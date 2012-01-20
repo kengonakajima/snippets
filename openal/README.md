@@ -9,7 +9,7 @@ output
 My handclap produced following:
 
 
-<code>
+<pre>
 10b 
 00c0 
 005a 
@@ -54,6 +54,6 @@ My handclap produced following:
 0178 
 010b 
 00b8 
-</code>
+</pre>
 
 
