@@ -11,8 +11,8 @@ function hex(x)
    return math.floor( x * 255 )
 end
 
-for y=1,h do
-   for x=1,w do
+for y=0,h-1 do
+   for x=0,w-1 do
       local r,g,b,a = img:getRGBA(x,y)
       r,g,b,a = hex(r),hex(g),hex(b),hex(a)
       print( string.format( "(%d,%d) %02x %02x %02x %02x", x,y,r,g,b,a))
