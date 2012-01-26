@@ -19,42 +19,86 @@ prop:setDeck ( gfxQuad )
 layer:insertProp ( prop )
 
 
-
+print("MOAIUntzSystem.initialize:")
 MOAIUntzSystem.initialize ()
 
---local sb = MOAIUntzSampleBuffer.new()
+local sb = MOAIUntzSampleBuffer.new()
 --sb:load('mono16.wav' )
 
---local sb2 = MOAIUntzSampleBuffer.new()
---sb2:load( "recorded/snd_254.wav" )
+local totalLenSec = 5
+sb:prepareBuffer( 1, 44100 * totalLenSec , 44100 )
+
+
+function dumpSampleBuffer(sb)
+   local data = sb:getData()
+   local meter={}
+   for i,v in ipairs(data) do
+      if (i%100)==0 then
+         table.insert(meter,v*1000)
+      end
+   end
+   for i,v in ipairs(meter) do
+      local n = math.abs(v)
+      local s = "" .. n
+      for j=1,n do
+         s = s .. "."
+      end
+      print(s)
+   end
+end
+
+function genTone( sb, note, n )
+   local bitPerSample, numChannel, numFrames, numSamplePerSec, lenSec = sb:getInfo()
+   print("soundbuffer info: bp:",bitPerSample, "ch:", numChannel, "fr:", numFrames, "numSample:",numSamplePerSec, "len:",lenSec )
+   local maxDataNum = numFrames * numChannel
+   local dataNum = maxDataNum
+   if n and n < dataNum then dataNum = n end
+   local data = {}
+   for i=1,dataNum do
+      data[i] = math.sin( i / note )
+   end
+   return data
+end
+
+local cnt = 5
+sb:setData( genTone( sb, cnt, nil ), 1 )
+
+--dumpSampleBuffer(sb)
+
 
 sound = MOAIUntzSound.new ()
-sound:load ("recorded/snd_0.wav" )
+sound:load (sb)
 sound:setVolume ( 1 )
-sound:setLooping ( false )
+sound:setLooping ( true )
 sound:play ()
+
+local timestep = 0.2
+local threstime = timestep
+local curFillIndex = 1
 
 t = MOAIThread.new()
 t:run( function()
-          cnt=0
-          local lastpos = sound:getPosition()
+          cnt=5
+
           while true do
              local curpos = sound:getPosition()
-             print("aa:", sound:isPlaying(), curpos, sound:isPaused())
-             
-             if lastpos == curpos then
+             local curDataIndex = math.floor( 44100 * curpos )
+             print("curpos:",curpos, curDataIndex, threstime )
+             if curpos > threstime then
+                threstime = threstime + timestep
+                
+                local unitFrameNum = timestep * 44100 * 1 * 2
+                local dat = genTone(sb, cnt, unitFrameNum )
                 cnt = cnt + 1
-                print(cnt)
-                sound = MOAIUntzSound.new()
-                sound:load( "recorded/snd_" .. cnt .. ".wav" )
-                sound:setVolume(1)
-                sound:setLooping(false)
-                sound:play()
-             end
+                print("datatoset:", #dat )
+                sb:setData( dat,curDataIndex )
 
-             lastpos = curpos
-             
-             prop:moveRot ( 360, 1.5 )
+
+--                cnt = cnt + 1                
+--                fillTone(sb,cnt, timestep * 44100 * 1)
+--                sound:setPosition(0)
+             end
+             prop:moveRot ( 30, 1.5 )
              
              coroutine.yield()
           end          

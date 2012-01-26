@@ -5,6 +5,7 @@
 
 using namespace std;
 
+const ALuint format = AL_FORMAT_STEREO16;
 const int SRATE = 44100;
 const int SSIZE = 4096;
 
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
 
     // record
     alGetError();
-    ALCdevice *device = alcCaptureOpenDevice(NULL, SRATE, AL_FORMAT_STEREO16, SSIZE);
+    ALCdevice *device = alcCaptureOpenDevice(NULL, SRATE, format, SSIZE);
     if (alGetError() != AL_NO_ERROR) {
         return 0;
     }
@@ -57,15 +58,18 @@ int main(int argc, char *argv[]) {
                 0,0,0,0, // fileLen
                 0x57,0x41,0x56,0x45, // WAVE
                 0x66,0x6D,0x74,0x20, // "fmt "
-                0x10,0,0,0, // 16
-                0x01,0, // 1 (format ID)
+                
+                0x10,0,0,0, // 16 fmt部分のバイト数。リニアPCMなら拡張部分がないので16
+                0x01,0, // 1 (format ID : PCM)
                 0x02,0, // 2 channel
                 0x44,0xac, 0,0, // 44100
                 0x10,0xb1, 0x02, 0, // 176400 bit/sec データ速度
+                
                 0x04, 0, // 4 (block size = 2x2)
                 0x10, 0, // 16 (bit depth/sample)
                 0x64,0x61,0x74,0x61, //  "data"
             };
+            
             fwrite(header,1,40,fp);
             int datalen = sample * 4;
             fwrite(&datalen,4,1,fp);
