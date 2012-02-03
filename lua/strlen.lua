@@ -1,4 +1,4 @@
--- speed test of string.len
+-- speed test of string.len, expect O(1)
 
 -- slow!
 function makestr(n)
