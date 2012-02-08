@@ -1,0 +1,7 @@
+aho=hoge
+hoge=moge
+moge=tako
+tako=fuck asdf asdf
+tako=fuck asdf asdf
+tako=fuck asdf asdf
+tako=fuck asdf asdf

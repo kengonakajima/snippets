@@ -1,0 +1,314 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<title>VCE-Lab Home Page</title>
+<style type="text/css">
+P  {
+  TEXT-INDENT: 1em
+}
+</style>
+
+</head>
+
+
+<body bgcolor="#ffffff">
+<table bgcolor="#ffffff" border=0 cellpadding=0 cellspacing=0 width=100%>
+  <tbody>
+  <tr>
+	<td bgcolor="#10507f">   <img src="images/vce-lab-title.gif">   </td>
+	<td bgcolor="#10507f">
+	<div align=right>
+	<form method=get action="http://www.google.com/search">
+	<input type="hidden" name="as_sitesearch" value="www.vce-lab.net">
+	<input type="text" size=15 name="q" value="">
+	<input type="submit" value="search">
+	</form>
+	<a href="ce-index.html"><img src="images/ce-logo-mini.gif" border=0></a>
+	</div>
+	</td>
+	<tr>
+	  <td colspan=2>
+	  <div align="right">
+	  <font size=2>
+	  <a href="index.html">Top </a> |
+	  <a href="keynote.html">KeyNote</a> |
+	  <a href="register.html">Download </a> |
+	  <a href="index.html#document">Docs </a>|
+	  <a href="faq.html">FAQ</a>|
+	  <a href="links.html">Links</a>|
+	  <a href="ce-index.html">CommunityEngine</a>|
+	  <a href="http://www.enix.co.jp/">Enix</a>
+	  </font>
+	  </div>
+	</tr>
+  </tbody>
+</table>
+<BR>
+
+
+
+
+
+<h2>最新ニュース</h2>
+
+
+
+<UL>
+  <LI>2002年12月13日 VCE 0.4.108: 最大接続を越えてconnectしたときの不具合修正
+  <LI>2002年11月27日 VCE 0.4.107: PS2 CodeWarrior 用バイナリを追加
+  <LI>2002年11月17日 VCE 0.4.106: VCE 内部の double型処理を排除
+  <LI>2002年11月15日 VCE 0.4.105: Linuxにおける scandir の不具合を修正
+  <LI>2002年11月08日 VCE 0.4.104 for PS2 libnet リリース
+  <LI>2002年11月05日 VCE 0.4.104: initialize後長時間 tcpcontext_create
+	  しないときの異常なタイムアウトを修正
+  <LI>2002年10月28日 VCE 0.4.102: VCE_EARRAY 追加
+  <LI>2002年10月25日 VCE 0.4.101: taskgroupのメモリリーク修正  
+  <LI>2002年10月20日 VCE 0.4.100: 配列エンジンのメモリリーク修正
+  <LI>2002年10月15日 VCE 0.4.99: 1回の heartbeatに呼びだされる
+	  コールバック関数の回数調整の不具合修正
+  <LI>2002年10月03日 VCE 0.4.97: vce_limit_t のメンバ追加.
+	  (vce_initialize_limited関数の使用に注意)
+  <LI>2002年9月26日 MM-suiteに LiquidSync (ファイル同期ツール)の
+	  アルファ版を追加しました。
+  <LI>2002年9月24日 MM-suiteに LVM最新版を追加しました。
+  <LI>2002年8月7日 VCEのデモプログラムである
+	  <a href="http://www.luminousphere.net/">LuminouShpere</a>を公開しました。
+  <LI>2002年7月20日 VCE 0.4.94 : モニタリングルーチンのバグ修正,セキュリティ
+	  ドキュメント追加
+  <LI><a href="oldnews.html">過去のニュース</a>
+</UL>
+
+<H2>今後の予定</h2>
+<Ul>
+
+  <LI>LiquidSync (2002 4Q)<BR>
+	  MM-Suiteに、p2pを活用した自動ファイル同期ツールが同梱されます。
+	  夏の時点では固定的ツリー構造にのみ対応し、
+	  2002年冬ごろには、動的ツリー構造に対応する予定です。
+
+  <LI>Banksv (2002 4Q)<BR>
+	  中央銀行サーバー：オンラインゲームのキャッシュフロー管理、
+	  ゲーム内預金口座管理機能
+
+  <LI>GUI maintainance tool (2003 1Q)<BR>
+	  GUI表示で VCE モニタリングに対応したサーバーを一括管理
+	  
+</ul>
+
+<div align=right>
+<img src="images/Christmas.gif"> 
+<img src="images/gang_red.gif"></div>
+
+<h2>Index</h2>
+
+<UL>
+  <LI><a href="keynote.html">KeyNote 2002</a>
+  <LI><a href="#whatis">VCE とは何か?</a>
+  <LI><a href="#tech">VCE の技術的特徴</a>
+  <LI><a href="#titles">VCEの使用実績</a>
+  <LI><a href="#download">ダウンロード</a>
+  <LI><a href="docs/index-ja.html">VCEドキュメント</a>
+  <LI><a href="faq.html">FAQ</a>
+  <LI><a href="libs.html">関連ツールキット</a>
+  <LI><a href="#list">VCE メーリングリストの紹介</a>
+  <LI><a href="#roadmap">ロードマップ</a>
+  <LI><a href="#contact">コンタクト</a>
+  <LI><a href="links.html">リンク集</a>
+</UL>
+<BR><BR>
+
+<a name="whatis"><h3>VCEとは何か?</h3></a>
+
+<p>
+VCEとは、"Virtual Community Engine" の略で、
+サーバー集中型のネットワークゲーム(オンラインゲーム)や、
+コミュニケーションツールを作るための基礎となる、
+通信ミドルウェアです。
+<a href="ce-index.html">コミュニティエンジン株式会社</a>
+により開発されています。<BR>
+VCEは以下のような部分から成りたっています。
+</p>
+
+<UL>
+  <LI>Linuxサーバー用ライブラリ libvce.a
+  <LI>Windowsクライアント用ライブラリ vcewin32.lib
+  <LI>Ruby言語用ラッパーライブラリ vce.so
+  <LI>ドキュメント
+  <LI>CとRubyによるサンプルコード
+</UL>
+
+<p>
+VCEが提案するのは、
+高負荷に耐えるコンテンツのサーバを「安全、簡単、迅速に」開発できる環境です。
+低コストで、高いTCP/IP負荷に耐えるクラスタリングサーバを実装するための
+ライブラリやツールが含まれています。
+コミュニティエンジンでは、サーバ集中型コンテンツの中でも、
+特に性能とコストに対してシビアな要求のあるネットワークゲーム市場を
+主ターゲット市場として選び、
+ゲームクリエイターの自由な発想をすぐに形に変えることができる
+<a href="libs.html">一連の開発環境群</a>を提供していきます。
+</p>
+
+<BR><BR>
+<a name="tech"><h3>VCE の技術的特徴</h3></a>
+ VCE の技術的特徴は、以下に集約されます。
+<UL>
+  <LI>必要最小限の機能を実装し、高速に動作する<BR>
+	  VCEは必要最小限の機能を実装し、
+	  堅牢・高速に稼働することを目指してデザインされています。
+	  
+  <LI>シングルスレッド・サーバ<BR>
+	  VCEでは、コールバックを利用した自前のスレッディングで最高の
+	  速度を追求します。
+	  CPUが1個〜2個の安価なマシンではカーネルスレッドを多数使うよりも、
+	  このようなアプローチのほうが高速です。
+	  
+  <LI>「中継サーバー」を使ったクラスタリング<BR>
+	  多数のクライアントからの接続を、中継サーバを介して束ねることで、
+	  高負荷状態における、UNIXのシステムコール呼びだし回数を劇的に減らします。
+	  さらに、クラスタ・ノード間のセッション移動も、
+	  アプリケーションプログラムから意識することなくできます。
+	  この中継サーバは、暗号(SSL)、復号の機能も同時に持っているので、
+	  本体サーバをアプリケーションのロジック処理のためにフル活用できます。
+	  
+  <LI>Diffie-Hellman/Blowfish を使った暗号化<BR>
+	  大量のデータを送受信する場合、暗号化の処理速度がネックになりますが、
+	  その処理を中継サーバで行なうことによってシングルスレッドサーバの
+	  性能を最大化します。
+	  VCEでは、Diffie-Hellman + Blowfish/Rijndael の組みあわせで
+	  強力で高速な暗号通信を可能にしています。
+
+
+  <LI>高級言語API<BR>
+	  アイデアをすぐ形にする、という点ではC/C++言語は
+	  スクリプト言語にはかないません。
+	  VCEでは、Ruby言語やKylixの API を提供していますので、
+	  直感的なサーバ開発が可能です(その場合の性能低下は20%〜80%程度)。
+	  サーバのプロトタイピングや、ライトなコンテンツに向きます。
+
+  <LI>豊富な上位ライブラリ<BR>
+	  VCE を利用したアプリケーション開発をさらに効率的にするために、
+	  「ソースコード共有」方式で各種上位ライブラリを提供します。
+	  ソースコード共有により、柔軟で迅速なカスタマイズが可能となります。
+	  上位ライブラリには現在、 "mm-suite","pp-suite","lobby-suite" があります。
+</ul>
+
+<BR>
+
+<a name="titles"><h3>使用実績</h3></a>
+<P>
+  VCEが使われているオンラインゲーム・タイトルを列挙しています。
+(タイトル名50音順、敬称略、開発中のものも含みます)
+</p>
+<ul>
+  <LI>三國志 Battlefield (コーエー)
+  <LI>ディプスファンタジア (エニックス)
+  <LI>信長の野望 Online (コーエー)
+</ul>
+
+<a name="download"><h3>ダウンロード</h3></a>
+
+<p>
+現在、本サイトでは、
+VCEのサンプル版バイナリパッケージ(tar.gz,zip)を無償で提供しています。
+無償ダウンロードをご利用いただくためには、
+まずライセンス文書を読んでいただき、同意をされてからユーザー登録をして頂き、
+その後自動的にダウンロード用のURLをメールで返信いたします。
+この方法はVCEをご利用いただく上でコミュニティエンジンが的確な
+サポートをしていくために必要ですので、ご協力をお願いします。
+</p>
+
+<BR>
+<OL>
+  <LI><a href="register.html">ライセンス確認/ユーザー登録</a>
+  <LI>返信メールにてダウンロードURLを受信
+  <LI>そのURLにてダウンロード
+</OL>
+
+
+<BR><BR>
+
+<a name="document"><h3>VCE ドキュメント</h3></a>
+VCEに附属しているドキュメントや、そのほかの文書を公開しています。
+<UL>
+  <LI><a href="docs/index-ja.html">VCE 最新版ドキュメント</a>
+  <LI><a href="changelog.txt">VCE ChangeLog </a>
+  <LI><a href="mysql-storage/">MySQL ベンチマーク結果</a>
+  <LI><a href="mmsuite/doc/index-ja.html">mm-suite ドキュメント</a>
+  <LI><a href="lvm/doc/index.html">LVM ドキュメント</a>
+  <LI><a href="h2n/">H2N ドキュメント</a>
+</UL>
+
+<BR><BR>
+<a name="list"><h3>メーリングリスト</h3></a>
+<p>
+コミュニティエンジンでは、VCEの利用者コミュニティのための
+メーリングリストを運営しています。
+メーリングリストに参加するには、
+<a href="register.html">VCEのダウンロード用ユーザー登録画面</a>
+において、「メーリングリスト参加を希望」をチェックしてください。
+現在の流量は月に数通程度で、
+コミュニティエンジンが発信しているVCEに関するニュースが
+中心となっています。
+</p>
+<BR><BR>
+
+<a name="roadmap"><h3>ロードマップ</h3></a>
+  VCE は休むことなく進歩を続けています。
+<BR>
+
+現在、VCEに追加中/実験中の機能は以下の通りです。
+<ul>
+  <LI>帯域制限<BR>
+	  VCE全体、コネクション単位、仮想回路単位の、
+	  各粒度における使用帯域制限をサポートします。
+  <LI>Dos/DDos 攻撃対策<BR>
+	  IPアドレスや頻度、通信内容にもとづく DoS 対策コードを内蔵します。
+  <LI>リモート・モニタリング機構<BR>
+	  Win32 環境で動作する、
+	  複数のVCEサーバアプリケーションの監視ツールを提供します。
+  <LI>ストリーミング、IPv6への対応
+  <LI>共有メモリルーチンの削除と公開<BR>
+	  共有メモリ関数群(mshare)はVCEの本来のレイヤーから逸脱気味であるため、
+	  次期バージョンでは削除するとともに、公開する予定です。
+</ul>
+<p>
+VCE の開発では、エクストリームプログラミング手法でいうところの、
+「短期間リリース」と「テスト最優先」の態度を保っています。
+
+</p>
+
+
+
+
+<table width=640>
+  <tr><TD>
+
+<a name="contact"><h3>コンタクト</h3></a>
+<p>
+VCE やコミュニティエンジンに関する御質問は、
+<a href="mailto:info@vce-lab.net">info@vce-lab.net</a>
+までお気軽にどうぞ。
+</p>
+  </td>
+  <td>
+  <div align=right><img src="images/bubu.gif"></div>
+  </td></tr>
+</table>
+
+<BR><BR><BR>
+
+<hr>
+<font size=-2>
+本ウェブサイトの内容の無断転載を禁じます。すべての内容は、
+日本国の著作権法および国際条約により保護されています。<BR>
+Copyright 2000,2001,2002 CommunityEngine Inc. All rights reserved.<BR>
+文責: Kengo Nakajima (中嶋謙互)<BR>
+Playstation2,プレイステーション2 は
+ソニー・コンピューターエンターテインメント社の登録商標です。
+</body>
+
+
+
+
+</html>

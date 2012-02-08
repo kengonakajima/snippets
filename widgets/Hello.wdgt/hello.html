@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style>
+body {
+        margin: 0;
+}
+
+.helloText {
+        font: 24px "Lucida Grande";
+        font-weight: bold;
+        color: white;
+        position: absolute;
+        top: 24px;
+        left: 20px;
+}
+</style>
+</head>
+<body background="Default.png">
+<h1 id="ht" class="helloText">Hello, World!</h1>
+<form>
+<input type=search>
+</form>
+
+<canvas id="canvas" width="200" height="200">
+<script>
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    context.clearRect(0, 0, 80, 80);
+    context.setFillColor(0.0, 0.0, 1.0, 1.0);
+    context.fillRect(0, 0, 80, 80);
+    context.setFillColor(1.0, 0.0, 0.0, 0.5);
+
+
+	context.save();
+	context.rotate( 0.5 );
+	context.setFillColor ( 1.0, 0, 0, 1.0);
+    context.fillRect (0, 0, 100, 50 );
+	context.restore();
+    context.setFillColor (0, 0, 1, .5);
+    context.fillRect (0, 0, 50, 100);
+
+	setInterval( 'alterText();', 1000 );
+
+
+
+
+
+var hoge = 0;
+function alterText()
+{
+	hoge = hoge + 1;
+
+	req = new XMLHttpRequest();
+	req.open( "GET", "http://nsx/~ringo/inc.cgi", false)
+	req.send(null)
+	var res;
+	res = req.responseText;
+
+	document.getElementById( "ht" ).innerText = "T=" + res + " "+ hoge;
+
+	context.save();
+	context.rotate( 0.5 + hoge / 100 );
+	context.setFillColor ( 1.0 - hoge/100, 0, 0, 1.0 - hoge/100);
+    context.fillRect (0, 0, 100, 50 );
+	context.restore();
+
+}
+
+
+</script>
+
+
+</body>
+</html>
+
+
+

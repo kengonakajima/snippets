@@ -1,0 +1,44 @@
+Compiled from tdlr.java
+public class tdlr extends java.applet.Applet {
+    public void paint(java.awt.Graphics);
+    public tdlr();
+}
+
+Method void paint(java.awt.Graphics)
+   0 iconst_0
+   1 istore_2
+   2 goto 46
+   5 iconst_0
+   6 istore_3
+   7 goto 32
+  10 aload_1
+  11 iload_3
+  12 iload_2
+  13 iconst_1
+  14 iconst_1
+  15 invokevirtual #13 <Method void fillRect(int, int, int, int)>
+  18 ldc2_w #14 <Long 10>
+  21 invokestatic #21 <Method void sleep(long)>
+  24 goto 29
+  27 astore 4
+  29 iinc 3 1
+  32 iload_3
+  33 aload_0
+  34 invokevirtual #27 <Method java.awt.Dimension size()>
+  37 getfield #33 <Field int height>
+  40 if_icmplt 10
+  43 iinc 2 1
+  46 iload_2
+  47 aload_0
+  48 invokevirtual #27 <Method java.awt.Dimension size()>
+  51 getfield #36 <Field int width>
+  54 if_icmplt 5
+  57 return
+Exception table:
+   from   to  target type
+    18    27    27   <Class java.lang.InterruptedException>
+
+Method tdlr()
+   0 aload_0
+   1 invokespecial #43 <Method java.applet.Applet()>
+   4 return

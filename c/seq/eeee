@@ -1,0 +1,186 @@
+FINDSLOT: return 0
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:-1
+!SENDER SEQ:ffffffff CMD:1010101 LEN:0 SFD:0 RFD:ffffffff
+!!!!!!!PACKET!  SEQ:ffffffff CMD:2020202 LEN:0 SFD:0 RFD:0
+BBBBBBBBBBBBBBBBB RFD:0
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:0
+rc_write returns 1
+ADDed sendp. Qi:1 fd:0 sfd:0 rfd:0
+rc_write returns 1
+ADDed sendp. Qi:2 fd:0 sfd:0 rfd:0
+rc_write returns 1
+!SENDER SEQ:0 CMD:5050505 LEN:1 SFD:0 RFD:0
+SENDER SEQ:1 CMD:5050505 LEN:1 SFD:0 RFD:0
+SENDER SEQ:2 CMD:5050505 LEN:1 SFD:0 RFD:0
+ADDed sendp. Qi:3 fd:0 sfd:0 rfd:0
+rc_write returns 1
+ADDed sendp. Qi:4 fd:0 sfd:0 rfd:0
+rc_write returns 1
+!SENDER SEQ:3 CMD:5050505 LEN:1 SFD:0 RFD:0
+SENDER SEQ:4 CMD:5050505 LEN:1 SFD:0 RFD:0
+PACKET!  SEQ:0 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:0
+Confirmed seq 0
+PACKET!  SEQ:1 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:1
+Confirmed seq 1
+PACKET!  SEQ:2 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:2
+Confirmed seq 2
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:0
+rc_write returns 1
+ADDed sendp. Qi:1 fd:0 sfd:0 rfd:0
+rc_write returns 1
+!SENDER SEQ:5 CMD:5050505 LEN:1 SFD:0 RFD:0
+SENDER SEQ:6 CMD:5050505 LEN:1 SFD:0 RFD:0
+ADDed sendp. Qi:2 fd:0 sfd:0 rfd:0
+rc_write returns 1
+ADDed sendp. Qi:5 fd:0 sfd:0 rfd:0
+rc_write returns 1
+!SENDER SEQ:7 CMD:5050505 LEN:1 SFD:0 RFD:0
+SENDER SEQ:8 CMD:5050505 LEN:1 SFD:0 RFD:0
+PACKET!  SEQ:3 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:3
+Confirmed seq 3
+PACKET!  SEQ:4 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:4
+Confirmed seq 4
+ADDed sendp. Qi:3 fd:0 sfd:0 rfd:0
+rc_write returns 1
+ADDed sendp. Qi:4 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:9 CMD:5050505 LEN:1 SFD:0 RFD:0
+SENDER SEQ:a CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:5 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:5
+Confirmed seq 5
+PACKET!  SEQ:6 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:6
+Confirmed seq 6
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:1 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:b CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:c CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:7 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:7
+Confirmed seq 7
+PACKET!  SEQ:8 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:8
+Confirmed seq 8
+PACKET!  SEQ:9 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:9
+Confirmed seq 9
+PACKET!  SEQ:a CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:10
+Confirmed seq 10
+ADDed sendp. Qi:2 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:3 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:d CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:e CMD:5050505 LEN:2 SFD:0 RFD:0
+ADDed sendp. Qi:4 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:5 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:f CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:10 CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:b CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:11
+Confirmed seq 11
+PACKET!  SEQ:c CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:12
+Confirmed seq 12
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:1 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:11 CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:12 CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:d CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:13
+Confirmed seq 13
+PACKET!  SEQ:e CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:14
+Confirmed seq 14
+ADDed sendp. Qi:2 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:3 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:13 CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:14 CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:f CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:15
+Confirmed seq 15
+PACKET!  SEQ:10 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:16
+Confirmed seq 16
+PACKET!  SEQ:11 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:17
+Confirmed seq 17
+PACKET!  SEQ:12 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:18
+Confirmed seq 18
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:1 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:15 CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:16 CMD:5050505 LEN:2 SFD:0 RFD:0
+ADDed sendp. Qi:4 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:5 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:17 CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:18 CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:13 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:19
+Confirmed seq 19
+PACKET!  SEQ:14 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:20
+Confirmed seq 20
+ADDed sendp. Qi:2 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:3 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:19 CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:1a CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:15 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:21
+Confirmed seq 21
+PACKET!  SEQ:16 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:22
+Confirmed seq 22
+ADDed sendp. Qi:0 fd:0 sfd:0 rfd:0
+rc_write returns 2
+ADDed sendp. Qi:1 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:1b CMD:5050505 LEN:2 SFD:0 RFD:0
+SENDER SEQ:1c CMD:5050505 LEN:2 SFD:0 RFD:0
+PACKET!  SEQ:17 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:23
+Confirmed seq 23
+PACKET!  SEQ:18 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:24
+Confirmed seq 24
+PACKET!  SEQ:19 CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:25
+Confirmed seq 25
+PACKET!  SEQ:1a CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:26
+Confirmed seq 26
+ADDed sendp. Qi:2 fd:0 sfd:0 rfd:0
+rc_write returns 2
+!SENDER SEQ:1d CMD:5050505 LEN:2 SFD:0 RFD:0
+!PACKET!  SEQ:1b CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:27
+Confirmed seq 27
+PACKET!  SEQ:1c CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:28
+Confirmed seq 28
+!PACKET!  SEQ:1d CMD:6060606 LEN:0 SFD:0 RFD:0
+RECEIVED DATA ACK. SEQ:29
+Confirmed seq 29
+!!!!!!!!!!

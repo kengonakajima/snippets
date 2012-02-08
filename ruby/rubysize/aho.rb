@@ -1,0 +1,2 @@
+
+print [ nil, nil ].size

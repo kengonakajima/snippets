@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" xmlns="*">
+	<mx:Canvas width="100%" height="100%">
+		<mx:Panel x="4" y="15" height="300" width="500" title="IME制御(flex2)">
+			<mx:Canvas height="100%" width="100%">
+				<mx:Label x="115" y="112" text="半角カナ"/>
+				<mx:Label x="115" y="82" text="全角カナ"/>
+				<mx:Label x="115" y="53" text="全角かな" height="21"/>
+				<mx:TextInput y="50" id="hiragana_txt" imeMode="{IMEConversionMode.JAPANESE_HIRAGANA }" >
+<!--					<mx:layoutConstraints> -->
+<!--						<mx:EdgeAnchor left="205"/> -->
+<!--					</mx:layoutConstraints> -->
+				</mx:TextInput>
+				<mx:TextInput id="katakana_txt" height="22" y="80" imeMode="{IMEConversionMode.JAPANESE_KATAKANA_FULL }">
+<!--					<mx:layoutConstraints>
+						<mx:EdgeAnchor left="205"/>
+					</mx:layoutConstraints>-->
+				</mx:TextInput>
+				<mx:TextInput id="hankana_txt" height="22" y="109" imeMode="{IMEConversionMode.JAPANESE_KATAKANA_HALF }">
+<!--					<mx:layoutConstraints>
+						<mx:EdgeAnchor left="205"/>
+					</mx:layoutConstraints> -->
+				</mx:TextInput>
+				<mx:TextInput id="alphaFull_txt" height="22" y="136" imeMode="{IMEConversionMode.ALPHANUMERIC_FULL}">
+<!--					<mx:layoutConstraints>
+						<mx:EdgeAnchor left="204"/>
+					</mx:layoutConstraints> -->
+				</mx:TextInput>
+				<mx:TextInput id="alphaHalf_txt" height="22" y="166" imeMode="{IMEConversionMode.ALPHANUMERIC_HALF}">
+<!--					<mx:layoutConstraints>
+						<mx:EdgeAnchor left="205"/>
+					</mx:layoutConstraints> -->
+				</mx:TextInput>
+								<mx:TextInput id="zenApha_txt" height="22" y="195"  x="205"/>
+				<mx:Label text="半角アルファベット" height="20" x="116" y="167"/>
+				<mx:Label text="全角アルファベット" height="20" x="117" y="137"/>
+				<mx:Label x="119" y="195" text="alpha" height="20"/>
+			</mx:Canvas>
+		</mx:Panel>
+	</mx:Canvas>
+</mx:Application>

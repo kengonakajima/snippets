@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style>
+body {
+        margin: 0;
+}
+
+.listclass {
+        font: 11px "Lucida Grande";
+        font-weight: bold;
+        color: black;
+        position: absolute;
+        top: 1px;
+        left: 12px;
+}
+</style>
+
+</head>
+<body background="Default.png">
+
+<p id="list" class="listclass">
+now loading (30secs every)
+</p>
+
+
+<script>
+
+function openLinkInBrowser(url) {
+    widget.system("open '"+url+"'", null);
+    widget.openURL('');
+}
+
+
+function emptyFunction()
+{
+	return;
+}
+
+function alterText()
+{
+
+	document.getElementById( "list" ).innerHTML = widget.system("/usr/bin/ruby /Users/ringo/test/Recent2.wdgt/recent.rb", null).outputString;
+
+
+}
+
+setInterval( 'alterText();', 1000*60  );
+
+</script>
+
+
+
+</body>
+</html>
+
+
+

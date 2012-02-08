@@ -1,0 +1,158 @@
+Useless nonterminals:
+
+   vertex
+   vertices
+   face
+   faces
+   face_indexes
+   vector3d
+   vectors3d
+   vector2d
+   vectors2d
+   rgbcolor
+   material_opts
+   material
+   materials
+   meshmateriallist
+   meshnormals
+   meshtexturecoords
+   mesh_opt
+   mesh_opts
+   mesh
+
+
+Terminals which are not used:
+
+   NAME
+   FLOAT
+   INTEGER
+   MESH
+   MESHMATERIALLIST
+   MATERIAL
+   MESHNORMALS
+   MESHTEXTURECOORDS
+   ';'
+   ','
+   '4'
+   '3'
+
+
+Useless rules:
+
+#2     vertex :	 FLOAT ';' FLOAT ';' FLOAT ';';
+#3     vertices :	 vertices ',' vertex;
+#4     vertices :	 vertex;
+#5     face :	 '4' ';' INTEGER ',' INTEGER ',' INTEGER ',' INTEGER ';';
+#6     face :	 '3' ';' INTEGER ',' INTEGER ',' INTEGER ';';
+#7     faces :	 faces ',' face;
+#8     faces :	 face;
+#9     face_indexes :	 face_indexes ',' INTEGER;
+#10    face_indexes :	 INTEGER;
+#11    vector3d :	 FLOAT ';' FLOAT ';' FLOAT ';';
+#12    vectors3d :	 vectors3d ',' vector3d;
+#13    vectors3d :	 vector3d;
+#14    vector2d :	 FLOAT ';' FLOAT ';';
+#15    vectors2d :	 vectors2d ',' vector2d;
+#16    vectors2d :	 vector2d;
+#17    rgbcolor :	 FLOAT ';' FLOAT ';' FLOAT ';';
+#18    material_opts :	 texturefilename;
+#19    material :	 MATERIAL '{' rgbcolor ';' FLOAT ';' rgbcolor ';' material_opts '}';
+#20    materials :	 materials material;
+#21    materials :	 material;
+#22    meshmateriallist :	 MESHMATERIALLIST '{' INTEGER ';' INTEGER ';' face_indexes ';' materials '}';
+#23    meshnormals :	 MESHNORMALS '{' INTEGER ';' vectors3d ';' INTEGER ';' faces ';' '}';
+#24    meshtexturecoords :	 MESHTEXTURECOORDS '{' INTEGER ';' vectors2d ';' '}';
+#25    mesh_opt :	 meshmateriallist;
+#26    mesh_opt :	 meshnormals;
+#27    mesh_opt :	 meshtexturecoords;
+#28    mesh_opts :	 mesh_opt mesh_opt;
+#29    mesh_opts :	 mesh_opt;
+#30    mesh :	 MESH NAME '{' INTEGER ';' vertices ';' INTEGER ';' faces ';' mesh_opts '}';
+
+
+
+Grammar
+rule 1    texturefilename -> TEXTUREFILENAME '{' STRING '}'
+
+Terminals, with rules where they appear
+
+$ (-1)
+',' (44) 5 6
+'3' (51) 6
+'4' (52) 5
+';' (59) 2 5 6 11 14 17 22 23 24 30
+'{' (123) 1 19 22 23 24 30
+'}' (125) 1
+error (256)
+NAME (257) 30
+FLOAT (258) 2 11 14 17
+INTEGER (259) 5 6 10 22 23 24 30
+STRING (260) 1
+MESH (261) 30
+MESHMATERIALLIST (262) 22
+MATERIAL (263) 19
+TEXTUREFILENAME (264) 1
+MESHNORMALS (265) 23
+MESHTEXTURECOORDS (266) 24
+
+Nonterminals, with rules where they appear
+
+texturefilename (19)
+    on left: 1, on right: 18
+
+
+state 0
+
+    TEXTUREFILENAME	shift, and go to state 1
+
+    texturefilename	go to state 5
+
+
+
+state 1
+
+    texturefilename  ->  TEXTUREFILENAME . '{' STRING '}'   (rule 1)
+
+    '{' 	shift, and go to state 2
+
+
+
+state 2
+
+    texturefilename  ->  TEXTUREFILENAME '{' . STRING '}'   (rule 1)
+
+    STRING	shift, and go to state 3
+
+
+
+state 3
+
+    texturefilename  ->  TEXTUREFILENAME '{' STRING . '}'   (rule 1)
+
+    '}' 	shift, and go to state 4
+
+
+
+state 4
+
+    texturefilename  ->  TEXTUREFILENAME '{' STRING '}' .   (rule 1)
+
+    $default	reduce using rule 1 (texturefilename)
+
+
+
+state 5
+
+    $   	go to state 6
+
+
+
+state 6
+
+    $   	go to state 7
+
+
+
+state 7
+
+    $default	accept

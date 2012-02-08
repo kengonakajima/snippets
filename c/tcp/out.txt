@@ -1,0 +1,12 @@
+couldn't set locale correctly
+
+
+
+PERLFUNC(1)     Perl Programmers Reference Guide      PERLFUNC(1)
+
+
+
+NNNNAAAAMMMMEEEE
+     perlfunc - Perl builtin functions
+
+DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN

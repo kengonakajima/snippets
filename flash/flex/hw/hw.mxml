@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:Application
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    viewSourceURL="src/HelloWorld/index.html"
+    horizontalAlign="center" verticalAlign="middle"
+    width="300" height="160">
+    <mx:Style source="./aho.css"/>
+    <mx:Script>
+    <![CDATA[
+		import mx.controls.Alert;
+//		Alert.show("aksjdhfkasdhkfjahsdkfjasdjf", "hogehoge?", 3, null,null);
+		private function hogehoge( a:int ) : void {			
+		}
+	]]>
+	</mx:Script>
+
+    <mx:Panel
+        paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10"
+        title="My Application">
+        <mx:Label text="Hello World!" fontWeight="bold" fontSize="24"/>
+    </mx:Panel>
+</mx:Application>

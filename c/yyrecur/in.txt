@@ -1,0 +1,26 @@
+Struct {
+  Member 1;
+  Member 2;
+  Struct {
+    Member 3;
+    Struct {
+      Member 4;
+      Member 5;
+    }
+    Member 6;
+  }
+  Struct {
+    Member 7;
+    Member 8;
+    Struct {
+      Member 9;
+      Member 10;
+      Struct {
+        Struct {
+          Member 11;
+        }
+      }
+    }
+  }
+}
+  

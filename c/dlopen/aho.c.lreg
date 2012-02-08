@@ -1,0 +1,91 @@
+
+;; Function main
+
+23 registers.
+
+Register 21 used 2 times across 0 insns; pref AREG, else GENERAL_REGS.
+
+Register 22 used 2 times across 0 insns; GENERAL_REGS or none.
+
+0 basic blocks.
+
+;; Register 21 in 0.
+;; Register 22 in 0.
+(note 2 0 3 "" NOTE_INSN_DELETED)
+
+(note 3 2 4 "" NOTE_INSN_FUNCTION_BEG)
+
+(note 4 3 6 "" NOTE_INSN_DELETED)
+
+(note 6 4 8 0 NOTE_INSN_BLOCK_BEG)
+
+;; Insn is not within a basic block
+(insn 8 6 10 (set (mem:SI (pre_dec:SI (reg:SI 7 %esp)))
+        (const_int 257)) 50 {movsi-2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 10 8 12 (set (mem:SI (pre_dec:SI (reg:SI 7 %esp)))
+        (symbol_ref:SI ("*.LC0"))) 50 {movsi-2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(call_insn 12 10 14 (set (reg:SI 0 %eax)
+        (call (mem:QI (symbol_ref:SI ("dlopen")))
+            (const_int 8))) 333 {call_value+1} (nil)
+    (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 14 12 16 (set (reg:SI 7 %esp)
+        (plus:SI (reg:SI 7 %esp)
+            (const_int 8))) 143 {addsi3+1} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 16 14 18 (set (reg:SI 21)
+        (reg:SI 0 %eax)) 54 {movsi+2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 18 16 21 (set (mem:SI (plus:SI (reg:SI 6 %ebp)
+                (const_int -4)))
+        (reg:SI 21)) 54 {movsi+2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 21 18 22 (set (reg:SI 22)
+        (mem:SI (plus:SI (reg:SI 6 %ebp)
+                (const_int -4)))) 54 {movsi+2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 22 21 24 (set (mem:SI (pre_dec:SI (reg:SI 7 %esp)))
+        (reg:SI 22)) 50 {movsi-2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 24 22 26 (set (mem:SI (pre_dec:SI (reg:SI 7 %esp)))
+        (symbol_ref:SI ("*.LC1"))) 50 {movsi-2} (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(call_insn 26 24 28 (set (reg:SI 0 %eax)
+        (call (mem:QI (symbol_ref:SI ("printf")))
+            (const_int 8))) 333 {call_value+1} (nil)
+    (nil)
+    (nil))
+
+;; Insn is not within a basic block
+(insn 28 26 30 (set (reg:SI 7 %esp)
+        (plus:SI (reg:SI 7 %esp)
+            (const_int 8))) 143 {addsi3+1} (nil)
+    (nil))
+
+(note 30 28 31 0 NOTE_INSN_BLOCK_END)
+
+(note 31 30 33 "" NOTE_INSN_FUNCTION_END)
+
+;; Insn is not within a basic block
+(code_label 33 31 0 1 "")
+

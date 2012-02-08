@@ -1,0 +1,1 @@
+long long i;int main(){        i=1039448449383839;        printf("%dd\n",  i );}

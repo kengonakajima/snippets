@@ -1,0 +1,107 @@
+<html>
+  <body>
+   <audio id="multiaudio1" src="Lvup_01.mp3" preload="auto"></audio>
+   <audio id="multiaudio2" src="attack_01.mp3" preload="auto"></audio>
+   <audio id="multiaudio3" src="hit_04.mp3" preload="auto"></audio>
+
+   <a href="javascript:play_multi_sound('multiaudio1');">1</a><br />
+   <a href="javascript:play_multi_sound('multiaudio2');">2</a><br />
+   <a href="javascript:play_multi_sound('multiaudio3');">3</a><br />
+
+<script type="text/javascript">
+
+  var channel_max = 10;										// number of channels
+  audiochannels = new Array();
+
+  audiochannels[0] = new Audio();						// create a new audio object
+  audiochannels[0].src = document.getElementById("multiaudio1").src;
+  audiochannels[0].load()
+  
+  audiochannels[1] = new Audio();						// create a new audio object
+  audiochannels[1].src = document.getElementById("multiaudio2").src;
+  audiochannels[1].load()
+  
+  audiochannels[2] = new Audio();						// create a new audio object
+  audiochannels[2].src = document.getElementById("multiaudio3").src;    
+  audiochannels[2].load()
+
+  setTimeout( "tm()", 1000 );
+  function tm(){
+    setTimeout( "tm()",1000 );
+    console.log("aho");
+    audiochannels[0].play();
+  }
+
+  setTimeout( "tm2()", 700 );
+  function tm2(){
+    setTimeout( "tm2()",700 );
+    console.log("tm2");
+    audiochannels[1].play();    
+  }
+  
+                                               
+</script>
+
+  
+Lvup_01.mp3
+Lvup_02.mp3
+attack_01.mp3
+attack_02.mp3
+attack_03.mp3
+attack_short_01.mp3
+attack_short_02.mp3
+attack_short_03.mp3
+bomb_01.mp3
+damage_enemy.mp3
+damage_enemy_blue.mp3
+damage_enemy_red_1.mp3
+damage_enemy_red_2.mp3
+damage_player_1.mp3
+damage_player_2.mp3
+damage_player_3.mp3
+damage_player_4.mp3
+death.mp3
+dig_01.mp3
+dig_02.mp3
+fire_long_1.mp3
+fire_long_2.mp3
+fire_long_3.mp3
+fire_long_4.mp3
+fire_long_5.mp3
+fire_midium_1.mp3
+fire_midium_2.mp3
+fire_midium_3.mp3
+fire_midium_4.mp3
+fire_midium_5.mp3
+fire_short_1.mp3
+fire_short_2.mp3
+fire_short_3.mp3
+fire_short_4.mp3
+fire_short_5.mp3
+foot_sound_big_L.mp3
+foot_sound_big_R.mp3
+foot_sound_small_L.mp3
+foot_sound_small_R.mp3
+heal_01.mp3
+heal_02.mp3
+hit_01.mp3
+hit_02.mp3
+hit_03.mp3
+hit_04.mp3
+item_get_01.mp3
+item_set_01.mp3
+life_aleart_03.mp3
+life_alert_01.mp3
+life_alert_02.mp3
+magic_fire_01.mp3
+magic_hit_01.mp3
+magic_spell_01.mp3
+magic_spell_02.mp3
+no_damage_01.mp3
+no_damage_02.mp3
+weapon_alert_01.mp3
+weapon_alert_02.mp3
+window_close_01.mp3
+window_close_02.mp3
+window_open_01.mp3
+window_open_02.mp3

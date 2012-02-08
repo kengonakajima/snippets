@@ -1,0 +1,9 @@
+<owl:Class rdf:ID="Person">
+ <rdfs:subClassOf rdf:resource="#Animal"/>
+ <rdfs:subClassOf>
+  <owl:Restriction>
+   <owl:onProperty rdf:resource="#hasRealName"/>
+   <owl:cardinality>1</owl:cardinality>
+  </owl:Restriction>
+ </rdfs:subClassOf>
+</owl:Class>

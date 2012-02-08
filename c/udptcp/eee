@@ -1,0 +1,82 @@
+start
+inited
+socketd 8
+listened
+recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:50 SEQ:0 ACK:-1 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:0
+SYN!
+MAKEH (host)SP:0 DP:3 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R accepted! nfd:3 3d01a8c0 0
+..recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:3 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:3
+SYN!
+MAKEH (host)SP:0 DP:4 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:4 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:4
+SYN!
+MAKEH (host)SP:0 DP:5 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:5 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:5
+SYN!
+MAKEH (host)SP:0 DP:6 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:6 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:6
+SYN!
+MAKEH (host)SP:0 DP:7 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:7 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:7
+SYN!
+MAKEH (host)SP:0 DP:9 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:8 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:8
+SYN!
+MAKEH (host)SP:0 DP:10 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:9 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:9
+SYN!
+MAKEH (host)SP:0 DP:11 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:10 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:10
+SYN!
+MAKEH (host)SP:0 DP:12 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:11 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:11
+SYN!
+MAKEH (host)SP:0 DP:13 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:12 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:12
+SYN!
+MAKEH (host)SP:0 DP:14 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:13 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:13
+SYN!
+MAKEH (host)SP:0 DP:15 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3d01a8c0 len:20
+R .recvfrom addr:3d01a8c0
+GETH (host)SP:0 DP:14 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+INDEX:-1 dp:14
+SYN!
+R ..............

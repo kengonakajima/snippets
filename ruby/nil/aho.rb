@@ -1,0 +1,1 @@
+print Hash.new()["aho"]

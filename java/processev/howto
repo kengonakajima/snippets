@@ -1,0 +1,145 @@
+How to Convert Programs to the 1.1 AWT API
+
+  JDK1.0.2からJDK1.1になって、イベントの扱いがだいぶん変わりました。
+今までのやりかたも通用するということになっていますが、それは古めかしい
+やりかたとして、変更することが望ましいとされています。
+  以下に、JDK1.1以降ではどのようにアプレットのプログラムをすればよいか
+を示します。この内容は、JDK1.1附属のドキュメント(CD-ROMにも収録されています)
+HowToUpgrade.htmlを訳した内容にあたるものです。
+
+
+  まず最初に、JDK1.1以前の様子を説明しておきます。JDK1.1以前は、コンポーネント
+だけがイベントを処理することができ、また、イベントを処理することができる
+のはそのイベントが発生したコンポーネントが含んでいるコンポーネントに限られ
+るようになっていました。それぞれのイベントは、コンポーネントの
+階層構造から離れられなかったのです。そこにおいては、handleEventという
+メソッドは、中心的な役割を果たしていました。
+
+  JDK1.1においては、イベント処理は、もはやコンポーネントの階層構造に縛られる
+ことはありません。そしてhandleEventメソッド中心的な役割を果たさなくなります。
+そのかわりに、コンポーネントのようなそれぞれのオブジェクトは、自分がイベントに
+「聞き耳を立てて待っている」と登録することによって、自分の興味があるイベント
+だけを受けとることができるようになります。イベント処理をするためだけに
+サブクラスを作る必要はなくなります。
+
+  以前のプログラムを1.1以降用に変更する最も簡単なやりかたは、
+？？？？？？？？？？？？？？？？？？？？？？？？？？？？？
+
+
+  コンポーネントではないオブジェクトにイベント処理のコードを集中させる
+という方法も可能です。そうすれば、GUIと、細かい実装の部分を分離することが
+できます。
+
+o プログラムに import java.awt.event.*; と書く
+
+o それぞれのコンポーネントが、どの種類のイベントを受けとるのかを
+調べます。コンポーネントと、発生するイベントの対応表は、また別に
+用意してあります。(1.0でaction()を使っていた場合は、actionListenerを
+implementsすればよいことがわかります。)
+
+
+
+o 適切なインターフェースをimplementsするように、クラスの宣言を変えます。
+これも別表を見ればわかります。
+例：
+public class MyClass extends SomeComponent implements ActionListener
+
+o イベントが発生するコンポーネントを決めます。そして、そのコンポーネントが
+発生するイベントを「聞く」のは自分であると、登録します。
+
+newComponentObject.addActionListener( this );
+
+o implementsしたインターフェースに含まれるメソッドをすべて空のままでよいから
+書きます。たとえば、 ActionListerの場合は、たった一つのメソッドしかないので、
+
+
+public void actionPerformed(ActionEvent event ){
+}
+
+というメソッドを一つだけ書けばいいのです。
+今までのソースコードをいじるなら、
+
+public boolean action( Event ev , Object arg ){
+を、上のコードに変更するわけです。
+
+
+o メソッドの名前を変えたら、あとは、以下の変更をそのメソッドに加えます。
+ o すべてのreturn を消します。
+ o event.targetを、 event.getSource()に変更します。
+
+
+
+
+
+
+
+
+     import java.awt.event.*;
+
+     public class DialogWindow extends Frame 
+                               implements WindowListener,
+                                          ActionListener {
+         ...
+         public DialogWindow() {
+             ...
+             Button button = new Button("Click to bring up dialog");
+             button.addActionListener(this);
+             ...
+             addWindowListener(this);
+         }
+
+         public void windowClosed(WindowEvent event) {
+         }
+
+         public void windowDeiconified(WindowEvent event) {
+         }
+
+         public void windowIconified(WindowEvent event) {
+         }
+
+         public void windowOpened(WindowEvent event) {
+         }
+
+         public void windowClosing(WindowEvent event) {
+             if (inAnApplet) {
+                 dispose();
+             } else {
+                 System.exit(0);
+             }
+         }
+
+         public void actionPerformed(ActionEvent event) {
+             if (dialog == null) {
+                 dialog = new SimpleDialog(this, "A Simple Dialog");
+             }
+             dialog.show();
+         }
+         ...
+     }
+
+     class SimpleDialog extends Dialog implements ActionListener {
+         ...
+         SimpleDialog(Frame dw, String title) {
+             ...
+             field = new TextField(40);
+             field.addActionListener(this);
+             ...
+             Button b = new Button("Cancel");
+             b.addActionListener(this);
+             setButton = new Button("Set");
+             setButton.addActionListener(this);
+             ...
+         }
+
+         public void actionPerformed(ActionEvent event) {
+             Object source = event.getSource();
+             if ( (source == setButton)
+                | (source == field)) {
+                 parent.setText(field.getText());
+             }
+             field.selectAll();
+             hide();
+         }
+     }
+
+

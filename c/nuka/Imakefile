@@ -1,0 +1,11 @@
+SYS_LIBRARIES	=		/* X 以外に link したいライブラリ */
+DEPLIBS		= $(DEPXLIB)
+LOCAL_LIBRARIES	= $(XLIB)
+
+DEFINES = -O2
+
+OBJS	= x.o
+
+ComplexProgramTarget(x)
+
+x.o		:

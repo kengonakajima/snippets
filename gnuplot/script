@@ -1,0 +1,5 @@
+set terminal png
+set output "aho.png"
+
+
+plot "aho.dat" using 1:2 with lines, "aho.dat" using 1:3 with lines

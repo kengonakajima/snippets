@@ -1,0 +1,36 @@
+CC=gcc
+PROG=lssendmesg
+CFLAGS= -O -Wall -s
+LFLAGS= -lsocket -lnsl
+
+SRC = main.c
+OBJ = $(SRC:.c=.o)
+
+$(PROG): $(OBJ)
+	$(CC) $(CFLAGS) -o $(PROG) $(OBJ) $(LFLAGS)
+
+depend:
+	make clean
+	makedepend $(SRC)
+
+clean:
+	rm -f $(OBJ)
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+main.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
+main.o: /usr/include/sys/cdefs.h /usr/include/stdlib.h
+main.o: /usr/include/features.h /usr/include/errno.h
+main.o: /usr/include/linux/errno.h /usr/include/asm/errno.h
+main.o: /usr/include/alloca.h /usr/include/strings.h /usr/include/string.h
+main.o: /usr/include/ulimit.h /usr/include/unistd.h /usr/include/posix_opt.h
+main.o: /usr/include/gnu/types.h /usr/include/confname.h
+main.o: /usr/include/sys/types.h /usr/include/linux/types.h
+main.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
+main.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
+main.o: /usr/include/sys/socket.h /usr/include/linux/socket.h
+main.o: /usr/include/asm/socket.h /usr/include/asm/sockios.h
+main.o: /usr/include/linux/sockios.h /usr/include/linux/uio.h
+main.o: /usr/include/netinet/in.h /usr/include/endian.h
+main.o: /usr/include/bytesex.h /usr/include/linux/in.h
+main.o: /usr/include/asm/byteorder.h /usr/include/netdb.h
+main.o: /usr/include/paths.h

@@ -1,0 +1,8 @@
+#!/bin/sh
+while true ; do
+	$* &
+	wait > /dev/null
+	echo $0 hung up! now sleeping while...
+	sleep 10
+	echo $0 rebooting $*
+done

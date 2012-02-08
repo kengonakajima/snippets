@@ -1,0 +1,10 @@
+diff hoge1.png tablebase1024.png
+diff hoge2.png tablebase1024.png
+diff hoge3.png tablebase1024.png
+diff hoge4.png tablebase1024.png
+diff hoge5.png tablebase1024.png
+diff hoge6.png tablebase1024.png
+diff hoge7.png tablebase1024.png
+diff hoge8.png tablebase1024.png
+diff hoge9.png tablebase1024.png
+diff hoge10.png tablebase1024.png

@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style>
+body {
+        margin: 0;
+}
+.lineclass {
+        font: 9px "Lucida Grande";
+		position: absolute;
+		left: 12px;
+		color: black;
+}
+
+.logo {
+		position: absolute;
+		top: 10px;
+		left: 115px;
+}
+
+</style>
+
+</head>
+<body background="Default.png">
+<a href="javascript:openLinkInBrowser('http://en.wikipedia.org/')"><img src="logo.png" class="logo" width=42 height=42></a>
+<pre id="line0" class="lineclass">---</pre>
+<pre id="line1" class="lineclass">---</pre>
+<pre id="line2" class="lineclass">---</pre>
+<pre id="line3" class="lineclass">---</pre>
+<pre id="line4" class="lineclass">---</pre>
+<pre id="line5" class="lineclass">---</pre>
+<pre id="line6" class="lineclass">---</pre>
+<pre id="line7" class="lineclass">---</pre>
+<pre id="line8" class="lineclass">---</pre>
+<pre id="line9" class="lineclass">---</pre>
+<pre id="line10" class="lineclass">---</pre>
+<pre id="line11" class="lineclass">---</pre>
+
+
+
+
+<canvas id="canvas" width=240 height=260>
+<script>
+	var maxline = 12;
+	var canvas = document.getElementById("canvas");
+	var context = canvas.getContext("2d");
+	var pix_per_line = 14;
+	var pauselen = 0;
+	var pausecounter = 0;
+	var interval = 100; // mili seconds
+	var fetch_interval = 120; // secs
+
+
+	setInterval( 'scroller();', interval );
+
+	var counter = 0;
+	var speed = 1;
+	var scroll = 1;  // do scroll if 1
+	var i;
+	var next_s = new Array();
+
+	for(i=0;i<maxline;i++){
+		document.getElementById("line"+i).style.posTop = pix_per_line * i;
+	}
+
+function scroller()
+{
+
+	if(scroll==1 && pausecounter <= 0 ){
+		
+		for(i=0;i<maxline;i++){
+			document.getElementById("line"+i).style.posTop -= speed;
+			if( document.getElementById("line"+i).style.posTop < 0 ){
+				if( next_s.length == 0 ){
+					scroll = 0; // 表示するものがないなら止めてしまう
+					for(i=0;i<maxline;i++){
+						document.getElementById("line"+i).style.posTop+=speed;
+					}
+					break;
+				} else {
+					var k, max_y=0;
+					for(k=0;k<maxline;k++){
+						if( document.getElementById("line"+k).style.posTop > max_y ){ max_y = document.getElementById("line"+k).style.posTop;  }
+					}
+					document.getElementById("line"+i).style.posTop = max_y + pix_per_line;
+					var title = next_s.shift();
+					var mod_s = title.replace( / /g, "_");
+					mod_s = mod_s.replace( /,/g, "%2C");
+					var html = "<a href=\"javascript:openLinkInBrowser('http://en.wikipedia.org/wiki/" + mod_s + "')\">+ " + title + "</a>"
+					document.getElementById("line"+i).innerHTML = html;
+					pausecounter = pauselen;
+				}
+			}
+		}
+	}
+
+	pausecounter -= 1;
+	counter += 1;
+	if( scroll == 0 && ( (counter % (fetch_interval * (1000/interval))) == 0 ) ){
+		s = widget.system("/usr/bin/ruby /Users/ringo/test/WikiRecent.wdgt/recent.rb", null).outputString;
+		ary = s.split("\n");
+		if( ary != null && ary.length > 0 ){
+			for(i=0;i<ary.length;i++){
+				if( ary[i] != null && ary[i].length > 1 ){
+					next_s.push( ary[i] );
+				}
+			}
+			scroll = 1;
+			pauselen = (fetch_interval / ary.length - 2) * (1000/interval);
+			if( pauselen < 0 ) { pauselen = 0; }
+			pausecounter = pauselen;
+		}
+	}
+
+
+
+//
+	
+//	context.setFillColor( 1.0,1.0,1.0,1.0);
+//	context.fillRect(12,12,150,190 );
+}
+
+
+
+function openLinkInBrowser(url) {
+    widget.system("open '"+url+"'", null);
+    widget.openURL('');
+}
+
+
+
+
+</script>
+
+
+
+</body>
+</html>
+
+
+

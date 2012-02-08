@@ -1,0 +1,4 @@
+
+int aho(int);
+
+    

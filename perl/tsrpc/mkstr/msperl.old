@@ -1,0 +1,100 @@
+#
+# でーたをもじにするの
+# perl用
+#
+
+#use strict subs;
+
+%types = (
+		  long32 => "L",
+		  int32 => "I",
+		  short16 => "S",
+		  char8 => "C"
+		  );
+
+&_init;
+
+print mkstr_long32( 65536 * 65536 * 65536 + 23);
+#  print mkstr_short16( 100000 ) , "\n";
+
+sub _init {
+	for $type ( keys %types ){
+		my $subname = "mkstr_$type";
+		my $key = $types{$type};
+		my $command = "sub $subname { return unpack( $key, pack( $key, shift ) ); }";
+		eval $command;
+	}
+}
+
+
+$fuck = <<EOF
+
+sub mkstr_long32($)
+{
+	return unpack( "L" , pack("L",shift()));
+}
+sub mkstr_int32($)
+{
+	return unpack( "
+#	return -2147483647 + ( shift() & 0xffffffff ) ;
+}
+sub mkstr_short16($)
+{
+	return -32768 + ( shift() & 0xffff );
+}
+sub mkstr_char8($)
+{
+	return -256 + ( shift() & 0xff );
+}
+sub mkstr_u_int32($)
+{
+	return shift() & 0xffffffff;
+}
+
+sub mkstr_u_short16($)
+{
+	return shift() & 0xffff;
+}
+sub mkstr_u_char8($)
+{
+	return shift() & 0xff;
+}
+sub mkstr_string($)
+{
+	return escape( shift());
+}
+EOF
+	;
+
+
+
+# print escape( $fuck = "aho is fuck.,\nnext line is also fuck.\n" );
+# print descape( $fuck );
+
+
+#
+# 
+#
+sub escape($)
+{
+	$_ = shift;
+
+	s/ /\\ /g;
+	s/\n/\\n/g;
+
+	return $_;
+}
+
+sub descape($)
+{
+	$_ = shift;
+
+	s/\\n/\n/g;
+	s/\\ / /g;
+
+	return $_;
+}
+
+
+
+

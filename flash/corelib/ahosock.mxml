@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:Application
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    horizontalAlign="center" verticalAlign="middle"
+    width="700" height="460"
+	applicationComplete="appComplete();">
+
+    <mx:Script>
+    <![CDATA[
+		import mx.controls.Alert;
+  		import flash.display.*;
+  		import flash.net.*;
+  		import flash.external.*;
+  		import flash.events.*;
+  		import flash.system.*;
+  		import flash.text.*;
+  		import mx.controls.Label;
+
+		import com.adobe.serialization.json.JSONDecoder;
+		import com.adobe.serialization.json.JSONEncoder;
+		import com.adobe.serialization.json.JSON;
+		import com.adobe.serialization.json.JSONParseError;
+
+    	public var socket:Socket;
+		public var label1:Label;
+
+		public function appComplete():void {
+			label1 = new Label();
+			label1.text="INIT";
+			addChild(label1);
+			//
+			socket = new Socket( "localhost", 10081 );
+    		socket.addEventListener(Event.CLOSE, on_close);
+    		socket.addEventListener(Event.CONNECT, on_connect);
+    		socket.addEventListener(IOErrorEvent.IO_ERROR, on_io_error);
+    		socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, on_security_error);
+    		socket.addEventListener(ProgressEvent.SOCKET_DATA, on_data);
+
+			var o:* = JSON.decode( " [ null, true, false, 100, -100, \"test\", { \"foo\": \"bar\" } ] "  ) as Array;
+			appendLabel( o[6].foo );
+
+
+		}
+		public function on_close(evt:Event):void {
+			appendLabel( "closed" );
+		}
+		public function on_connect(evt:Event):void {
+			appendLabel( "connected");
+		}
+		public function on_io_error(evt:IOErrorEvent):void {
+			appendLabel( "ioerror");
+		}
+		public function on_security_error(evt:SecurityErrorEvent):void {
+			appendLabel("secerror");
+		}
+		public function on_data(evt:Event):void {
+			appendLabel( "ondata");
+		}
+		public function appendLabel(s:String):void {
+			label1.text += s;
+		}
+
+
+		public function send( data:String):void {
+			if(!socket||!socket.connected){
+				appendLabel("senderror");
+				return;
+			}
+			socket.writeUTFBytes(data);
+			socket.flush();
+		}
+		public function clicked():void {
+			var obj:Object = { foo: { foo2: { foo3: { foo4: "bar" } } } };
+			var s:String = JSON.encode( obj );
+			appendLabel( s );
+			send( s );
+			
+		}
+	]]>
+	</mx:Script>
+
+    <mx:Panel
+        paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10"
+        title="My Application">
+        <mx:Label text="Hello World!" fontWeight="bold" fontSize="24"/>
+    </mx:Panel>
+
+     <mx:Label id="hogelabel" text="This Label displays plain text."/>
+     <mx:Button id="btn1" label="push" click="clicked();"/>
+
+</mx:Application>
+

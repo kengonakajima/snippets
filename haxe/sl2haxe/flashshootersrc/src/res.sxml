@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<movie width="480" height="340" framerate="20">
+	<background color="#ffffff"/>
+
+	<frame>
+		<library>
+			<clip id="teddy" import="bear.png"/>
+			<clip id="square" import="Square.png"/>
+		</library>
+	</frame>
+</movie>

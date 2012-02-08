@@ -1,0 +1,62 @@
+#!/usr/bin/perl
+
+
+$def_sleep = 5;
+
+if( $ARGV[0] ne ''){ $def_sleep =$ARGV[0];}
+
+print "sleep: $def_sleep\n";
+
+
+$u = `uname`;
+chop($u);
+
+$whoami = `whoami`;
+chop($whoami);
+
+
+if($u ne 'Linux' ){die "works only on linux.\n"; }
+
+
+$p = `ps auxw|grep wget`;
+
+
+
+
+
+for($toggle = 0;;){
+	@lines = split(/\n/ , $p );
+	for(;;){
+		$line = shift(@lines);
+
+		last if($line eq '');
+		next if($line =~ /grep/ );
+	
+		($user,$pid)=split( /\s+/ , $line );
+		
+		print "W:$whoami U:$user\n";
+		if( $whoami eq $user ){
+
+			if( ( $toggle % 2 ) == 0 ){
+				print "stopping $pid\n";
+				system("kill -STOP $pid");
+				sleep( $def_sleep );
+			} else {
+				print "continuing $pid\n";
+				system("kill -CONT $pid");
+			}
+			$toggle ++;
+			sleep(1);
+		}
+	}
+	
+}
+
+
+
+
+
+
+
+
+

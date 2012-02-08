@@ -1,0 +1,4 @@
+-cp src\
+-swf bin\FlashShooter.swf
+-swf-lib res.swf
+-main FlashShooter.hx

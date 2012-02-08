@@ -1,0 +1,10 @@
+progname aa;
+
+talk aaaaa;
+walk 3;
+walk 4;
+
+set s_thai = 10;
+
+goto 0;
+

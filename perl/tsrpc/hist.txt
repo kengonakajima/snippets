@@ -1,0 +1,8 @@
+TSRPCGEN 変更
+
+1998
+
+0513 TCP/UDPをつかって2種類の関数を実現した perl sample code
+     を手で書いた。動作した。ss001(server) lsdev(client)で
+     成功。sample/
+

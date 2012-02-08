@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<movie width="480" height="340" framerate="20">
+	<background color="#ffffff"/>
+
+	<frame>
+		<clip id="Player1" import="Player1.png"/>
+		<clip id="Player2" import="Player2.png"/>
+		<clip id="Player3" import="Player3.png"/>
+		<clip id="Expl1" import="Expl1.png"/>
+		<clip id="Expl2" import="Expl2.png"/>
+		<clip id="Expl3" import="Expl3.png"/>
+		<clip id="Expl4" import="Expl4.png"/>
+		<clip id="Expl5" import="Expl5.png"/>
+		<clip id="Expl6" import="Expl6.png"/>
+		<clip id="Enemy1-1" import="Enemy1.png"/>
+		<clip id="Enemy1-2" import="Enemy2.png"/>
+		<library>
+			<clip id="Player">
+                          <frame name="PlayerFrame1">
+                             <place id="Player1" depth="1"/>
+                          </frame>
+                          <frame name="PlayerFrame2">
+                             <place id="Player2" depth="1"/>
+                          </frame>
+                          <frame name="PlayerFrame3">
+                             <place id="Player3" depth="1"/>
+                          </frame>
+                        </clip>
+			<clip id="Explosion">
+                          <frame name="ExplosionFrame1">
+                             <place id="Expl1" depth="1"/>
+                          </frame>
+                          <frame name="ExplosionFrame2">
+                             <place id="Expl2" depth="1"/>
+                          </frame>
+                          <frame name="ExplosionFrame3">
+                             <place id="Expl3" depth="1"/>
+                          </frame>
+                          <frame name="ExplosionFrame4">
+                             <place id="Expl4" depth="1"/>
+                          </frame>
+                          <frame name="ExplosionFrame5">
+                             <place id="Expl5" depth="1"/>
+                          </frame>
+                          <frame name="ExplosionFrame6">
+                             <place id="Expl6" depth="1"/>
+                          </frame>
+                        </clip>
+			<clip id="Enemy1">
+                          <frame name="Enemy1Frame1">
+                            <place id="Enemy1-1" depth="1"/>
+                          </frame>
+                          <frame name="Enemy1Frame2">
+                            <place id="Enemy1-2" depth="1"/>
+                          </frame>
+                        </clip>
+			<clip id="water" import="Water1.jpg"/>
+			<clip id="bullet" import="bullet.png"/>
+			<clip id="Island1" import="Island1.png"/>
+			<clip id="Island2" import="Island2.png"/>
+			<clip id="Island3" import="Island3.png"/>
+		</library>
+	</frame>
+</movie>

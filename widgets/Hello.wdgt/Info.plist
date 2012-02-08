@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>net.ce-lab.www.widget.hello</string>
+	<key>CFBundleName</key>
+	<string>Hello</string>
+	<key>DefaultImage</key>
+	<string>Default.png</string>
+	<key>Height</key>
+	<string>200</string>
+	<key>MainHTML</key>
+	<string>hello.html</string>
+	<key>Width</key>
+	<string>400</string>
+</dict>
+</plist>

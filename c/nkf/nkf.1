@@ -1,0 +1,112 @@
+.TH NKF 1L 18/Aug/87
+.SH NAME
+nkf \- Network Kanji code conversion Filter
+.SH SYNOPSIS
+.B nkf
+[
+.B options
+] [
+.B file
+]
+.SH DESCRIPTION
+.PP
+.B Nkf
+is a yet another kanji code converter among networks, hosts and terminals.
+It converts input kanji code to designated kanji code
+such as 7-bit JIS, shifted-JIS or EUC.
+.PP
+One of the most unique facicility of 
+.B nkf
+is the guess of the input kanji code.
+It currently recognizes 7-bit JIS, shifted-JIS and EUC.
+So users needn't the input kanji code specification.
+.PP
+Options are bellow:
+.TP
+.B \-b
+bufferd output.
+This is a default.
+.TP
+.B \-u
+unbufferd output.
+.TP
+.B \-t
+no operations.
+.TP
+.B \-j
+.br
+.ns
+.TP
+.B \-n
+output 7-bit JIS code.
+This is a default.
+.TP
+.B \-s
+.br
+.ns
+.TP
+.B \-x
+output shifted-JIS code.
+.TP
+.B \-e
+.br
+.ns
+.TP
+.B \-a
+output EUC (AT&T) code.
+.TP
+.BI \-i c
+output 
+.BI ESC\-$\- c
+as kanji-in.
+(Default is
+.BR B .)
+.TP
+.BI \-i c
+output 
+.BI ESC\-(\- c
+as kanji-out.
+(Default is
+.BR B .)
+.TP
+.B \-@J
+.br
+.ns
+.TP
+.B \-J
+same as
+.BR \-i @
+.BR \-o J.
+.TP
+.B \-@H
+.br
+.ns
+.TP
+.B \-H
+same as
+.BR \-i @
+.BR \-o H.
+.TP
+.B \-BJ
+same as
+.BR \-i B
+.BR \-o J.
+.TP
+.B \-BB
+same as
+.BR \-i B
+.BR \-o B.
+.SH "FILES"
+nkf - binary
+.SH AUTHOR
+Itaru Ichikawa		ichikawa@fujitsu.co.jp
+.SH BUGS
+.B Nkf
+cannot handle some input that contains mixed kanji codes.
+.SH NOTES
+Kanji-out used in
+.B JUNET
+should
+.I NOT
+.BR ESC\-(-H .
+

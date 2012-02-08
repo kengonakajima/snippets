@@ -1,0 +1,71 @@
+bind: 0 3d01a8c0
+start con fd:0
+MAKEH (host)SP:0 DP:50 SEQ:0 ACK:-1 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3e01a8c0 len:20
+c c c c recvfrom addr:3e01a8c0
+GETH (host)SP:3 DP:0 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+STbl[0] 1: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[1] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[2] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[3] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[4] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[5] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[6] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[7] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[8] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[9] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[10] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[11] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[12] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[13] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[14] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+STbl[15] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:3
+INDEX:-1
+SYN!
+MAKEH (host)SP:3 DP:3 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3e01a8c0 len:20
+R c c c c c recvfrom addr:3e01a8c0
+GETH (host)SP:4 DP:3 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+STbl[0] 1: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[1] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[2] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[3] 1: addr:3e01a8c0 port:3 cliaddr:3e01a8c0 sport:4
+STbl[4] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[5] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[6] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[7] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[8] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[9] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[10] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[11] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[12] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[13] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[14] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+STbl[15] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:4
+INDEX:-1
+SYN!
+MAKEH (host)SP:4 DP:4 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3e01a8c0 len:20
+R c c c c recvfrom addr:3e01a8c0
+GETH (host)SP:5 DP:4 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+STbl[0] 1: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[1] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[2] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[3] 1: addr:3e01a8c0 port:3 cliaddr:3e01a8c0 sport:5
+STbl[4] 1: addr:3e01a8c0 port:4 cliaddr:3e01a8c0 sport:5
+STbl[5] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[6] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[7] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[8] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[9] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[10] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[11] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[12] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[13] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[14] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+STbl[15] 0: addr:0 port:0 cliaddr:3e01a8c0 sport:5
+INDEX:-1
+SYN!
+MAKEH (host)SP:5 DP:5 SEQ:0 ACK:0 RST:0 SYN:1 FIN:0 REF:0 LEN:0
+Sender: addr:3e01a8c0 len:20
+R c c c c c c c c c 

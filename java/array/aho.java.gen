@@ -1,0 +1,12 @@
+
+
+public class aho {
+  public static void main(java.lang.String[] argv) {
+    int	i;
+
+    for (i = 0; i < argv.length; i++) {
+      java.lang.System.out.println("ARG=" + argv[i]);
+    }
+  }
+
+}

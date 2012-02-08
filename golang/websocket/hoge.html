@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8" />
+
+<title>WebSocket Test</title>
+
+<script language="javascript" type="text/javascript">
+
+  var wsUri = "ws://127.0.0.1:8080/echo";
+//  var wsUri = "ws://59.106.172.232:12345/echo";
+  var output;
+
+  function init()
+  {
+    output = document.getElementById("output");
+    testWebSocket();
+  }
+
+  function testWebSocket()
+  {
+    websocket = new WebSocket(wsUri);
+    websocket.onopen = function(evt) { onOpen(evt) };
+    websocket.onclose = function(evt) { onClose(evt) };
+    websocket.onmessage = function(evt) { onMessage(evt) };
+    websocket.onerror = function(evt) { onError(evt) };
+  }
+
+  function onOpen(evt)
+  {
+    output.innerHTML+="CONNECTED"+evt.data;
+    websocket.send("WebSocket rocks");
+  }
+
+  function onClose(evt)
+  {
+    output.innerHTML+="CLOSED:"+evt.data
+  }
+
+  var cnt = 0;
+  
+  function onMessage(evt)
+  {
+    output.innerHTML+= " :" + evt.data;
+    cnt++;
+    if( cnt < 500 ){
+//      websocket.send( ""+cnt)
+    }
+  }
+
+  function onError(evt)
+  {
+    output.innerHTML+= " ERROR: " + evt.data ;
+  }
+
+  window.addEventListener("load", init, false);
+
+</script>
+
+<h2>WebSocket Test</h2>
+
+<div id="output"></div>
+
+
+</html> 

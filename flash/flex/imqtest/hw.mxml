@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:Application
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    viewSourceURL="src/HelloWorld/index.html"
+    horizontalAlign="left" verticalAlign="top"
+    width="800" height="560">
+    <mx:Script>
+    <![CDATA[
+		import mx.controls.Alert;
+//		Alert.show("aksjdhfkasdhkfjahsdkfjasdjf", "hogehoge?", 3, null,null);
+	]]>
+	</mx:Script>
+
+    <mx:TextInput id="src2" text="Hello World!"/>
+
+<!--    <mx:Panel
+        paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10"
+        title="My Application">
+        <mx:Label text="Hello World!" fontWeight="bold" fontSize="24"/>
+    </mx:Panel> -->
+
+
+        <mx:Grid>
+            <mx:GridRow>
+                <mx:GridItem>
+                    <mx:Button label="Row 1 Col 1" width="100"/>
+                </mx:GridItem>
+                <mx:GridItem>
+                    <mx:Button label="Row 1 Col 2" width="100"/>
+                </mx:GridItem>
+                <mx:GridItem>
+                    <mx:Button label="Row 1 Col 3" width="100"/>
+                </mx:GridItem>
+            </mx:GridRow>
+
+            <mx:GridRow>
+                <mx:GridItem>
+                    <mx:Button label="Row 2 Col 1" width="100"/>
+                </mx:GridItem>
+                <mx:GridItem>
+                    <mx:Button label="Row 2 Col 2" width="100"/>
+                </mx:GridItem>
+                <mx:GridItem>
+                    <mx:Button label="Row 2 Col 3" width="100"/>
+                </mx:GridItem>
+            </mx:GridRow>
+
+            <mx:GridRow>
+                <mx:GridItem>
+                    <mx:Button label="Row 3 Col 1" width="100"/>
+                </mx:GridItem>
+                <mx:GridItem>
+                    <mx:Button label="Row 3 Col 2" width="100"/>
+                </mx:GridItem>
+                <mx:GridItem>
+<!--                    <mx:Button label="Row 3 Col 3" width="100"/> -->
+
+      <mx:Label id="simpleLabel" text="This Label displays plain text." width="100"/>
+                </mx:GridItem>
+            </mx:GridRow>
+        </mx:Grid>
+
+
+    <mx:TextInput id="src" text="Hello World!"/>
+
+<mx:DividedBox direction="horizontal" width="100%" height="100%">
+
+            <mx:Panel title="Panel 1" width="15%" height="100%" backgroundColor="0xffCCCC">
+            </mx:Panel>
+
+            <mx:Panel title="Panel 2" width="30%" height="100%" backgroundColor="0xCCCCff">
+            </mx:Panel>
+
+            <mx:Panel title="Panel 3" width="20%" height="100%" backgroundColor="0xCCffCC">
+            </mx:Panel>
+
+        </mx:DividedBox>
+
+</mx:Application>

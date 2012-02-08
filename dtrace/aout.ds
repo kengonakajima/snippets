@@ -1,0 +1,11 @@
+#!/usr/sbin/dtrace -s
+
+syscall::open*:
+
+/execname == "a.out" /
+{
+ printf( "a.out with pid %d \n", pid );
+ ustack();
+ trace(args);
+}
+

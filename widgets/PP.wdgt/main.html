@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style>
+body {
+        margin: 0;
+}
+
+.ph {
+	font-size: 10px;
+	position: absolute;
+	left: 10px;
+
+}
+</style>
+
+</head>
+<body background="Default.png">
+	<br>
+<span id="line0" class="ph">--0--</span><br>
+<span id="line1" class="ph">--1--</span><br>
+<span id="line2" class="ph">--2--</span><br>
+<span id="line3" class="ph">--3--</span><br>
+<span id="line4" class="ph">--4--</span><br>
+<span id="line5" class="ph">--5--</span><br>
+<span id="line6" class="ph">--6--</span><br>
+<span id="line7" class="ph">--7--</span><br>
+<span id="line8" class="ph">--8--</span><br>
+<span id="line9" class="ph">--9--</span><br>
+<span id="line10" class="ph">--10--</span><br>
+<span id="line11" class="ph">--11--</span><br>
+
+
+
+<script type="text/javascript" src="prototype.js"></script>
+<script type="text/javascript" src="jkl-parsexml.js"></script>
+
+<script>
+var maxline = 12;
+var maxary = 300;
+var pix_per_line = 15;
+
+setInterval( 'scroller();', 1000 );
+
+function Phrase(){
+	
+}
+Phrase.prototype = {
+	name: "asdf",
+	blog: "blog",
+	url: "url",
+	update: function(n,b,u){
+		this.name = n;
+		this.blog = b;
+		this.url = u;
+	}	
+}
+
+	
+// Step 0	
+var pary = new Array();
+	
+for(i=0;i<maxary;i++){
+	pary[i] = new Phrase();
+	pary[i].update("n","b","u");
+}
+	
+
+for(i=0;i<maxline;i++){
+	document.getElementById("line"+i).style.posTop = pix_per_line * (i+1);
+}
+
+// Step 0: Prepare data array
+// entry format: [counter, name, weblog, url]
+// Step 1: Fetch XML from http://61.194.89.205:8008/recent_phrase.xml
+// <?xml version="1.0"?>
+// <page> 
+// <phrase>
+// <name>&#x6BCE;&#x5E74;&#x898B;&#x3054;&#x305F;&#x3048;&#x629C;&#x7FA4;</name>
+//  <weblog>&#x30D9;&#x30EB;&#x30AC;&#x30E2;&#x30C3;&#x30C8;&#x306A;&#x4E00;&#x65E5;</weblog>
+//  <url>http://refle-bergamot.cocolog-nifty.com/blog/</url>
+// </phrase>
+// <phrase>...</phrase>
+// ...
+//
+// Step 2: Delete oldest phrases if data array is full
+// Step 3: Store new phrases in data array
+// 
+// 
+
+var ring_pointer = 0;
+
+function updateAry(nm,blog,url){
+	if( ring_pointer >= maxary ){
+		ring_pointer = 0;
+	}
+	pary[ring_pointer].update(nm,blog,url);
+	ring_pointer += 1;
+}
+
+
+
+var fetch_interval = 4; 
+
+function splitSubString(str, start, end) {
+	var s = str.indexOf(start, 0);
+	if (s < 0) return "";
+	s += start.length;
+	var e = str.indexOf(end, s);
+	if (e < 0) e = str.length;
+	return str.substring(s, e);
+}
+
+function xmlLoaded(req){
+//	alert(req.responseText);
+	if( req && req.responseText ){
+		var list = req.responseText.split( "<phrase>" )
+		for(i=1;i<list.length;i++){
+//			alert( list[i]);
+			var nm = splitSubString( list[i], "<name>", "</name>" )			
+			var blog = splitSubString( list[i], "<weblog>", "</weblog>" )			
+			var url = splitSubString( list[i], "<url>", "</url>" )						
+			if(i<maxline){
+				updateAry(nm,blog,url);
+			}
+		}
+	}
+	showNewest();
+}
+
+// Show from top of ring pointer 
+function showNewest(){
+//	alert("show");
+	var vcnt = ring_pointer-1;
+	for(i=0;i<maxline;i++){
+		if( vcnt < 0 ){
+			vcnt = maxary-1;
+		}
+		document.getElementById("line"+i).innerHTML  = "<a href=\"javascript:openLinkInBrowser('" + pary[vcnt].url + "');\">" + pary[vcnt].name + "</a>";
+		
+//		var downloadURL = "http://www.gumonji.net" + imgpath;
+//		document.getElementById( "image" ).innerHTML = "<img src=\"" + downloadURL + "\" width=85 height=82 onClick=\"click_on_img();\">" ;
+//		var ll = "<a href=\"javascript:openLinkInBrowser('http://www.gumonji.net/cgi-bin/" + imagelinkpath + "')\">go</a>";
+//		document.getElementById( "gobutton" ).innerHTML = ll;
+		
+		vcnt -= 1;
+	}
+}
+
+var do_load = true;
+if(window.widget){
+	widget.onhide = onhide;
+	widget.onshow = onshow;
+}
+function onhide(){
+	do_load = false;
+}
+function onshow(){
+	do_load = true;
+}
+		
+function scroller()
+{
+	if(do_load == true ){
+		var savedThis = this;
+		var request = new XMLHttpRequest();
+		request.onload = function() { xmlLoaded(request); }
+		request.open("GET", "http://61.194.89.205:8008/recent_phrase.xml", true );
+		request.setRequestHeader("Content-Type", "text/xml" );
+		request.send();
+	}
+}
+
+
+
+function openLinkInBrowser(url) {
+    widget.system("open '"+url+"'", null);
+    widget.openURL('');
+}
+
+
+
+
+</script>
+
+
+
+</body>
+</html>
+
+
+

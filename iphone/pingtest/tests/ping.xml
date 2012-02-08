@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?mso-infoPathSolution solutionVersion="1.0.0.185" productVersion="12.0.0" name="urn:schemas-microsoft-com:office:infopath:VCE-Gen-Editor:-myXSD-2007-04-09T09-42-00" PIVersion="1.0.0.0" ?>
+<?mso-application progid="InfoPath.Document" versionProgid="InfoPath.Document.2"?>
+<my:gen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:my="http://schemas.microsoft.com/office/infopath/2003/myXSD/2006-09-29T11:02:35" xmlns:xd="http://schemas.microsoft.com/office/infopath/2003" xml:lang="ja">
+	<my:protocol my:name="ping_proto" my:recvprefix="" my:recvsuffix="" my:sendprefix="" my:sendsuffix="">
+		<my:config my:dummyproto="" my:debuglog="true" my:hashid="" my:mpi="" my:output="" my:header="pingproto.h" my:source="pingproto.mm" my:structparameter="" my:purevirtual=""></my:config>
+		<my:method my:methname="ping" my:prflow="" my:methcomment="" my:methlimit="" my:methlimittime="">
+			<my:param my:prname="time" my:prtype="int" my:prlength="" my:prvariable="true"></my:param>
+		</my:method>
+	</my:protocol>
+</my:gen>

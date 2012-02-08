@@ -1,0 +1,5 @@
+/* sample protocol text */
+version=10000;
+tcp int32 remotesum2( string , int32[10] );
+udp string udpcat( string , string );
+

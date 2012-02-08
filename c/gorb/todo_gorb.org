@@ -1,0 +1,223 @@
+* Go-like Ruby DSL
+
+Goにはよいところがあるが、遅い。
+Ruby DSLを用いて非常に速い http/tcp サーバを簡単に実装できないか？
+
+・静的言語
+　・ビルドが速い
+　・テンプレートがない
+　・継承がない
+　・duck typing風 (thisを明示するため)
+　・差分コンパイルできる
+　・mapが便利, arrayはあまり便利じゃない
+　・ := 
+・GC→遅い原因となっている
+・chan
+・goroutine
+
+解決法
+・静的言語を出力する
+・シングルスレッド限定
+・RPCサーバ限定
+・libevent
+
+仕様
+・リフレクションなし, interfaceなし
+・ルビーふう文字列処理も変換できるのか:y.done.
+・セミコロンいらない
+・カッコ最小限
+・i8 i16 i32 i64 ui8 ui16 ui32 ui64 str(utf-8)
+・map（固定サイズでもいい）
+・array（固定サイズでもいい）
+・ポインタ
+・参照渡し、参照の配列
+・正規表現
+・enum
+・構造体の構造体など複雑な型
+・３項演算子
+
+* TODO waitの仕様
+こうかく
+meth recv_login(co(*Conn), name(str), pw(str)) do
+
+     result, acc = wait send_loadAccount(g_dbcli, name)     
+     if result == NOENT then
+         result,acc = wait send_createAccount(g_dbcli, name,pw)
+         if result == NG then
+             send_loginResult( co, NG )
+         else
+             send_loginResult( co, OK )
+         end
+     else
+         if acc.pw == pw then             # ここでパスワード判定するために引数を継続する必要があるが、nameは継続する必要がない。 
+             send_loginResult( co, OK )
+         else
+             send_loginResult( co, NG )
+         end
+     end
+end
+
+引数を効果的に継続する方法：
+1)領域を確保してコピーする
+2)プロトコルの領域を再利用する
+
+だが、、、、、、、、、、、
+
+
+
+これより短くできなくていいだろ。
+waitの次のステートメントで、グローバル変数と、関数の引数とローカル変数とが継続されていたらいい。
+
+上ではwaitが２個あり、 wait_0, wait_1 と命名したとする。
+それぞれ、見えているローカル変数が違っているので、継続が必要な情報は違う。
+something(int)がふえている。
+
+struct recv_login_wait_0_ctx
+{
+    int64 reqId;
+    Conn *arg_co;
+    char *arg_name;
+    char *arg_pw;
+} recv_login_wait_0_ctx;
+
+
+struct recv_login_wait_1_ctx
+{
+    int64 reqId;
+    Conn *arg_co;
+    char *arg_name;
+    char *arg_pw;
+} recv_login_wait_1_ctx;
+
+
+void recv_login( Conn *co, char * name, char *pw ) {
+
+  recv_login_wait_0_ctx *ctx = malloc( sizeof( recv_login_wait0_ctx ) );
+  ctx.reqId = newReqId();
+  ctx.arg_co = co;
+  ctx.arg_name = name; // これ　ポインタだったらダメだなあ。 いちいちコピーするのか？
+  ctx.arg_pw = pw;
+
+recv_login_ctx.new( RECV_LOGIN, co, name, pw ); // newした時点でreqIdを新しくつくる
+  send_loadAccount( g_dbcli, name, ctx->reqId ); // reqidは最後につける
+}
+以降pollingして、resultが返ってきたらreqidから検索して・・・・
+void recv_loadAccount_wait_cont_0( recv_loadAccount_0_ctx *ctx0, int result, Account acc ) {             // waitの場合、新しく引数が定義されるので
+  if( result == NOENT ){
+    recv_login_wait_1_ctx *ctx1 = recv_login_wait_1_ctx.new( RECV_LOGIN, ctx0->co, ctx0->name, ctx0->pw );
+    send_createAccount( g_dbcli, ctx0->name, ctx0->pw);
+  } else {
+    if( strcmp(acc.pw,ctx0->local_pw)==0 ) {
+      send_loginResult( ctx0->co, OK );
+    } else {
+      send_loginResult( ctx0->co, NG );
+  }
+}
+void recv_loadAccount_wait_cont_1( recv_login_wait_1_ctx *ctx1, int result, Account acc ) {
+  if( result == NG ){
+    send_loginResult( ctx1->co, NG );
+  } else {
+    send_loginResult( ctx1->co, OK );
+  }
+}
+
+void recv_loadAccountResult( dbcli *cl, int result, Account acc, int64 reqId ) {
+   context *ctx = findContext(reqId);
+   ctx->continueFunc( ctx );
+}
+void recv_createAccountResult( dbcli *cl, int result, Account acc, int64 reqId ) {
+
+* DONE ++の扱い
+  CLOSED: [2010-11-17 水 06:41]
+どうしても扱えない。完成した後で、シンタックスシュガーするレイヤをつくって、++があったら、全部終わった後にやるようにとか。
+
+
+* DONE ローカル（同じプロセス内の）RPC
+  CLOSED: [2010-11-17 水 05:54]
+ループバック通信を初期化できるようにしたらよい
+
+
+* DONE mallocの仕様
+  CLOSED: [2010-11-17 水 06:14]
+オブジェクトはnew, pnewと２種類のメソを定義し、　newを使った場合はヒープから、pnewを使った場合はプールからとる。
+free,pfreeも同様に用意する。
+mallocは、
+
+* DONE gcについて
+  CLOSED: [2010-11-17 水 06:17]
+結論としては、完全に無しにする。
+まず単純なメモリリークは見つけるのが簡単なので問題にならない。
+論理的な間違いによるポインタを持ったままのメモリリークは、gcがあっても防げない。
+こっちのほうが防ぐのがむずかしい。
+細かくnew/makeするロジックは、高速なサーバでは必要がない。
+そのためメモリ管理はプログラマに任せる。
+webまわりなどgcを使った富豪的なプログラミングをしたいときはRubyやjavascriptを使ってやればいい。
+gorbでは徹底的に高速なサーバを書くことに徹する。
+
+
+
+
+* DONE test ParseTree
+  CLOSED: [2010-11-17 水 05:51]
+一番むずそうなのは goroで、これは、上の使い方ができたら十分。　値を他のcoroにコピーで渡して待つのを簡単に書いている。
+
+Cのマクロかプリプロセッサとしての存在にする？
+
+>> require "parse_tree"
+=> true
+>> pt = ParseTree.new
+>> class Simple
+>> def init
+>> print "aho"
+>> end
+>> end
+=> nil
+>> parse_tree = pt.parse_tree(Simple)
+=> [[:class, :Simple, [:const, :Object], [:defn, :init, [:scope, [:block, [:args], [:fcall, :print, [:array, [:str, "aho"]]]]]]]]
+
+これすごい。
+
+
+http://sean-carley.blogspot.com/2006/04/assignment-in-ruby-simple-scoped.html
+
+
+Scope	AST Name	Code	AST
+Local	:lasgn	a=nil	[:lasgn, :a, [:nil]]
+Instance	:iasgn	@a=nil	[:iasgn, :@a, [:nil]]
+Class	:cvasgn	@@a=nil	[:cvasgn, :@@a, [:nil]]
+Global	:gasgn	$a=nil	[:gasgn, :$a, [:nil]]
+
+int LoadPlayerKlanByKlan( int64 klan, int32 limit ) {
+  limitstr := "";
+  
+
+}
+
+func( LoadPlayerKlanByKlan, klan int64, limit int32 ) do
+  var limitstr ""
+  if limit > 0 {
+end
+
+
+★受信側を定義したら、送信側は自動的に作られる?
+
+★mysql apiなどブロックする外部ブラックボックスapiに対しては、
+それを非同期化するだけのサーバを用意して　rpcにすることが前提（それもgorbで書くのでいいが）
+よって、gorbが定義するrpcのサーバでもありクライアントでもあるような高速なサーバを定義できたらよい。
+
+必要に応じて逆プロクシをつくったり、accepterをつくったり、複数のプロセス間の連携をやりやすくできるべし。
+
+
+
+* TODO 結論
+cでも書きやすくしたらかなり結構むだがでるから
+goでやって
+io減らすのが最良だな
+
+goでバックエンドへの通信をタイマーで貯めたらかるくなるか
+というかrpc単位がおおきければかるいか
+
+しむのばあいはできるだけ集中させる必要があるが
+オントはない
+
+

@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="text/html;charset=euc-jp">
+
+<!-- author: kengo nakajima (2006 Community Engine Inc. ) -->
+
+
+<style>
+body {
+	margin: 0;
+}
+
+
+#image {
+	position: absolute;
+	top: 14px;
+	left: 17px;
+}
+
+#status {
+  color: white;
+  font: 9px "Lucida Grande";
+  font-weight: bold;
+  position: absolute;
+  top: 14px;
+  left: 18px;
+
+}
+
+#gobutton {
+  color: white;
+  font: 10px "Lucida Grande";
+  font-weight: bold;
+  position: absolute;
+  top: 83px;
+  left: 88px;
+}
+
+A:link { color: white; }
+A:visited { color: white; }
+A { text-decoration: none; }
+
+
+#front {
+	position: absolute;
+	color: white;
+}
+
+</style>
+
+
+
+<script>
+
+var downloader = null;
+var imageName = null;
+
+
+function splitSubString(str, start, end) {
+	var s = str.indexOf(start, 0);
+	if (s < 0) return "";
+	s += start.length;
+	var e = str.indexOf(end, s);
+	if (e < 0) e = str.length;
+	return str.substring(s, e);
+}
+
+
+
+function setStatus(str) {
+	var element = document.getElementById("status");
+	element.innerText = str;
+}
+
+
+Request.prototype = {
+	getLatest : function () {
+		var savedThis = this;
+		var request = new XMLHttpRequest();
+		setStatus( "loading.." );
+		request.onload = function() { savedThis.loaded(request); }
+		request.open("GET", "http://www.gumonji.net/cgi-bin/album_list.cgi", true );
+		request.setRequestHeader("Content-Type", "text/html" );
+		request.send();
+    }
+	,
+    loaded : function(req) {
+		var status = req.status;
+		setStatus(status);
+		if( req && req.responseText && status > 199 && status < 300){
+			var list = req.responseText.split( "<div class=\"album_tn\">" )
+			
+			var imgpath = splitSubString( list[1+prevcount], "<img src=\"", "\"" )
+
+			imageName = imgpath.substring( imgpath.lastIndexOf("/") + 1, imgpath.length);
+			imagelinkpath = splitSubString( list[1+prevcount], "<a href=\"", "\"" );
+
+			var downloadURL = "http://www.gumonji.net" + imgpath;
+			document.getElementById( "image" ).innerHTML = "<img src=\"" + downloadURL + "\" width=85 height=82 onClick=\"click_on_img();\">" ;
+			var ll = "<a href=\"javascript:openLinkInBrowser('http://www.gumonji.net/cgi-bin/" + imagelinkpath + "')\">go</a>";
+			document.getElementById( "gobutton" ).innerHTML = ll;
+			setStatus( "" );
+		} else {
+			setStatus("Error");
+		}
+    }
+}
+
+function Request() {
+	this.sessionid = null;
+}
+
+function renew() {
+	setStatus("renewing");
+	var obj = new Request();
+	obj.getLatest();
+}
+
+// automatic renewal
+function renewEngine() {
+	setTimeout( "renewEngine()", 120*1000 );
+	prevcount = 0;
+	renew();
+}
+
+
+function setup(){
+	if( window.widget ){
+        widget.onshow = onshow;
+    }
+	setTimeout( "renewEngine()", 1*1000 );
+}
+
+
+function onshow(){
+	widget.system( "date >> /tmp/ringo", null );
+	renew();
+}
+
+
+var perPage = 10;      // depends on www.gumonji.net 
+var prevcount = 0;
+
+function click_on_img(){
+	prevcount += 1;
+	if( prevcount >= perPage ){ prevcount = 0; }
+	renew();
+}
+
+function openLinkInBrowser(url) {
+    widget.system("open '"+url+"'", null);
+    widget.openURL('');
+}
+
+
+
+</script>
+
+</head>
+<body background="Default.png" onload="setup();">
+
+
+<div id="image">
+<img src="http://www.gumonji.net/album/000/000406/15050.jpg" width=85 height=82 onClick="click_on_img();"></div>
+
+
+  <div id="status">init</div>
+  <div id="gobutton"><a href="javascript:openLinkInBrowser('http://www.gumonji.net/cgi-bin/album.cgi?id=15050')">go</a></div>
+
+</body>
+</html>
+
+
+

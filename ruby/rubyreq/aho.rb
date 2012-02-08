@@ -1,0 +1,7 @@
+
+require "hoge.rb"
+
+
+
+
+ahoaho()

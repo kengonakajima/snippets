@@ -1,0 +1,238 @@
+<html><head><title>lzw</title></head>
+<body bgcolor="#ffffff" text="#000000" link="#ff0000" vlink="#0000ff" alink="#ff0000">
+
+<hr><center><h3>LZW符号</h3></center><hr><dl>
+
+<dt> 関数名
+<dd><pre>
+enLZW  LZW符号
+deLZW  LZW符号からの復号
+</pre>
+
+<dt> 形式
+<dd><pre>
+LZW符号
+    long enLZW(unsigned char *code, long clen,
+               unsigned char *text, long tlen);
+
+LZW符号からの復号
+    long deLZW(unsigned char *text, long tlen,
+               unsigned char *code, long clen);
+</pre>
+
+<dt> 引数
+<dd><pre>
+LZW符号関数において
+    code  （入出力）LZW符号を格納する配列
+    clen  （入力）　配列codeの長さ
+    text  （入力）　テキストを格納する配列
+    tlen  （入力）　配列textの長さ
+
+LZW符号からの復号関数において
+    text  （入出力）テキストを格納する配列
+    tlen  （入力）　配列textの長さ
+    code  （入力）　LZW符号を格納する配列
+    clen  （入力）　配列codeの長さ
+</pre>
+
+<dt> 関数値
+<dd><pre>
+LZW符号関数について
+    LZW符号の長さ。符号化に失敗したときは -1L。
+
+LZW符号からの復号関数について
+    テキストの長さ。復号に失敗したときは -1L。
+</pre>
+
+<dt> 注意事項
+<p>
+
+<dt> 用例（<a href="lzw-test.c"><tt>lzw-test.c</tt></a>）
+<p>
+
+<dt> プログラム（<a href="lzw.c"><tt>lzw.c</tt></a>）
+<dd><pre>
+#define CHAR_SIZE 256
+#define NODE_SIZE 4096
+#define BITS_LEN  12           /* 2^^12 = 4096 */
+
+typedef struct {
+    unsigned char chr;         /* 文字 */
+    int      parent;           /* 親ノードへ */
+    int      brother;          /* 兄弟ノードへ */
+    int      child;            /* 子ノードへ */
+} NODE;
+
+long enLZW(unsigned char *code, long clen,
+           unsigned char *text, long tlen)
+{
+    int  i, j;
+    int  w, k, rv;
+    long c, len;
+    int  freeNode;
+    NODE node[NODE_SIZE];
+    static int wMask[BITS_LEN] =
+        { 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1};
+    static unsigned char bit0[8] = {~128,~64,~32,~16,~8,~4,~2,~1};
+    static unsigned char bit1[8] = { 128, 64, 32, 16, 8, 4, 2, 1};
+
+    
+    if (tlen <= 0) return -1;
+
+    for (i = 0; i <= CHAR_SIZE; i++) {
+        node[i].chr     = (unsigned char)i;
+        node[i].brother = i+1;
+        node[i].parent  = node[i].child = 0;
+    }
+    node[CHAR_SIZE].brother = 0;
+    freeNode = CHAR_SIZE + 1;
+    
+    /* 符号化と木の更新 */
+    w = text[0];
+    for (c = 1, i = 0, len = 0; ; c++) {
+        k = (c >= tlen) ? CHAR_SIZE : text[c];
+
+        /* wk が登録済 ? */
+        for (rv = node[w].child; rv > 0; rv = node[rv].brother)
+            if (node[rv].chr == k) break;
+        if (rv > 0) w = rv;
+        else {
+            /* 参照番号を出力 */
+            for (j = 0; j < BITS_LEN; j++) {
+                if (w & wMask[j]) *code |= bit1[i];
+                else              *code &= bit0[i];
+                if (++i == 8) {
+                    code++;
+                    if (++len > clen) return -1L;
+                    i = 0;
+                }
+            }
+            /* wk を登録 */
+            if (freeNode < NODE_SIZE) {
+                node[freeNode].parent  = w;
+                node[freeNode].chr     = k;
+                node[freeNode].brother = node[w].child;
+                node[freeNode].child   = 0;
+                node[w].child = freeNode++;
+            }
+            w = k;
+        }
+        if (c == tlen+1) break;              /* EOF */
+    }
+    if (i > 0) len++;
+    return (len > clen) ? -1L : len;
+}
+
+long deLZW(unsigned char *text, long tlen,
+           unsigned char *code, long clen)
+{
+    int  i, j;
+    int  w, k, rv;
+    long c, len;
+    int  freeNode;
+    NODE node[NODE_SIZE];
+    int  stack[NODE_SIZE]; int sp;
+    static int wMask[BITS_LEN] =
+        { 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1};
+    static unsigned char bit1[8] = { 128, 64, 32, 16, 8, 4, 2, 1};
+
+    
+    if (clen <= 0) return -1;
+
+    for (i = 0; i <= CHAR_SIZE; i++) {
+        node[i].chr     = (unsigned char)i;
+        node[i].brother = i+1;
+        node[i].parent  = node[i].child = 0;
+    }
+    node[CHAR_SIZE].brother = 0;
+    freeNode = CHAR_SIZE + 1;
+    
+    /* 復号化と木の更新 */
+    for (i = 0, len = 0, c = 0, sp = 0; ; ) {
+        for (j = 0, rv = 0; j < BITS_LEN; j++) {
+            if (*code & bit1[i]) rv |= wMask[j];
+            if (++i == 8) {
+                code++;
+                if (++c > clen) return -1L;
+                i = 0;
+            }
+        }
+        if (rv == CHAR_SIZE) break;              /* EOF */
+
+        /* 参照番号に対応するノードからルートまで登りながら文字を出力 */
+        if (rv >= freeNode) {
+            stack[sp++] = k;                     /* 例外処理 */
+            k = w;
+        } else k = rv;
+
+        while (k > CHAR_SIZE) {
+            stack[sp++] = node[k].chr;
+            k = node[k].parent;
+        }
+        stack[sp++] = k;
+
+        while (sp) {
+            if (++len > tlen) return -1L;
+            *text++ = stack[--sp];
+        }
+
+        /* wk を登録 */
+        if (len > 1 && freeNode < NODE_SIZE) {
+            node[freeNode].parent  = w;
+            node[freeNode].chr     = k;
+            node[freeNode].brother = node[w].child;
+            node[freeNode].child   = 0;
+            node[w].child = freeNode++;
+        }
+        w = rv;
+    }
+    return len;
+}
+</pre>
+
+<dt> 説明
+<dd> 1984年 T. A. Welch が考案したデータ圧縮符号で、J. Ziv と A. Lempel
+が1978年に発表した LZ78 符号を改良したものである。<p>
+
+LZ78符号は、辞書としてこれまでに見いだした部分文字列の一覧表を使うこ
+とで、大域的な辞書の作成が可能となる。実際には、入力された文字列を増
+分分解と呼ばれる方法で部分文字列に分解し、得られた部分文字列を辞書に
+登録し、この辞書を利用して符号化を行っている。<p>
+
+LZ78符号では、符号語中に必ず入力文字列中の文字そのものが含まれている
+が、LZW符号には、1文字からなる部分文字列をすべて辞書に前もって登録し
+ておくことで、符号語中に含まれる文字を取り除き、つねに辞書の参照番号
+のみで済ませる。<p>
+
+具体的には、LZW符号は入力テキストにある部分文字列に参照番号を割り振っ
+た辞書をつくり、再びその部分文字列が現れたらその参照番号を符号語とし
+て出力する。部分文字列の照合は最長一致法で行い、新たに登録する部分文
+字列は以前に登録したものを１文字延長したものである。初期辞書は入力に
+あるすべての文字に参照番号を割り振ったものとする。<p>
+
+LZW符号では、符号語を以下のようにして構成する。<p>
+
+<ol>
+<li> 最初の入力文字を w とする。
+<li> 入力テキストから次の文字 K を読み込み、<br>
+     wK が辞書に登録済であれば、wK を w とする。<br>
+     wK が未登録であれば、w に対応する辞書参照番号を出力し、wK を辞書
+     登録する。つぎに、K を w とする。
+<li> 2. の処理を入力が終了するまで繰り返す。
+</ol><p>
+
+LZW符号の各種改良版を実際に使った圧縮プログラムとしては、MS-DOSにお
+いては PKARC、UNIX の compress コマンド、Macintosh の StfuuIt などが
+あり、コンピュータやOSの種類を問わず、広く利用されている。また、ホー
+ムページに広く利用されている GIFイメージファイルに、圧縮アルゴリズム
+として採用されている。<p>
+
+<dt> 関連関数
+<dd>
+<a href="../s/shannon.html">シャノン・ファノ符号</a>、
+<a href="../h/huffman.html">ハフマン符号</a>、
+<a href="../a/arithmetic.html">算術符号</a>、
+<a href="../f/fgk.html">FGK符号</a>、
+<a href="../l/lz77.html">LZ77符号</a><p>
+
+</dl><hr></body></html>

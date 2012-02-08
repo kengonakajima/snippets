@@ -1,0 +1,40 @@
+<html>
+<body>
+<pre>
+<h1>ﾋﾞﾙﾄﾞのﾛｸﾞ</h1>
+<h3>
+--------------------構成: sdlcc2 - Win32 Debug--------------------
+</h3>
+<h3>ｺﾏﾝﾄﾞ ﾗｲﾝ</h3>
+一時ﾌｧｲﾙ "z:\RSP304.tmp" を作成し、次の内容を記録します
+[
+/nologo /MD /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"Debug/sdlcc2.pch" /Yu"stdafx.h" /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"\\Nsx\ringo\test\sdlcc2\sdlcc2.cpp"
+]
+Creating command line "cl.exe @z:\RSP304.tmp" 
+一時ﾌｧｲﾙ "z:\RSP305.tmp" を作成し、次の内容を記録します
+[
+sdlmain.lib sdl.lib glaux.lib opengl32.lib glu32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/sdlcc2.pdb" /debug /machine:I386 /out:"Debug/sdlcc2.exe" /pdbtype:sept 
+.\Debug\sdlcc2.obj
+.\Debug\StdAfx.obj
+"C:\ringo\SDL-devel-1.2.2-VC6\SDL-1.2.2\lib\SDL.lib"
+"C:\ringo\SDL-devel-1.2.2-VC6\SDL-1.2.2\lib\SDLmain.lib"
+]
+ｺﾏﾝﾄﾞ ﾗｲﾝ "link.exe @z:\RSP305.tmp" の作成中
+<h3>ｱｳﾄﾌﾟｯﾄ ｳｨﾝﾄﾞｳ</h3>
+ｺﾝﾊﾟｲﾙ中...
+sdlcc2.cpp
+\\Nsx\ringo\test\sdlcc2\sdlcc2.cpp(296) : error C2027: 認識できない型 'object' が使われています。
+        \\Nsx\ringo\test\sdlcc2\sdlcc2.cpp(279) : 'object' の宣言を確認してください。
+\\Nsx\ringo\test\sdlcc2\sdlcc2.cpp(322) : warning C4305: 'initializing' : 'const double' から 'float' へ切り詰めます。
+\\Nsx\ringo\test\sdlcc2\sdlcc2.cpp(322) : warning C4305: 'initializing' : 'const double' から 'float' へ切り詰めます。
+\\Nsx\ringo\test\sdlcc2\sdlcc2.cpp(329) : warning C4305: 'initializing' : 'const double' から 'float' へ切り詰めます。
+cl.exe の実行ｴﾗｰ
+
+
+
+<h3>結果</h3>
+sdlcc2.exe - ｴﾗｰ 1、警告 3
+</pre>
+</body>
+</html>

@@ -1,0 +1,4 @@
+void
+fuckfunc( int a )
+{
+}

@@ -1,0 +1,94 @@
+#
+# でーたをもじにするの
+# perl用
+#
+
+use strict subs;
+
+
+print remotestrcapcount( "ABCabcEFGefg" , 10 ) ,"\n";
+
+# perl text encode 
+# 入力はperlの生なスカラで、出力はエスケープされたネットワーク文字列表現。
+sub mkstr_long32($){ return -2147483647 + ( shift() & 0xffffffff); }
+sub mkstr_long32slow($){ return unpack( "l" , pack("l",shift()));  }
+sub mkstr_u_long32($){	return shift() & 0xffffffff; }
+sub mkstr_u_long32slow($){	return unpack( "L" , pack("L",shift()));  }
+
+sub mkstr_int32($){	return -2147483647 + (shift() & 0xffffffff ); }
+sub mkstr_int32slow($){	return unpack( "i" , pack("i" , shift()));  }
+sub mkstr_u_int32($){	return shift()& 0xffffffff; }
+sub mkstr_u_int32slow($){	return unpack( "I" , pack("I" , shift()));  }
+sub mkstr_short16($){	return -32768 + ( shift() & 0xffff ); }
+sub mkstr_short16slow($){	return unpack( "s" , pack("s" , shift()));  }
+sub mkstr_u_short16($){	return shift() & 0xffff ; }
+sub mkstr_u_short16slow($){	return unpack( "S" , pack("S" , shift()));  }
+sub mkstr_char8($){	return -256 + ( shift() & 0xff ) ; }
+sub mkstr_char8slow($){	return unpack( "c" , pack("c" , shift()));  }
+sub mkstr_u_char8($){	return shift() & 0xff ; }
+sub mkstr_u_char8slow($){	return unpack( "C" , pack("C" , shift()));  }
+sub mkstr_float32($){	return unpack( "f" , pack("f" , shift()));  }
+sub mkstr_double64($){	return unpack( "d" , pack("d" , shift()));  }
+sub mkstr_string($){ return escape( shift()); }
+
+# perl text decode
+# 入力は、ネットワーク表現で、出力はperlの生なデータ。
+sub demkstr_long32($){ return unpack( "l" , pack( "l" , shift())); }
+sub demkstr_u_long32($){ return unpack( "L" , pack("L",shift()));  }
+sub demkstr_int32($){ return unpack( "i" , pack("i" , shift()));  }
+sub demkstr_u_int32($){	return unpack( "I" , pack("I" , shift()));  }
+sub demkstr_short16($){	return unpack( "s" , pack("s" , shift()));  }
+sub demkstr_u_short16($){ return unpack( "S" , pack("S" , shift()));  }
+sub demkstr_char8($){	return unpack( "c" , pack("c" , shift()));  }
+sub demkstr_u_char8($){	return unpack( "C" , pack("C" , shift()));  }
+sub demkstr_float32($){	return unpack( "f" , pack("f" , shift()));  }
+sub demkstr_double64($){ return unpack( "d" , pack("d" , shift()));  }
+sub demkstr_string($){ return descape( shift()); }
+
+#
+# 呼ばれる関数
+# int remotestrcapcount( string , int32 )
+sub remotestrcapcount( $$)
+{
+	return unpackage_int32(call_tsrpctcp("remotestrncmp" ,
+								mkstr_string( shift()) , mkstr_int32( shift()) ));
+
+}
+sub unpackage_int32
+
+sub call_tsrpctcp($@)
+{
+	my($cmd)=shift;
+	$cmd .= join(' ' , @_ );
+
+	print $cmd , "\n";
+
+
+}
+
+#
+# 
+#
+sub escape($)
+{
+	$_ = shift;
+
+	s/ /\\ /g;
+	s/\n/\\n/g;
+
+	return $_;
+}
+
+sub descape($)
+{
+	$_ = shift;
+
+	s/\\n/\n/g;
+	s/\\ / /g;
+
+	return $_;
+}
+
+
+
+

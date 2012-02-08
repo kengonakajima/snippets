@@ -1,0 +1,137 @@
+
+&gt;安達＠立命館と申します。
+&gt;くだらない質問ですいません。
+&gt;スタンドアロンで、DatagramSocketをつかって、JPEGファイルを
+&gt;取ってきたのですが、それを即、Canvas等にdrawImageしたりするには、
+&gt;どうすればよいですか？
+&gt;あ。ファイルにいったんセーブしてから、getImageして表示するというのは
+&gt;なしでお願いします。
+
+これはたぶん今のところ無理ですね。でもどーしてもやりたければこんなんで
+どうでしょう!
+
+% java ImageTest jpeg-file
+
+としてjpegファイルを一旦byte[]配列に読み込んでから, そのデータでImage
+を生成できます。GIFの場合はJPEGImageDecoderのところをGIFImageDecoder
+にするだけでOKです。Undocumentなんで, どーしてもやりたいという時の
+参考にしてみて下さい。
+
+後、デマンドローディングの呪ばくからこれで逃れられる分けではありません。
+
+//////////////////////////////////////////////////////////////////////
+//
+// JPEGの生データからImageを生成するImage Producer
+//
+//////////////////////////////////////////////////////////////////////
+import <A HREF="http://www.sun.co.jp/java.jp/docs/japi/Package-java.io.html" target=Work>java.io.*</A>;
+import sun.awt.image.*;
+
+public class JPEGByteArrayImageSource extends sun.awt.image.FileImageSource {
+        byte[]  iData;
+
+        /**
+         * byte[]配列データからJPPEG Imageを生成
+         */
+        public JPEGByteArrayImageSource(byte[] iData) {
+                super("");      // 親がpublic constructorを持たないので
+                this.iData = iData;
+        }
+
+        protected ImageDecoder getDecoder() {
+          try {
+                return new JPEGImageDecoder(this,
+                         new ByteArrayInputStream(iData));
+          } catch(Throwable e) {
+                System.out.println("error: " + e);
+
+          }
+          return null;
+        }
+}
+
+//////////////////////////////////////////////////////////////////
+//
+// イメージの生byte配列からImageを生成するテスト
+//
+/////////////////////////////////////////////////////////////////
+import <A HREF="http://www.sun.co.jp/java.jp/docs/japi/Package-java.awt.html" target=Work>java.awt.*</A>;
+import <A HREF="http://www.sun.co.jp/java.jp/docs/japi/Package-java.io.html" target=Work>java.io.*</A>;
+import sun.awt.image.URLImageSource;
+
+class ImageTest extends Frame {
+
+        Image   img;
+
+        public static void main(String args[]) throws Exception {
+                new ImageTest().init(args[0]);
+        }
+
+        public ImageTest() {
+                resize(400, 400);
+                show();
+        }
+
+        public void init(String filename) throws Exception {
+
+                // 画像ファイルからデータをbyte[]に読み込む
+		// フォーマットのチェックは省略
+                File pFile = new File(filename);
+                FileInputStream fin = new FileInputStream(pFile);
+                byte[] data = new byte[(int)pFile.length()];
+
+                int off = 0;
+                int len = 0;
+                int ret = 0;
+                while(true) {
+                        len = fin.available();
+                        if((ret = fin.read(data, off, len)) &lt;= 0) {
+                                break;
+                        }
+                        off += ret;
+                }
+                System.out.println("data read complete !");
+
+                // byte[]でImageを生成
+                img = getToolkit().createImage(
+                        new JPEGByteArrayImageSource(data));
+        }
+
+        public void paint(Graphics g) {
+                g.drawImage(img, 0, 0, this);
+        }
+}
+
+
+-- 
+株式会社アスキーサムシンググッド 	TEL (044)989-9422
+      IPC事業本部  			FAX (044)989-8154
+      谷  真琴				e-mail makoto-t@ascii.co.jp
+</PRE>
+<!--X-MsgBody-End-->
+<!--X-Follow-Ups-->
+<HR>
+<DL>
+<DT><STRONG>Follow-Ups</STRONG>:</DT>
+<DD><A HREF=004736.html#body>004736</A>: Osamu Adachi &lt;adachi@hayalab.cs.ritsumei.ac.jp&gt; </DD>
+</DL>
+<!--X-Follow-Ups-End-->
+<!--X-References-->
+<DL>
+<DT><STRONG>References</STRONG>:</DT>
+<DD><A HREF=004681.html#body>004681</A>: Osamu Adachi&lt;adachi@hayalab.cs.ritsumei.ac.jp&gt; </DD>
+</DL>
+<!--X-References-End-->
+<!--X-BotPNI-->
+<!--X-BotPNI-End-->
+<!--X-User-Footer-->
+<!--X-User-Footer-End-->
+</BODY>
+</HTML>
+<HR>
+[<A HREF="004693.html#body">Prev</A>]
+[<A HREF="threads-004600.html" target=_top>Threads</A>]
+[<A HREF="004695.html#body">Next</A>]
+</NOFRAMES>
+</BODY>
+</HTML>

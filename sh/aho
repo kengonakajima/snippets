@@ -1,0 +1,4 @@
+#!/usr/local/bin/tcsh
+label:
+ls
+goto label

@@ -1,0 +1,73 @@
+<HTML>
+<TITLE>perl rpc</TITLE>
+<BODY  TEXT="#ffee11" LINK="#ffbb33" VLINK="#cc7700" bgcolor="#003358">
+
+
+<h1>Perl RPC </h1>
+
+Perlのようなインタプリタを使って関数名と引数とかえりちを名前で通信すれば、
+いとも簡単にrpcが実現できる。フォーマットを指定してTCP/UDPの
+ベース部分を作ってやればいいだけである。
+そんなライブラリをさくっと作ってしまおうという計画。
+クライアントでは以下のようなコードになるだろう。
+
+<pre>
+use perlRPC;
+
+$cl = perlRPCClient( "server.aho.hoge.fuck", "tcp" );	# サーバに接続
+$cl->addFunction( "remotefunc1" );	 	# ここで関数の名前をとうろく
+$cl->addFunction( "remotefunc2" );
+
+
+%result = remotefunc1( @args );		# ここで自由な引数と戻り値で呼びだす。
+
+print %result ,"\n";
+
+</pre>
+
+サーバでは以下のようになる。
+<table border
+<pre>
+use perlRPC;
+$serv = perlRPCServer( 9100 , "tcp/udp" );		# tcpでもudpでもOKにできる
+$serv->becomeDaemon();	# デーモンになる
+
+# あとは普通に関数を定義するだけ。
+sub remotefunc1
+{
+	$hoge = shift;
+}
+sub remotefunc2
+{
+	...
+}
+
+</pre>
+
+<h1>Perl RPCの概要</h1>
+
+<li>関数名と引数を通信して、RPCを実現する。TCP/UDPを使うことができる。
+<LI>サーバは簡単にデーモン化でき、指定したポートで要求を待つ。
+<LI>名前から関数コールはperlエンジンにまかせる(eval)。
+<LI>複雑な型をもつものも、展開して送信するので、正しく受けわたしできる。
+<LI>名前で関数名を指定できるので、一般的な(well known)関数の名前をサーバーで定義
+しておけば、いろんなサーバにアクセスできるようになる。
+
+<h1>制約</h1>
+<lI>当然、リファレンスを含む型は本質的に無意味なので送信してもそのフィールド
+を使う価値はない。
+
+<h1>動作フロー</h1>
+<font color=white>
+クライアント側
+</font>	
+<font color=red>
+サーバー側
+</font>
+
+<h1>フォーマット/プロトコル</h1>
+perlRPCは、FreezeThawを使って引数などをfreeze圧縮して送信する。
+evalを実行するサーバはそれをthawして処理する。
+基本はこれだけであり、どんなコードも文字列として
+送信することができるので可能性は無限と言える。
+コマンドは改行記号でくぎられる。

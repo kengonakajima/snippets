@@ -1,0 +1,87 @@
+
+                                                 
+* mongo from go
+done
+
+* http
+done
+
+* twitter
+
+
+* oauth
+仕様の確認。
+1. ユーザがhdに来て認証要求する。
+2. hdからtwに request token要求し、もらう。
+3. ユーザを twの許可ページにリダイレクトする
+4. twで許可を求める
+5. OKならtwからhdにリダイレクトされてくる。
+
+最初の1回以外はサーバ間の通信がなくてよいね。
+主にリダイレクトを使って実現している。
+サーバ間の通信はhttpsを使う。とあるが、いまはhttpになっている。
+
+
+
+* oauthをgolangで時前で実装してみよう。
+1. ユーザがhdに来て認証要求する
+  http経由でフォームをかえす : /
+  結果を受け取る
+  
+2. hdからtwに request token要求し、もらう。
+
+func NewTwitterClient(ps *persist.PersistService, consumer_key string, consumer_secret string, authorization_type string) *AuthClient {
+	return NewAuthClient(ps, "twitter", consumer_key, consumer_secret, "http://twitter.com/oauth/request_token", "http://twitter.com/oauth/access_token", "http://twitter.com/oauth/"+authorization_type);
+}
+
+
+http://d.hatena.ne.jp/shibason/20090802/1249204953
+これによると、7桁の数値のアクセストークンを1回だけもらえばbotとしてはOKらしい。
+問題は、botでいいのかってことだが、別にいいだろう。
+>>>>>>> .r93
+done
+
+成功した
+
+
+(Macintosh.local) hd $ ruby at.rb
+Access this URL and approve => http://twitter.com/oauth/authorize?oauth_token=ijmxdXDDb7YRWzIl9XmRcNSwHVk7iCdSzBFOG5SPI
+Input OAuth Verifier: 4018917
+Access token: 52653-WItLBZVz57JevBFyewEkgisW4KNiMpzgebILJEkcy9k
+Access token secret: DbUjJcNvKw9CWSB3pImI7v8Jj8LZOY0aWzyfkjdPJZE
+(Macintosh.local) hd $ 
+
+  
+3. ユーザを twの許可ページにリダイレクトする
+4. twで許可を求める
+5. OKならtwからhdにリダイレクトされてくる。
+
+手動でやったらできた。
+1. アプリ登録。twitter loginをしないを選択。read only.以下のURLを得た
+http://twitter.com/oauth_clients/details/353985
+2. consumer key=Vj1kPZIdQWvwjsanAzyxCA, consumer secret=G3pi811H2VaQbEipRZF9XWKA8Miz4Ubx9lqMesLyzsQ  の2値を取得
+3. oauth_get_verifier.rb に上記を入力してURLを取得
+http://twitter.com/oauth/authorize?oauth_token=ijmxdXDDb7YRWzIl9XmRcNSwHVk7iCdSzBFOG5SPI
+この値の計算はrubyのoauthライブラリを使った
+ブラウザに4018917という値が出たのでそれを入力したら
+Access token: 52653-WItLBZVz57JevBFyewEkgisW4KNiMpzgebILJEkcy9k
+Access token secret: DbUjJcNvKw9CWSB3pImI7v8Jj8LZOY0aWzyfkjdPJZE
+と取得できた。
+4. この2つの値と consumer key, consumer secretの合計4つの値を設定して timeline.rb を実行するとタイムライン取得できた。
+
+クライアントを配布する
+
+ほかのユーザのtimelineも、
+response = access_token.get('http://api.twitter.com/1/statuses/friends_timeline/12345.json')
+としたら取得できた。
+
+これで、クローラは実現できるとなった。
+
+* login
+この手順を実装できたらよい
+
+* crawler
+Rubyで実装できることになったので、sakuraでなくても開発できるようになった。
+
+
+* web

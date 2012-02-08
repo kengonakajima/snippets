@@ -1,0 +1,372 @@
+<html>
+
+<title>TCP-SIMPLE-RPC</title>
+
+<body>
+
+<h1>TCP-SIMPLE-RPCの特徴</h1>
+
+  汎用性の高い、そしてデバッグもしやすいTCPは、
+ネットワークアプリケーションの基盤として使用するには最適な
+トランスポートである。したがってTSRPCは、TCPのみをターゲットとしており、
+TCPの恩恵をフルに生かした仕様となっている。(開発ステップ1)<br>
+  詳細には、データの長さが無制限となり、たかだか1回の実行が確実に
+保証される。<br>
+  ネットワークインフラは確実に性能向上しているので、TCPを使うことが
+全体の性能に重大なマイナスをあたえることはこれからはないであろう。<br>
+  しかし、TCPのコネクション数が、OSによって厳しく制限されているのも事
+実である。したがって、TSRPCは、特殊機能として、
+返答が不要で高々1回の実行も保証されなくてもよく、
+かつメッセージの大きさも小さい場合のみに使える、
+特別なUDPトランスポートモードの通信も用意している。
+これは、TCPと並列に動作し、処理の幅を少し広げる意味をもつ。
+（開発ステップ2）<br>
+  TSRPCはまた、unix認証のシステムを装備する（開発ステップ3）。
+さらにTSRPCは、公開鍵を簡単に応用したアルゴリズムにより、
+ストリームを流れる情報を暗号化することに対応する。（開発ステップ4）
+これによってさらなる安全性を確保する。この機能は、
+通信ゲームなどを実装するときに欠かせない機能である。
+<br>
+  
+TSRPCの認証はNISと連携することができるので、
+ほとんどのアプリケーションの実装につかうことができるようになる。
+（開発ステップ5）<br>
+
+  それぞれの開発ステップにおいて、TSRPCは、Perl,unixC,win32C,Javaのそれぞれ用
+のコードを出力することができるという条件をみたしていく。<br>
+  それから、TSRPCは、すべての内容が出力されたソースコードに収まるよう
+になっているので、ライブラリをインストールする必要がない。
+これはアーキテクチャ独立が自動的に成立することを意味する。
+もちろんそのためにCのコードは移植性の高いコードを出力する。
+これはシンプルなシステムにすることによって実現する仕様である。
+認証や暗号化や圧縮などを省いていくことによって、
+出力されるソースコードはどんどん小さくなっていく。<br>
+  TSRPCのインストールパッケージには、PerlのスクリプトであるTSRPCGEN
+と、さまざまなPerlモジュールが含まれるのみである。
+Perlモジュールはプログラムのテンプレートを含む。
+
+
+  最後に、TSRPCの心臓部である、TSRPCGENは、
+基本型を複数ならべた引数を持つ関数のみをサポートしているので、
+出力されるソースコードを見て簡単にデバッグできるという特徴を持っている。
+構造体渡しをするマクロを生成するオプションもある。（開発ステップ？）
+
+<h1>TCP-SIMPLE-RPCにおけるメッセージとは</h1>
+メッセージとは、以下の項目のセットである。
+
+<ol>
+<LI>メッセージID
+<li>自分のプロセスが走っているホストのIPアドレス/PORT
+<li>相手のプロセスが走っているホストのIPアドレス/PORT
+<li>TCPかUDPかのフラグ
+<li>認証に必要な情報
+<LI>暗号化に必要な情報
+<li>このメッセージを発生するために使う関数の名前
+<li>このメッセージを処理するために使う関数の名前
+<li>変換フォーマット
+
+</ol>
+TSRPCでは、メッセージを単位として、プロトコルを記述する。
+以上の情報はすべて文字列にコードされる。
+
+<h1>データの流れ</h1>
+レイヤーでもって表記する。
+<ol>
+<LI>クライアントプログラムはあらかじめTSRPCGENによって宣言/定義されて
+いる関数Aを呼び出す。
+<lI>関数AはTSRPCGENによって出力されたファイルで定義されていて、
+データ変換ルーチンをソースコード的にそなえているので、データ変換および
+通信のための文字列生成までを行い、それを圧縮ルーチンにわたす。
+<li>圧縮ルーチンは文字列を圧縮し、サイズを縮めてから、暗号化ルーチンに
+渡す。
+<li>暗号化ルーチンはあらかじめ設定されている情報にしたがって暗号化して、
+通信エンジン部分に渡す。
+<li>通信エンジン部分は、メッセージのタイプによってTCPかUDPを使って
+サーバーに送信する。
+<LI>サーバーの通信エンジン部分は情報を受け取ると、
+暗号化ルーチンに渡す。
+<LI>暗号化ルーチンはデコードし、圧縮展開ルーチンに渡す。
+<LI>圧縮展開ルーチンは、文字列を展開し、文字列解釈ルーチンに渡す。
+<LI>文字列解釈ルーチンは、情報の内容を解析し、指定された関数を呼び出す。
+</ol>
+以上のようにして、クライアントからサーバに関数呼び出しが通信される。 
+
+
+<h1>サーバとクライアント</h1>
+TSRPCGENは、一つのソースコードが、
+サーバにもクライアントにも同時なるように生成することができる。
+これはつまり、より複雑なネットワークアプリケーション
+（LIFESTORMのような）は、クライアントになったりサーバーになったりする
+ことが多いからである。この機能を使用するには、コマンドラインから
+<code>tsrpcgen -serverclient</code>
+というオプションを指定する。通常は
+<code>-client</code>や<code>-server</code>である。
+<code>-serverclient</code>を指定すると、生成されるコードで定義されてい
+る関数の名前に<code>_send</code>, <code>_recv</code>という名前が付加さ
+れる。これは、呼び出し側と呼び出される側を区別するための機能である。
+<pre>
+クライアント側になる場合
+hogefunc_send( ahostr );
+
+サーバーとして働く場合
+hogefunc_recv( char *arg )
+{
+       処理
+}
+
+
+</pre>
+
+
+<h1>コマンドライン</h1>
+<pre>
+tsrpcgen infile [-s <suffix>] [-c <suffix>] [-b <suffix> ] [-a] [-e] [-p]
+-sはサーバコードの出力を指定。
+-cはクライアントコードの出力を指定。
+-bは両方を備えたコードの出力を指定。
+-aはauthenticationを使う指定。
+-eはencodeを使う指定。
+-pは圧縮を使う指定。
+suffixは、unix , win , java , perlを指定可能
+</pre>
+例。
+<pre>
+% tsrpcgen hoge.protocol -server unix -client java -serverclient perl
+</pre>
+上の例では、
+hoge_serv_unix.c hoge_serv_unix.h hoge_cli.java hoge_cliserv.perl 
+の4つのユーザ定義のソースコードと、
+tsrpc_unix.c tsrpc.java tsrpc.perl
+のユーティリティファイルを出力する。
+<br>
+
+hoge_serv_unix.cはサーバのみのunix Cコードを、
+hoge_cli.javaはクライアントのみのjavaコードを、
+hoge_cli.perlはサーバとクライアントの両方を持つperlコードを出力する。
+
+<h1>ビルトイン便利コマンド</h1>
+  WWWのサービスを使いたい時が非常に多いため、
+WWW用にはビルトインで特別なルーチンを用意する。
+以下がそのふたつである。URLにはhttp:// ftp://が使える。
+
+<pre>
+getWWWFile( $url , $localpath );
+$content = getWWWContent( $url );
+</pre>
+
+この関数一発で、ブロッキングありの標準的なサービスの利用を可能にする。
+この関数をスレッドで使うのは、それぞれの上位のプログラムにまかせる。
+
+
+
+
+<h1>けいかく</h1>
+  TSRPCGENは以下の開発プロセスにわけることができる。
+
+<table border>
+<tr><th>TSRPCGEN</th><th>内容</th><th>進み具合い</th></tr>
+<tr><td></td><td>TSRPCL仕様決定</td><td></td></tr>
+<tr><td></td><td>TSRPCLパーサ</td><td></td></tr>
+<tr><td></td><td>TSRPCL基本型実装</td><td></td></tr>
+</table>
+
+で、以下はTSRPCGENが出力するコードの動作である。
+<table border>
+<tr><th>*</th><th>Call-Tmplate</th><th>MkStr</th><th>1TCP</th><th>2UDP</th><th>3auth</th><th>4crypt</th><th>HTTP</th><th>FTP</th></tr>
+
+<tr><th>Perl-S</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+<tr><th>Perl-C</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+
+<tr><th>unixC-S</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+<tr><th>unixC-C</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+
+<tr><th>winC-S</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+<tr><th>winC-C</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+
+<tr><th>Java-S</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+<tr><th>Java-C</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+
+</table>
+
+
+
+
+
+  
+
+<h1>TSRPCL仕様</h1>
+限りなくCの文法に近いようにしたい。基本型はCのものを基本に以下のものがある。
+ポインタはなし。
+
+<table border>
+<tr><td>int32/int</td><td>u_int32/u_int</td></tr>
+<tr><td>long32/long</td><td>u_long32/u_long</td></tr>
+<tr><td>short16/short</td><td>u_short16/u_short</td></tr>
+<tr><td>char8/char</td><td>u_char8/u_char</td></tr>
+<tr><td>float32/float</td></tr>
+<tr><td>double64/double</td></tr>
+<tr><td>string(str)長さ制限なし.0終端のchar配列のこと</td></tr>
+<tr><td>char8[N](acharN)長さ制限あり(Nで指定）</td></tr>
+<tr><td>short16[N](ashortN)長さ制限あり(Nで指定）</td></tr>
+<tr><td>int32[N](aintN)長さ制限あり(Nで指定）</td></tr>
+<tr><td>long32[N](alongN)長さ制限あり(Nで指定）</td></tr>
+<tr><td>float32[N](afloatN)長さ制限あり(Nで指定）</td></tr>
+<tr><td>double64[N](adoubleN)長さ制限あり(Nで指定）</td></tr>
+
+
+</table>
+
+これを以下のように関数の引数としてならべるだけ。
+
+<pre>
+/* コメントはCの方法で書く */
+//  この方法もうけつける
+// プリプロセッサは通さないのでインクルードとかはない
+tcp_keep_alive_timeout=20;
+tcp_connection_timeout=200;
+tcp int hogefunc( string , int );
+udp int setposition( int , double , double );
+tcp double[128] remote_generator( double , double );
+</pre>
+
+<code>double[128] remote_generator( double , double );</code>
+この例では、128要素のdoubleの配列を返してもらうことを意味する。
+Nの値は1以上、メモリの許す限りまでである。
+行頭のtcp/udpは使うトランスポートの種類を指定する。
+同じクライアントハンドラに対して、つまり同じサーバに対してどちらも
+使える。ひとつのコマンドは必ずどちらかのトランスポートになる。
+サーバーは両方で待っているということである。
+
+<h1>ユーザに見える関数/サブルーチン</h1>
+クライアント側のAPIから。
+
+<ul>
+<LI>接続済みのクライアントハンドラを得る。<br>
+<pre>
+C     : TSRPCCLIENT*th =   tsrpc_new_client( char* URL  , char* option);
+perl  : $th = tsrpc_client->new( option );
+java  : TSRPCClient t = new TSRPCClient( String URL , String option );
+</pre>
+
+<LI>リモートの関数を呼び出す<br>
+<pre>
+C     : (anytype) ret  = th->func( args );
+perl  : ret = $th->func( args );
+java  : (anytype) ret = t.func( args );
+</pre>
+
+<li>クライアントハンドラを破棄する<br>
+<pre>
+C     : int tsrpc_destroy_client(  TSRPCCLIENT *th );
+perl  : $th->destroy();
+java  : t.destroy();
+</pre>
+
+</ul>
+
+サーバー側は関数の外がわは自動的に生成されるので内容を書くだけであるが、
+その関数の定義の方法と例を示す。
+
+<pre>
+C     :  server.c の中で
+(anytype ) func( args )
+{
+    ここに内容を書く
+}
+perl  :  server.perlファイルの中で
+sub func
+{
+
+    ここに内容を書く
+}
+
+java  : server.javaの中で
+class server
+{
+    public (anytype) func ( args )
+    {
+    ここに内容を書く
+    }
+}
+</pre>
+
+
+
+
+<h1>環境変数設定</h1>
+以下の変数をTSRPCLファイル中で設定することによって、
+TSRPCGENの出力コードを調整することができる。
+<table border>
+<tr><td>変数名 </td><td>内容</td><td>デフォルト値/範囲</td></tr>
+<tr><td>version </td><td>プロトコルのバージョン番号</td><td>任意</td></tr>
+<tr><td>tcp_keep_alive_timeout </td><td>KeepAliveの時間</td><td>20/1~</td></tr>
+<tr><td>tcp_connection_timeout </td><td>接続を張ろうとがんばる時間</td><td>100/1~</td></tr>
+</table>
+
+
+
+<h1>出力ファイル</h1>
+
+<table border>
+<tr><td>tsrpc_unix.c</td><td>UNIX用ライブラリ。オプションによってでかさが変わる</td></tr>
+<tr><td>tsrpc_win.c</td><td>WIN用ライブラリ。オプションによってでかさが変わる</td></tr>
+<tr><td>tsrpc.java</td><td>Java用ライブラリ。オプションによってでかさが変わる</td></tr>
+<tr><td>tsrpc.perl</td><td>perl用ライブラリ。オプションによってでかさが変わる</td></tr>
+
+<tr><td>*_cli_unix.c</td><td>UNIX用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cli_unix.h</td><td>UNIX用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_serv_unix.c</td><td>UNIX用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_serv_unix.h</td><td>UNIX用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cliserv_unix.c</td><td>UNIX用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cliserv_unix.h</td><td>UNIX用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cli_win.c</td><td>WIN用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cli_win.h</td><td>WIN用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_serv_win.c</td><td>WIN用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_serv_win.h</td><td>WIN用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cliserv_win.c</td><td>WIN用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cliserv_win.h</td><td>WIN用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cli.java</td><td>Java用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_serv.java</td><td>Java用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cliserv.java</td><td>Java用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cli.perl</td><td>perl用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_serv.perl</td><td>perl用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+<tr><td>*_cliserv.perl</td><td>perl用の出力コード。TSRPCLファイルによって内容が決まる</td></tr>
+
+
+</table>
+
+<h1>改良版LIFESTORMを作る場合</h1>
+LIFESTORMはクライアント間がUDPまたはTCP、
+サーバクライアント間がTCPである。
+クライアント間用に 
+<code>ls_intercli.protocol</code>
+クライアントサーバ間用に
+<code>ls.protocol</code>
+を用意し、
+まったく別にTSRPCGENする。
+<pre>
+tsrpcgen ls_intercli.protocol -b win
+tsrpcgen ls.protocol -s unix -c win
+</pre>
+そうすると、
+<code>ls_intercli_win.c , ls_intercli_win.h , 
+ls_unix.c,ls_unix.h,ls_win.c,ls_win.h</code>
+と、
+<code>tsrpc_win.c tsrpc_unix.c</code>
+
+の8つのファイルが生成される。
+windowsクライアントは、
+<code>ls_intercli_win.c , ls_win.c ,tsrpc_win.c </code>
+をプロジェクトに追加してコンパイルする。
+関数を使うところではヘッダファイルをわすれないこと。
+サーバは
+<code>ls_unix.c, tsrpc_unix.c</code>
+をMakefileに追加する。
+
+
+
+
+
+
+
+

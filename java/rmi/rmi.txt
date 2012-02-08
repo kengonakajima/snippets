@@ -1,0 +1,84 @@
+ o まずInterfaceをつくる。この例の場合は、Hello.javaで
+Helloというインターフェースを作る。
+
+o それをコンパイルする。Hello.classができる。
+パッケージ指定しているので、
+examples/hello/の下に、Hello.classを移動する。
+そうしないとHelloAppletがコンパイルできない。
+
+o Helloインターフェースを介してネットワークサービスを利用する
+アプレットである、 HelloAppletを書く。HelloAppletの中では、public
+HelloAppletクラスだけを定義している。HelloApplet.javaをコンパイルする。
+
+o 実際のネットワークサービスを提供するHelloImpl.classをつくる
+ために、HelloImpl.javaをコンパイルする。
+
+o すべてのクラスができたら、
+rmic example.hello.HelloImpl
+として、スタブを作る。
+
+
+
+
+
+o setenv CLASSPATH ./
+としておかないと、カレントからexamplesというディレクトリをつくった
+場合はrmicがエラーを出す。
+
+o HTMLファイルには、code="examples.hello.HelloApplet"
+というようにクラスが指定してあるので、それだけでクラスは
+自分が2つふかいディレクトリにいると思ってしまうので、
+codeBaseは../..する必要があるのだ。
+
+/home1/WWW/html/ringo/rmi/examples/hello/Hello.class
+/home1/WWW/html/ringo/rmi/examples/hello/HelloImpl.class
+/home1/WWW/html/ringo/rmi/examples/hello/HelloApplet.class
+/home1/WWW/html/ringo/rmi/test.html
+/home1/WWW/html/ringo/rmi/Hello.java
+/home1/WWW/html/ringo/rmi/HelloImpl.java
+/home1/WWW/html/ringo/rmi/HelloApplet.java
+/home1/WWW/html/ringo/rmi/HelloImpl_Skel.class
+/home1/WWW/html/ringo/rmi/HelloImpl_Stub.class
+
+これだけがそろえば、あとは
+
+
+rmiregistry
+
+として、
+
+おもむろにアプリケーションサーバを起動する。それには
+
+java -Djava.rmi.server.codebase=http://ns2.titan.co.jp/ringo/rmi/
+        examples.hello.HelloImpl &
+とすればよい。
+しかし、この場合は、
+/home1/WWW/html/ringo/rmi/examples/hello/HelloImpl_Skel.class
+/home1/WWW/html/ringo/rmi/examples/hello/HelloImpl_Stub.class
+をコピーし忘れていたために、すうびょうほどたった時にサーバーが
+もんくをいってきた。だからコピーしてもういちどjavaした。
+そしたら何もいってこなかった。なんびょうかたったときに、
+HelloImpl bound in registryなどといったのでそれでoKか？
+
+appletviewer http://ns2.titan.co.jp/ringo/rmi/test.html
+でよいのだが、その時に、
+setenv CLASSPATH ./
+としておかないと起動できないことがわかった。べつのディレクトリに
+いどうしても起動できない。bad magic number(class not found)になる。
+この問題は、またもやhtmlファイルの置き場がわるかったことによって
+はっせいしていた。test.htmlを
+/home1/WWW/html/ringo/rmi/examples/hello/test.html
+に移動してやるとうまく動いた。どのディレクトリからでも動く。
+windows95からも動くか調べてみると、セキュリティ例外が出て動かなかった。
+(ポート番号が違うからとうぜんなのだが。これを回避するには、
+appletviewerの設定をすればよいのだが、それをしようとするとリソース
+がない、とか言ってappletviewerがおこるので、できないため、テスト
+できなかった。Solarisでも設定しようとするとその例外が出るから、
+ネットワークアクセスは制限されているはずなのだが、できるからふしぎだ。
+
+
+
+
+また複数を同時に起動できることもわかった。サーバーはforkしているのだろ
+うか？状態は持つことができるだろうか？
+

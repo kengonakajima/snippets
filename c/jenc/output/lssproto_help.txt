@@ -1,0 +1,121 @@
+LSRPC AUTOMATIC HELP FILE for protocol [lssproto]
+
+Client note:
+step 1: Include lssproto_cli.h in all source files in which you use RPC functions
+step 2: Compile and add lssproto_cli.c into your project
+step 3: Compile and add lssproto_util.c into your project
+step 4: Write following functions somewhere:
+void lssproto_W_recv( int fd,int id,int x,int y );
+void lssproto_AB_recv( int fd,char* data );
+void lssproto_NAB_recv( int fd,char* data );
+void lssproto_T_recv( int fd,int charindex,char* message,int color );
+void lssproto_M_recv( int fd,int fl,int x1,int y1,int x2,int y2,char* data );
+void lssproto_C_recv( int fd,char* data );
+void lssproto_CA_recv( int fd,char* data );
+void lssproto_R_recv( int fd,int result,char* data );
+void lssproto_S_recv( int fd,char* data );
+void lssproto_D_recv( int fd,int category,int dx,int dy,char* data );
+void lssproto_ClientLogin_recv( int fd,char* result );
+void lssproto_CreateNewChar_recv( int fd,char* result,char* data );
+void lssproto_CharDelete_recv( int fd,char* result,char* data );
+void lssproto_CharLogin_recv( int fd,char* result,char* data );
+void lssproto_ChangePasswd_recv( int fd,char* result,char* data );
+void lssproto_CharList_recv( int fd,char* result,char* data );
+void lssproto_CharLogout_recv( int fd,char* result,char* data );
+void lssproto_Echo_recv( int fd,char* test );
+
+step 5: Use lssproto_InitClient( writefunc , worksize );
+step 6: Call functions like following:
+
+void lssproto_W_send( int fd,char* direction,int id );
+void lssproto_AD_send( int fd,int dir );
+void lssproto_MGD_send( int fd,int dir,char* pattern );
+void lssproto_SKD_send( int fd,int dir,int index );
+void lssproto_CM_send( int fd,char* data );
+void lssproto_ID_send( int fd,int dir,int itemindex );
+void lssproto_ST_send( int fd,int titleindex );
+void lssproto_DT_send( int fd,int titleindex );
+void lssproto_FT_send( int fd,char* data );
+void lssproto_PI_send( int fd,int dir );
+void lssproto_DI_send( int fd,int itemindex );
+void lssproto_DG_send( int fd,int amount );
+void lssproto_MI_send( int fd,int fromindex,int toindex );
+void lssproto_SKUP_send( int fd,int skillindex );
+void lssproto_MSG_send( int fd,int index,char* message,int color );
+void lssproto_AB_send( int fd );
+void lssproto_DAB_send( int fd,int index );
+void lssproto_AAB_send( int fd );
+void lssproto_RAB_send( int fd,int index );
+void lssproto_TK_send( int fd,char* message,int color );
+void lssproto_M_send( int fd,int fl,int x1,int y1,int x2,int y2 );
+void lssproto_S_send( int fd,char* category );
+void lssproto_ClientLogin_send( int fd,char* cdkey,char* passwd );
+void lssproto_CreateNewChar_send( int fd,char* charname,int imgno,char* option );
+void lssproto_CharDelete_send( int fd,char* charname );
+void lssproto_CharLogin_send( int fd,char* charname );
+void lssproto_ChangePasswd_send( int fd,char* oldpasswd,char* newpasswd );
+void lssproto_CharList_send( int fd );
+void lssproto_CharLogout_send( int fd );
+void lssproto_Echo_send( int fd,char* test );
+step 7: If you want to cleanup lsrpc, use lssproto_CleanupServer();
+
+Server note:
+step 1: You include lssproto_serv.h in all source files in which you use RPC functions
+step 2: Compile and add lssproto_serv.c into your project
+step 3: Compile and add lssproto_util.c into your project
+step 4: Write following functions somewhere:
+void lssproto_W_recv( int fd,char* direction,int id );
+void lssproto_AD_recv( int fd,int dir );
+void lssproto_MGD_recv( int fd,int dir,char* pattern );
+void lssproto_SKD_recv( int fd,int dir,int index );
+void lssproto_CM_recv( int fd,char* data );
+void lssproto_ID_recv( int fd,int dir,int itemindex );
+void lssproto_ST_recv( int fd,int titleindex );
+void lssproto_DT_recv( int fd,int titleindex );
+void lssproto_FT_recv( int fd,char* data );
+void lssproto_PI_recv( int fd,int dir );
+void lssproto_DI_recv( int fd,int itemindex );
+void lssproto_DG_recv( int fd,int amount );
+void lssproto_MI_recv( int fd,int fromindex,int toindex );
+void lssproto_SKUP_recv( int fd,int skillindex );
+void lssproto_MSG_recv( int fd,int index,char* message,int color );
+void lssproto_AB_recv( int fd );
+void lssproto_DAB_recv( int fd,int index );
+void lssproto_AAB_recv( int fd );
+void lssproto_RAB_recv( int fd,int index );
+void lssproto_TK_recv( int fd,char* message,int color );
+void lssproto_M_recv( int fd,int fl,int x1,int y1,int x2,int y2 );
+void lssproto_S_recv( int fd,char* category );
+void lssproto_ClientLogin_recv( int fd,char* cdkey,char* passwd );
+void lssproto_CreateNewChar_recv( int fd,char* charname,int imgno,char* option );
+void lssproto_CharDelete_recv( int fd,char* charname );
+void lssproto_CharLogin_recv( int fd,char* charname );
+void lssproto_ChangePasswd_recv( int fd,char* oldpasswd,char* newpasswd );
+void lssproto_CharList_recv( int fd );
+void lssproto_CharLogout_recv( int fd );
+void lssproto_Echo_recv( int fd,char* test );
+
+step 5: Use lssproto_InitServer( writefunc , worksize );
+step 6: Call functions like following:
+
+void lssproto_W_send( int fd,int id,int x,int y );
+void lssproto_AB_send( int fd,char* data );
+void lssproto_NAB_send( int fd,char* data );
+void lssproto_T_send( int fd,int charindex,char* message,int color );
+void lssproto_M_send( int fd,int fl,int x1,int y1,int x2,int y2,char* data );
+void lssproto_C_send( int fd,char* data );
+void lssproto_CA_send( int fd,char* data );
+void lssproto_R_send( int fd,int result,char* data );
+void lssproto_S_send( int fd,char* data );
+void lssproto_D_send( int fd,int category,int dx,int dy,char* data );
+void lssproto_ClientLogin_send( int fd,char* result );
+void lssproto_CreateNewChar_send( int fd,char* result,char* data );
+void lssproto_CharDelete_send( int fd,char* result,char* data );
+void lssproto_CharLogin_send( int fd,char* result,char* data );
+void lssproto_ChangePasswd_send( int fd,char* result,char* data );
+void lssproto_CharList_send( int fd,char* result,char* data );
+void lssproto_CharLogout_send( int fd,char* result,char* data );
+void lssproto_Echo_send( int fd,char* test );
+step 7: If you want to cleanup lsrpc, use lssproto_CleanupServer();
+
+-- end of generated help--

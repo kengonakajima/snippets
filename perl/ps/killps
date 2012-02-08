@@ -1,0 +1,27 @@
+#!/usr/local/bin/perl 
+
+if( @ARGV != 1 ){
+	die("usage: killps psname\n" );
+}
+
+
+# print "[$ARGV[0]] arg\n";
+
+$arg = $ARGV[0];
+
+open( IN , "ps -el|" );
+
+while( $line = <IN> ){
+
+	if( $line =~ /\s$arg\s/ ){
+		print $line;	
+		@l = split( /\s+/ , $line );
+		
+		$comline = "kill $l[4]";
+		system( $comline );
+		print "tried to kill process $l[4]\n";
+
+	}
+
+}
+

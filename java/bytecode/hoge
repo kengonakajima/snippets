@@ -1,0 +1,6 @@
+Compiled from "Aho.java"
+public class Aho extends java.lang.Object{
+    public Aho();
+    public static void main(java.lang.String[]);
+}
+

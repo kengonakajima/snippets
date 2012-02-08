@@ -1,0 +1,13 @@
+syn ackをおくるとこまでいった。 OK
+それをうけとってコネクション確立までいった。 OK
+UDPCWrite OK
+UDPCReadをつくってから OK
+
+UDPCCloseをつくる。
+
+それから再送の処理をつくる。
+
+
+
+
+

@@ -1,0 +1,4 @@
+version=10000;
+tcp int32[2] baka( u_char[2000] ,   float32[2]  );
+tcp int[2] baka( int32[2] ,   float32[2]  );
+udp double64 kakezan(  );

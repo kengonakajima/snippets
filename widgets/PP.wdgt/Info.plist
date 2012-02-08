@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AllowFileAccessOutsideOfWidget</key>
+	<false/>
+	<key>AllowNetworkAccess</key>
+	<true/>
+	<key>AllowSystem</key>
+	<true/>
+	<key>CFBundleIdentifier</key>
+	<string>net.ce-lab.www.widget.pp</string>
+	<key>CFBundleName</key>
+	<string>PP</string>
+	<key>DefaultImage</key>
+	<string>Default.png</string>
+	<key>Height</key>
+	<string>207</string>
+	<key>MainHTML</key>
+	<string>main.html</string>
+	<key>Width</key>
+	<string>165</string>
+</dict>
+</plist>

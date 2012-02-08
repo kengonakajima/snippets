@@ -1,0 +1,213 @@
+Sender: addr:c0a8010b len:24
+send syn
+recvfrom addr:c0a8010b len:24 seq:-1 ack:0 RSFR:0 1 0 0 l:0 svfd:3 rvfd:0
+return vfd
+connect return:3
+sock[3].write_addr:512
+sock[3].write_addr:520
+[Len Seq State Time]
+[512 0 1 0.000000 ]
+[8 512 1 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+[0 0 0 0.000000 ]
+Sender: addr:c0a8010b len:536
+write more! 2 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:24 seq:-1 ack:0 RSFR:0 0 0 0 l:512 svfd:3 rvfd:0
+Ack ok! [0] 0
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:124 seq:0 ack:-1 RSFR:0 0 0 0 l:100 svfd:0 rvfd:3
+Sender: addr:c0a8010b len:24
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:124 seq:100 ack:-1 RSFR:0 0 0 0 l:100 svfd:0 rvfd:3
+Sender: addr:c0a8010b len:24
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:124 seq:200 ack:-1 RSFR:0 0 0 0 l:100 svfd:0 rvfd:3
+Sender: addr:c0a8010b len:24
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:124 seq:300 ack:-1 RSFR:0 0 0 0 l:100 svfd:0 rvfd:3
+Sender: addr:c0a8010b len:24
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:124 seq:400 ack:-1 RSFR:0 0 0 0 l:100 svfd:0 rvfd:3
+Sender: addr:c0a8010b len:24
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+recvfrom addr:c0a8010b len:36 seq:500 ack:-1 RSFR:0 0 0 0 l:12 svfd:0 rvfd:3
+Sender: addr:c0a8010b len:24
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 1
+write more! 127 
