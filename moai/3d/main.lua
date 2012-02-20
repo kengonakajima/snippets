@@ -19,6 +19,7 @@ gfxQuad:setTexture ( "../sol.png" ) --"cathead.png" )
 gfxQuad:setRect ( -64, -64, 64, 64 )
 gfxQuad:setUVRect ( 0, 1, 1, 0 )
 
+
 prop = MOAIProp.new ()
 prop:setDeck ( gfxQuad )
 layer:insertProp ( prop )
