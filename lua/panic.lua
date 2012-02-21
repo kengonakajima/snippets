@@ -18,6 +18,6 @@ function b()
 end
 
 
-xpcall( function()
+--xpcall( function()
     b()
-  end, errh )
+--  end, errh )
