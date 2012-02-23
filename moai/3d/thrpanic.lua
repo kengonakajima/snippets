@@ -1,8 +1,3 @@
-----------------------------------------------------------------
--- Copyright (c) 2010-2011 Zipline Games, Inc. 
--- All Rights Reserved. 
--- http://getmoai.com
-----------------------------------------------------------------
 
 MOAISim.openWindow ( "test", 320, 480 )
 
@@ -42,7 +37,9 @@ camera:setLoc ( 0, 0, camera:getFocalLength ( 320 ))
 layer:setCamera ( camera )
 
 
+
 function errh(erro)
+  print("qqq")
   print( debug.traceback() )
   return false
 end
@@ -53,3 +50,20 @@ xpcall( function()
     end
     MOAIInputMgr.device.keyboard:setCallback( onKeyboardEvent )
   end, errh )
+function a()
+  prrrrrrrrrrrrrint()
+end
+
+
+th = MOAIThread.new()
+th:run( function()
+    local cnt=0
+    while true do
+      cnt = cnt + 1
+      print("cnt:",cnt)
+      if cnt > 1000000 then
+        a()
+      end
+      coroutine.yield()
+    end    
+  end)
