@@ -52,10 +52,11 @@ dr:setLink(1, p, MOAITransform.ATTR_X_LOC,0, MOAIEaseType.LINEAR)
 p:seekLoc(0,0,1,MOAIEaseType.LINEAR)
 
 -- I wish I could write like this:
-p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
-p:resetEaseDrivers()  -- this stops all ease drivers with the prop
-p:seekLoc(0,0,2,MOAIEaseType.LINEAR) -- then p goes to (0,0) correctly
+--p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
+--p:resetEaseDrivers()  -- this stops all ease drivers with the prop
+--p:seekLoc(0,0,2,MOAIEaseType.LINEAR) -- then p goes to (0,0) correctly
 
--- or,
-p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
-p:seekLoc(0,0,2,MOAIEaseType.LINEAR, true) -- the last argument is "reset and overwrite" mode
+-- or, more shorter:
+
+--p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
+--p:seekLoc(0,0,2,MOAIEaseType.LINEAR, true) -- the last argument is "reset and overwrite" mode
