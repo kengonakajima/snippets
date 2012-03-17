@@ -37,26 +37,17 @@ p:setLoc(-100,0)
 --p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
 --p:moveLoc(100,0,2,MOAIEaseType.LINEAR) 
 
-
--- goes 100 px in 2 seconds, stop at x == 0
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
-
--- goes 200 px in 2 seconds, stop at x == 100,  because 2 ease driver run concurrently.
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
-
-
--- goes 100 px in 2 seconds, stop at x == 0,   because setLink overwrites the seek. but it's too verbose..
-local dr = p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
+-- goes 100 px in 2 seconds, stop at x == 0,   because setLink overwrites the move. but it's too verbose..
+local dr = p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
 dr:setLink(1, p, MOAITransform.ATTR_X_LOC,0, MOAIEaseType.LINEAR)
-p:seekLoc(0,0,1,MOAIEaseType.LINEAR)
+p:moveLoc(100,0,1,MOAIEaseType.LINEAR)
 
 -- I wish I could write like this:
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
+--p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
 --p:resetEaseDrivers()  -- this stops all ease drivers with the prop
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR) -- then p goes to (0,0) correctly
+--p:moveLoc(100,0,2,MOAIEaseType.LINEAR) -- then p goes to (0,0) correctly
 
 -- or, more shorter:
 
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR)
---p:seekLoc(0,0,2,MOAIEaseType.LINEAR, true) -- the last argument is "reset and overwrite" mode
+--p:moveLoc(0,0,2,MOAIEaseType.LINEAR)
+--p:moveLoc(0,0,2,MOAIEaseType.LINEAR, true) -- the last argument is "reset and overwrite" mode
