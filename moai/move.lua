@@ -31,23 +31,21 @@ layer:insertProp(p)
 p:setLoc(-100,0)
 
 -- goes 100 px in 2 second, stop at x == 0 (center)
---p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
+p:moveLoc(100,0,2)
 
 -- goes 100+100=200 px in 2 seconds, stops at x == 100
---p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
---p:moveLoc(100,0,2,MOAIEaseType.LINEAR) 
+--p:moveLoc(100,0,2)
+--p:moveLoc(100,0,2)
 
 -- goes 100 px in 2 seconds, stop at x == 0,   because setLink overwrites the move. but it's too verbose..
-local dr = p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
-dr:setLink(1, p, MOAITransform.ATTR_X_LOC,0, MOAIEaseType.LINEAR)
-p:moveLoc(100,0,1,MOAIEaseType.LINEAR)
+--local dr = p:moveLoc(100,0,2)
+--dr:setLink(1, p, MOAITransform.ATTR_X_LOC,0)
+--p:moveLoc(100,0,1)
 
 -- I wish I could write like this:
---p:moveLoc(100,0,2,MOAIEaseType.LINEAR)
+--p:moveLoc(100,0,2)
 --p:resetEaseDrivers()  -- this stops all ease drivers with the prop
---p:moveLoc(100,0,2,MOAIEaseType.LINEAR) -- then p goes to (0,0) correctly
+--p:moveLoc(100,0,2) -- then p goes to (0,0) correctly
 
--- or, more shorter:
 
---p:moveLoc(0,0,2,MOAIEaseType.LINEAR)
---p:moveLoc(0,0,2,MOAIEaseType.LINEAR, true) -- the last argument is "reset and overwrite" mode
+
