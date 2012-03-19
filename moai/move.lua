@@ -45,7 +45,6 @@ p:moveLoc(100,0,2)
 -- I wish I could write like this:
 --p:moveLoc(100,0,2)
 --p:resetEaseDrivers()  -- this stops all ease drivers with the prop
---p:moveLoc(100,0,2) -- then p goes to (0,0) correctly
-
+--p:moveLoc(100,0,2) -- then p goes to (0,0) correctly  
 
 
