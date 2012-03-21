@@ -1,214 +1,214 @@
 local st = os.clock()
-local k =0 
+g =0 
 for i=1,100000 do
   local t = i % 100
   if t==0 then
-    k = k + 0
+    g = g + 0
   elseif t == 1 then
-    k = k + 1
+    g = g + 1
   elseif t == 2 then
-    k = k + 2
+    g = g + 2
   elseif t == 3 then
-    k = k + 3
+    g = g + 3
   elseif t == 4 then
-    k = k + 4
+    g = g + 4
   elseif t == 5 then
-    k = k + 5
+    g = g + 5
   elseif t == 6 then
-    k = k + 6
+    g = g + 6
   elseif t == 7 then
-    k = k + 7
+    g = g + 7
   elseif t == 8 then
-    k = k + 8
+    g = g + 8
   elseif t == 9 then
-    k = k + 9
+    g = g + 9
   elseif t == 10 then
-    k = k + 10
+    g = g + 10
   elseif t == 11 then
-    k = k + 11
+    g = g + 11
   elseif t == 12 then
-    k = k + 12
+    g = g + 12
   elseif t == 13 then
-    k = k + 13
+    g = g + 13
   elseif t == 14 then
-    k = k + 14
+    g = g + 14
   elseif t == 15 then
-    k = k + 15
+    g = g + 15
   elseif t == 16 then
-    k = k + 16
+    g = g + 16
   elseif t == 17 then
-    k = k + 17
+    g = g + 17
   elseif t == 18 then
-    k = k + 18
+    g = g + 18
   elseif t == 19 then
-    k = k + 19
+    g = g + 19
   elseif t == 20 then
-    k = k + 20
+    g = g + 20
   elseif t == 21 then
-    k = k + 21
+    g = g + 21
   elseif t == 22 then
-    k = k + 22
+    g = g + 22
   elseif t == 23 then
-    k = k + 23
+    g = g + 23
   elseif t == 24 then
-    k = k + 24
+    g = g + 24
   elseif t == 25 then
-    k = k + 25
+    g = g + 25
   elseif t == 26 then
-    k = k + 26
+    g = g + 26
   elseif t == 27 then
-    k = k + 27
+    g = g + 27
   elseif t == 28 then
-    k = k + 28
+    g = g + 28
   elseif t == 29 then
-    k = k + 29
+    g = g + 29
   elseif t == 30 then
-    k = k + 30
+    g = g + 30
   elseif t == 31 then
-    k = k + 31
+    g = g + 31
   elseif t == 32 then
-    k = k + 32
+    g = g + 32
   elseif t == 33 then
-    k = k + 33
+    g = g + 33
   elseif t == 34 then
-    k = k + 34
+    g = g + 34
   elseif t == 35 then
-    k = k + 35
+    g = g + 35
   elseif t == 36 then
-    k = k + 36
+    g = g + 36
   elseif t == 37 then
-    k = k + 37
+    g = g + 37
   elseif t == 38 then
-    k = k + 38
+    g = g + 38
   elseif t == 39 then
-    k = k + 39
+    g = g + 39
   elseif t == 40 then
-    k = k + 40
+    g = g + 40
   elseif t == 41 then
-    k = k + 41
+    g = g + 41
   elseif t == 42 then
-    k = k + 42
+    g = g + 42
   elseif t == 43 then
-    k = k + 43
+    g = g + 43
   elseif t == 44 then
-    k = k + 44
+    g = g + 44
   elseif t == 45 then
-    k = k + 45
+    g = g + 45
   elseif t == 46 then
-    k = k + 46
+    g = g + 46
   elseif t == 47 then
-    k = k + 47
+    g = g + 47
   elseif t == 48 then
-    k = k + 48
+    g = g + 48
   elseif t == 49 then
-    k = k + 49
+    g = g + 49
   elseif t == 50 then
-    k = k + 50
+    g = g + 50
   elseif t == 51 then
-    k = k + 51
+    g = g + 51
   elseif t == 52 then
-    k = k + 52
+    g = g + 52
   elseif t == 53 then
-    k = k + 53
+    g = g + 53
   elseif t == 54 then
-    k = k + 54
+    g = g + 54
   elseif t == 55 then
-    k = k + 55
+    g = g + 55
   elseif t == 56 then
-    k = k + 56
+    g = g + 56
   elseif t == 57 then
-    k = k + 57
+    g = g + 57
   elseif t == 58 then
-    k = k + 58
+    g = g + 58
   elseif t == 59 then
-    k = k + 59
+    g = g + 59
   elseif t == 60 then
-    k = k + 60
+    g = g + 60
   elseif t == 61 then
-    k = k + 61
+    g = g + 61
   elseif t == 62 then
-    k = k + 62
+    g = g + 62
   elseif t == 63 then
-    k = k + 63
+    g = g + 63
   elseif t == 64 then
-    k = k + 64
+    g = g + 64
   elseif t == 65 then
-    k = k + 65
+    g = g + 65
   elseif t == 66 then
-    k = k + 66
+    g = g + 66
   elseif t == 67 then
-    k = k + 67
+    g = g + 67
   elseif t == 68 then
-    k = k + 68
+    g = g + 68
   elseif t == 69 then
-    k = k + 69
+    g = g + 69
   elseif t == 70 then
-    k = k + 70
+    g = g + 70
   elseif t == 71 then
-    k = k + 71
+    g = g + 71
   elseif t == 72 then
-    k = k + 72
+    g = g + 72
   elseif t == 73 then
-    k = k + 73
+    g = g + 73
   elseif t == 74 then
-    k = k + 74
+    g = g + 74
   elseif t == 75 then
-    k = k + 75
+    g = g + 75
   elseif t == 76 then
-    k = k + 76
+    g = g + 76
   elseif t == 77 then
-    k = k + 77
+    g = g + 77
   elseif t == 78 then
-    k = k + 78
+    g = g + 78
   elseif t == 79 then
-    k = k + 79
+    g = g + 79
   elseif t == 80 then
-    k = k + 80
+    g = g + 80
   elseif t == 81 then
-    k = k + 81
+    g = g + 81
   elseif t == 82 then
-    k = k + 82
+    g = g + 82
   elseif t == 83 then
-    k = k + 83
+    g = g + 83
   elseif t == 84 then
-    k = k + 84
+    g = g + 84
   elseif t == 85 then
-    k = k + 85
+    g = g + 85
   elseif t == 86 then
-    k = k + 86
+    g = g + 86
   elseif t == 87 then
-    k = k + 87
+    g = g + 87
   elseif t == 88 then
-    k = k + 88
+    g = g + 88
   elseif t == 89 then
-    k = k + 89
+    g = g + 89
   elseif t == 90 then
-    k = k + 90
+    g = g + 90
   elseif t == 91 then
-    k = k + 91
+    g = g + 91
   elseif t == 92 then
-    k = k + 92
+    g = g + 92
   elseif t == 93 then
-    k = k + 93
+    g = g + 93
   elseif t == 94 then
-    k = k + 94
+    g = g + 94
   elseif t == 95 then
-    k = k + 95
+    g = g + 95
   elseif t == 96 then
-    k = k + 96
+    g = g + 96
   elseif t == 97 then
-    k = k + 97
+    g = g + 97
   elseif t == 98 then
-    k = k + 98
+    g = g + 98
   elseif t == 99 then
-    k = k + 99
+    g = g + 99
   elseif t == 100 then
-    k = k + 100
+    g = g + 100
   end
 end
 
 local et = os.clock()
-print(k, (et-st))
+print(100, g, (et-st))
 
 function f1(t)
   g = g + t
@@ -624,4 +624,45 @@ for i=1,100000 do
 end
 
 et = os.clock()
-print(g,(et-st))
+print(100, g,(et-st))
+
+st = os.clock()
+g=0
+for i=1,100000 do
+  local t = (i % 10)
+  if t==0 then
+    g = g + 0
+  elseif t == 1 then
+    g = g + 1
+  elseif t == 2 then
+    g = g + 2
+  elseif t == 3 then
+    g = g + 3
+  elseif t == 4 then
+    g = g + 4
+  elseif t == 5 then
+    g = g + 5
+  elseif t == 6 then
+    g = g + 6
+  elseif t == 7 then
+    g = g + 7
+  elseif t == 8 then
+    g = g + 8
+  elseif t == 9 then
+    g = g + 9
+  elseif t == 10 then
+    g = g + 10
+  end
+end
+et = os.clock()
+print(10,g,(et-st))
+
+st = os.clock()
+g=0
+for i=1,100000 do
+  local t = (i%10)+1
+  local f = funcs[t]
+  f(t)
+end
+et = os.clock()
+print(10,g,(et-st))
