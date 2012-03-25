@@ -27,6 +27,14 @@ aho.each do |e|
   STDERR.print JSON.parse(e)["zoo"]["BOO"][0]
 end
 
+redis.del "commits"
+
+N.times do |i|
+  redis.hset "commits", "#{i}#{i}", "#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}#{i}"
+end
+N.times do |i|
+  aho = redis.hget "commits", "#{i}#{i}"
+end
 
 
 
