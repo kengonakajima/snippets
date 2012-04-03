@@ -1,0 +1,3 @@
+require("aho")
+
+print( aho )
