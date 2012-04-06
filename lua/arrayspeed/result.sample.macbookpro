@@ -1,0 +1,22 @@
+make
+node --version
+v0.4.4
+node test.js
+{ time: 1340, title: 'direct' }
+{ time: 1607, title: 'array depth-1' }
+{ time: 1901, title: 'array depth-2' }
+{ time: 2307, title: 'array depth-3' }
+{ time: 2647, title: 'array depth-4' }
+{ time: 3181, title: 'array depth-5' }
+luvit --version
+0.2.0-117-gcbec0fe
+luvit test.lua
+{"title":"direct","time":73.075744}
+{"title":"array depth-1","time":73.54232}
+{"title":"array depth-2","time":72.564039}
+{"title":"array depth-3","time":77.266263}
+{"title":"array depth-4","time":76.870167}
+{"title":"array depth-5","time":70.688316}
+
+Compilation finished at Sat Apr  7 03:20:46
+
