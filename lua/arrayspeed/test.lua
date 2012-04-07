@@ -15,7 +15,7 @@ function benchmark(f, title)
     f()
   end
   local b = uv.hrtime()
-  print( json.stringify({ time=(b-a)/1000/1000, title=title } ))
+  print( json.stringify({ time=(b-a)/1000/1000, title=title, unit="ms" } ))
 end
 
 benchmark( function() a = v                 end, 'direct' )

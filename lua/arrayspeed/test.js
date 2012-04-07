@@ -12,7 +12,7 @@ var benchmark = function(f, title){
   for(var n = 100*1000*1000; n; --n)
     f();
   var b = new Date();
-  console.log( { time:b-a, title:title } );
+  console.log( { time:b-a, title:title, unit:"ms" } );
 };
 
 benchmark( function(){ var a = v;                 }, 'direct' );
