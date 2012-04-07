@@ -1,3 +1,15 @@
+
+[HTML5時代のJavaScriptとハッシュオブジェクトの苦悩](http://usagi.hatenablog.jp/entry/2012/04/06/195259)
+で出ていたJavaScriptのコードが、<br>
+同じようなことをLuaJITでやると全然違うだろうとおもったので試した。<br>
+
+15倍以上速い結果になった。
+
+このコードの場合、同じデータに繰り返しアクセスするが、<br>
+こういうときはバイトコード変換+トレースJITの場合は最適化が特によく効くので、差が開いたのだろう。
+
+
+
 JavaScript benchmark
 ----
 ```
@@ -26,7 +38,7 @@ benchmark( function(){ var a = a4[0][0][0][0];    }, 'array depth-4');
 benchmark( function(){ var a = a5[0][0][0][0][0]; }, 'array depth-5');
 ```
 
-Lua benchmark
+Lua(luvit) benchmark
 ----
 ```
 local uv = require("uv_native")
