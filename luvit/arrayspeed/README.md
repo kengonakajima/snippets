@@ -1,6 +1,18 @@
-JavaScript code
-----
 
+[HTML5時代のJavaScriptとハッシュオブジェクトの苦悩](http://usagi.hatenablog.jp/entry/2012/04/06/195259)
+で出ていたJavaScriptのコードが、<br>
+同じようなことをLuaJITでやると全然違うだろうとおもったので試した。<br>
+
+15倍以上速い結果になった。
+
+このコードの場合、同じデータに繰り返しアクセスするが、<br>
+こういうときはバイトコード変換+トレースJITの場合は最適化が特によく効くので、差が開いたのだろう。
+
+
+
+JavaScript benchmark
+----
+```
 var v = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
 var
@@ -24,10 +36,11 @@ benchmark( function(){ var a = a2[0][0];          }, 'array depth-2');
 benchmark( function(){ var a = a3[0][0][0];       }, 'array depth-3');
 benchmark( function(){ var a = a4[0][0][0][0];    }, 'array depth-4');
 benchmark( function(){ var a = a5[0][0][0][0][0]; }, 'array depth-5');
+```
 
-Lua code
+Lua(luvit) benchmark
 ----
-
+```
 local uv = require("uv_native")
 local json = require("json")
 
@@ -54,11 +67,11 @@ benchmark( function() a = a2[1][1]          end, 'array depth-2')
 benchmark( function() a = a3[1][1][1]       end, 'array depth-3')
 benchmark( function() a = a4[1][1][1][1]    end, 'array depth-4')
 benchmark( function() a = a5[1][1][1][1][1] end, 'array depth-5')
-
+```
 
 Result
 ----
-
+```
 make -k 
 node --version
 v0.6.14
@@ -78,6 +91,7 @@ luvit test.lua
 {"time":70.527224,"unit":"ms","title":"array depth-3"}
 {"time":80.763861,"unit":"ms","title":"array depth-4"}
 {"time":94.745047,"unit":"ms","title":"array depth-5"}
+```
 
 Conclusion
 ----
