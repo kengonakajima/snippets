@@ -1,3 +1,6 @@
+def aho()
+  hoge()
+end
 
 begin
   begin
@@ -7,7 +10,7 @@ begin
     raise $!
   end
 rescue
-  print "hoge 2\n"
+  print "hoge 2 #{$!}\n"
   print $!,"\n"
 end
 
