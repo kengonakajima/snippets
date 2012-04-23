@@ -6,7 +6,6 @@ begin
   begin
     aho()
   rescue
-
     print "hoge 1 #{$!.backtrace}\n"
     raise $!.backtrace
   end
