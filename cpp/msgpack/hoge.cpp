@@ -20,15 +20,15 @@ int main() {
     // msgpack::zone z;
     // msgpack::object obj = msgpack::unpack( out, 20, z );
 
-    msgpack::unpacker pac;
-    pac.reserve_buffer(32*1024);
-    assert( pac.buffer_capacity() > outsz );
-    memcpy( pac.buffer(), out, outsz );
-    pac.buffer_consumed(outsz);
+    msgpack::unpacker unpac;
+    unpac.reserve_buffer(32*1024);
+    assert( unpac.buffer_capacity() > outsz );
+    memcpy( unpac.buffer(), out, outsz );
+    unpac.buffer_consumed(outsz);
 
     msgpack::unpacked result;
 
-    while( pac.next( &result ) ) {
+    while( unpac.next( &result ) ) {
         std::cerr << "unpacked!" << std::endl;
         msgpack::object obj = result.get();
         std::auto_ptr<msgpack::zone> z = result.zone();
@@ -51,9 +51,46 @@ int main() {
         default:
             assert(false);
         }
-            
-        
     }
 
+
+    // packer
+    {
+        msgpack::sbuffer sb;
+        msgpack::packer< msgpack::sbuffer > pk( & sb );
+        pk.pack_array(3);
+        pk.pack(10);
+        pk.pack(20);
+        pk.pack(10000000000);
+
+        char *packed = sb.data();
+        size_t packedsz = sb.size();
+
+        std::cerr << "packedsz:" << packedsz << std::endl;
+        msgpack::unpacker unp;
+        unp.reserve_buffer(32*1024);
+        memcpy( unp.buffer(), packed, packedsz );
+        unp.buffer_consumed(packedsz);
+
+        msgpack::unpacked result;
+        assert( unp.next(&result) );
+
+        msgpack::object obj = result.get();
+        
+
+        assert( obj.type == MSGPACK_OBJECT_ARRAY );
+        assert( obj.via.array.size == 3 );
+
+        msgpack::object e0, e1, e2;
+        e0 = obj.via.array.ptr[0];
+        e1 = obj.via.array.ptr[1];
+        e2 = obj.via.array.ptr[2];
+        assert( e0.type == MSGPACK_OBJECT_POSITIVE_INTEGER );
+        assert( e1.type == MSGPACK_OBJECT_POSITIVE_INTEGER );
+        assert( e2.type == MSGPACK_OBJECT_POSITIVE_INTEGER );
+        assert( e0.as<int>() == 10 );
+        assert( e1.as<int>() == 20 );
+        assert( e2.as<long long>() == 10000000000 );
+    }
 }
     
