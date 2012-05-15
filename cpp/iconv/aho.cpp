@@ -29,6 +29,6 @@ int main(void)
     char text[bufsize], text2[bufsize];
   
     strcpy(text, "あいうえお");
-    convert(text, text2, bufsize, "EUC-JP", "UTF-8");
+    convert(text, text2, bufsize, "UTF-8", "SJIS" ); //"EUC-JP"
     printf("%s\n", text2);
 }
