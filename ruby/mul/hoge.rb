@@ -5,3 +5,7 @@ end
 a,b = aho()
 
 print a,",",b,"\n"
+
+a = aho()
+
+print a, "\n"
