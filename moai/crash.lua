@@ -38,10 +38,11 @@ end
 
 
 function fn()
+  -- no xpcall outside coro!
   while true do
     xpcall( upd, crashHandler )
     coroutine.yield()
-  end  
+  end
 end
 
 t = MOAIThread.new()
@@ -62,9 +63,8 @@ MOAIInputMgr.device.mouseLeft:setCallback ( onMouseLeftEvent )
 MOAIInputMgr.device.mouseRight:setCallback ( onMouseRightEvent )
 
 function crashHandler(e)
-  print(e)
   local s = debug.traceback(e)
-  
+  print("LOG:", s)  
   task = MOAIHttpTask.new ()
   task:setVerb ( MOAIHttpTask.HTTP_POST )
   task:setUrl ( "106.187.55.104:31111/crashlog" )
