@@ -15,6 +15,6 @@ print redis.hget( "testtest123", "bb" ), "\n"
 out=redis.hmget( "testtest123", "aa", "bb", "cc" )
 out.each do |e| print e, "\n" end
 
-ary = ["aa","bb","cc"]
+ary = ["aa","bb","cc", "dd", "bb" ]
 out=redis.hmget( "testtest123", *ary )
 out.each do |e| print e, "\n" end

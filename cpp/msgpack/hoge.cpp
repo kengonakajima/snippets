@@ -72,9 +72,12 @@ int main() {
         memcpy( unp.buffer(), packed, packedsz );
         unp.buffer_consumed(packedsz);
 
+        std::cerr << "before-next: offset:" << unp.off << " parsed:" << unp.parsed << std::endl;
+        
         msgpack::unpacked result;
         assert( unp.next(&result) );
 
+        std::cerr << "after-next: offset:" << unp.off << " parsed:" << unp.parsed << std::endl;
         msgpack::object obj = result.get();
         
 
