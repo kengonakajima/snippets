@@ -1,10 +1,12 @@
 luvit write() causes EFAULT
 ====
 
-How to reproduce EFAULT
-----
- 1. luvit sv.lua 
- 2. luvit cl.lua
+luvit's Socket:write() is unsafe, large chunk will be lost in some cases.
+
+To reproduce EFAULT, simply start sv.lua and cl.lua :
+
+ 1. $ luvit sv.lua 
+ 2. $ luvit cl.lua
 
 then cl.lua start to send a large chunk to server, and soon get this:
 
