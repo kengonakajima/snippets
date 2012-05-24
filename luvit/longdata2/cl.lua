@@ -6,8 +6,8 @@ local timer = require("timer")
 local table = require("table")
 
 local sendcnt,recvcnt = 1,1
-local unit = 40000 -- 79500 -- error occurs from about 79500 on osx when repn==1
-local repn = 5
+local unit = 160000 -- 79500 -- error occurs from about 79500 on osx when repn==1
+local repn = 1
 local mod = 119
 
 local cl
@@ -17,7 +17,8 @@ cl = net.createConnection(61111, '127.0.0.1', function (err)
   
 
   cl:on("error", function(e)
-      io.stderr:write("E") 
+      p(e)
+      io.stderr:write("E:"..e) 
     end)
 
   
@@ -45,7 +46,10 @@ cl = net.createConnection(61111, '127.0.0.1', function (err)
           sendcnt = sendcnt + 1
         end
         local s = table.concat( t )
-        cl:write(s)
+        cl:write(s,function(e)
+            io.stderr:write("w")
+            if e then assert(false,"we:"..e) end
+          end)
       end      
     end)
 
