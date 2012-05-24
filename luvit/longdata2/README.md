@@ -1,4 +1,4 @@
-luvit write() causes EFAULT
+luvit write() causes EFAULT on OSX and Linux
 ====
 
 luvit's Socket:write() is unsafe, large chunk will be lost in some cases.
