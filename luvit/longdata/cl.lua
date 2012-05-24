@@ -13,9 +13,10 @@ cl = net.createConnection(61111, '127.0.0.1', function (err)
   cl:on("data",function(data)
       assert(data)
       assert(#data > 0 )
+      cl:write(data)
       for i=1,#data do
         local ch = string.byte(data,i,i)
-        if ch == ( cl.cnt % 32 ) then
+        if ch == ( cl.cnt % 119 ) then
           if (cl.cnt%100000)==0 then
             io.stderr:write( "o")
           end

@@ -6,7 +6,7 @@ local table = require("table")
 function mkstr(n)
   local t = {}
   for i=1,n do
-    table.insert(t, string.char(i%32) )
+    table.insert(t, string.char(i%119) )
   end
   return table.concat( t,"")
 end
@@ -22,16 +22,47 @@ server = net.createServer(function (cl)
          io.stderr:write("E") 
       end)
 
+    cl.sent = false
+    cl.cnt = 1
     cl:on("data", function(data)
-        print("data:",#data)
-        io.stderr:write(".")
-
-        for i=1,1000 do
-          cl:write(s1000000)
-          cl:write("r")
+        assert(data)
+        if #data == 0 then return end
+        
+        if data ~= "hi\n" then
+          for i=1,#data do
+            local ch = string.byte(data,i,i)
+            if ch == (cl.cnt%119) then
+              if( cl.cnt%200000)==0 then
+                io.stderr:write("o")
+              end
+            else
+              if ch == string.byte("r",1,1) then
+                cl.cnt = 0
+                io.stderr:write( "R")
+              elseif ch == string.byte("q",1,1) then
+                print("DONE")
+              else
+                io.stderr:write( "e("..cl.cnt..":" .. i .. ":" .. ch ..")")
+                if i > 1 then
+                  io.stderr:write( "before:".. string.byte(data,i-1,i-1) .. " ")
+                end                
+                assert(false)
+              end
+            end
+            cl.cnt = cl.cnt + 1
+          end
+          io.stderr:write( "" .. string.byte(data,#data,#data) .. " ")
         end
+        
 
-        cl:write("q")
+        if not cl.sent then
+          cl.sent = true
+          for i=1,1000 do
+            cl:write(s1000000)
+            cl:write("r")
+          end
+          cl:write("q")
+        end        
       end)
     
     
