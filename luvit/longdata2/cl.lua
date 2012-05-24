@@ -1,4 +1,7 @@
 -- echo cl
+
+-- collectgarbage("stop")   This fixes the EFAULT but need collectgarbage("step") in after_write.
+
 local net = require('net')
 local io = require("io")
 local string = require("string")
@@ -39,6 +42,7 @@ cl = net.createConnection(61111, '127.0.0.1', function (err)
     end)
 
   timer.setInterval( 1, function()
+      
       for j=1,repn do
         local t={}
         for i=1,unit do
@@ -47,6 +51,9 @@ cl = net.createConnection(61111, '127.0.0.1', function (err)
         end
         local s = table.concat( t )
         cl:write(s,function(e)
+            if not e then 
+              -- collectgarbage("step")  Without this, memory is used up soon!
+            end            
             io.stderr:write("w")
             if e then assert(false,"we:"..e) end
           end)

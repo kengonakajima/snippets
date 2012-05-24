@@ -29,6 +29,14 @@ in luv_stream.c: luv_write() :
     return 0;
 
 
-Why it is considered unsafe?
+By adding :
+
+ 1. collectgarbage("stop"), and
+ 2. collectgarbage("step") in after_write
+
+this EFAULT could be fixed..
+
+How we can improve this?
+
 
 
