@@ -1,0 +1,3 @@
+[submodule "luvit/lumino"]
+	path = luvit/lumino
+	url = https://kengonakajima@github.com/kengonakajima/lumino
