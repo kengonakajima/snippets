@@ -2,9 +2,9 @@
 i = 2
 
 case i
-when 2
+when 2,3
 	print "aho\n"
-	break
+#	break
 	print "hoge\n"
 end
 
