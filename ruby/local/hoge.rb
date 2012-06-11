@@ -1,6 +1,17 @@
-def arglog(b)
-  b.eval( "local_variables.each do |name| print name, ':',  (eval name), '\t' end")
-  print "\n"
+def argdump(b)
+  out = b.eval( <<EOF
+__s = ""
+local_variables.each do |name| 
+  if name != "__s" then
+    __s += name + ":"
+    __s += eval( name + ".to_s" )
+    __s += '\t'
+  end
+end
+__s += "\n"
+EOF
+)
+  return out
 end
 
 def hoge(a,b,c)
@@ -11,7 +22,7 @@ def hoge(a,b,c)
 end
 
 def piyo(a,b,c)
-  arglog(binding)
+  print( argdump(binding) )
 end
 
 
