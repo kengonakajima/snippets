@@ -1,3 +1,6 @@
 [submodule "luvit/lumino"]
 	path = luvit/lumino
-	url = https://kengonakajima@github.com/kengonakajima/lumino
+	url = git@github.com:kengonakajima/lumino.git
+[submodule "ruby/rumino"]
+	path = ruby/rumino
+	url = git@github.com:kengonakajima/rumino.git
