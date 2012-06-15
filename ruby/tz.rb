@@ -25,6 +25,10 @@ print "step 4:", (parsed.to_i - Time.parse(orig).to_i)/3600, "\n"
 # 4. to_iで比較すると　. 合計16時間引かれる。
 
 
+
+print "==============\n"
+
+
 # mysqlのdatetimeには、タイムゾーンの値は入らない。　そこでこれを直すには、mysqlにto_iしてから入れる。
 
 
@@ -39,5 +43,35 @@ print "step 3:", parsed,"\n"
 
 
 print "step 4:", (parsed.to_i - Time.parse(orig).to_i)/3600, "\n"
+
+
+#
+# 全部bigintにしたら解決できるが、human readableでなくなる。
+# 地道に解決すると、
+# 2. mysqlに入れるときに7時間分足す
+# 3. mysqlから出すときに Time.parseを  UTCをつけて実行する
+
+print "==============\n"
+
+orig = "2012-06-13T19:04:10-07:00" # 北米陣が感じている時間
+print "step 1:", orig, "\n"
+
+before_mysql = Time.iso8601(orig)  # そのままTimeにする
+
+print "AAAAAAAAAA:", before_mysql.hour, ",", before_mysql.gmtoff, ",", before_mysql.utc_offset, "\n"  # hourを出すと、日本人が感じてる時間を出力してしまう。
+print before_mysql.methods.sort.join("\n")
+
+mysql = todate(before_mysql)
+print "step 2:",mysql,"\n"
+
+parsed = Time.parse(mysql+" UTC")
+print( "xx:", parsed.gmtoff )
+print "step 3:", parsed,"\n"
+
+dt = (parsed.to_i - Time.parse(orig).to_i)/3600
+print "step 4:", dt, "\n"
+raise "differ" if dt != 0 
+
+
 
 exit 0
