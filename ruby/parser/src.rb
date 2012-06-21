@@ -1,3 +1,5 @@
+require "rubygems"
+
 class X
   def mb1(p)
   end

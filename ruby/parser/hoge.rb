@@ -4,12 +4,10 @@ require "../rumino/rumino"
 
 @p = RubyParser.new
 
-s=readFile("../rumino/rumino.rb")
-#s=readFile("src.rb")
+#s=readFile("../rumino/rumino.rb")
+s=readFile("src.rb")
 
 out=@p.parse(s)
-
-
 
 
 $defns = Hash.new(0)
@@ -104,4 +102,4 @@ $methhist.valsort.reverse.each do |k,v|
   print "METHHIST: #{k} : #{v}\n"
 end
 
-print out
+print out.to_s
