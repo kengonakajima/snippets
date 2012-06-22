@@ -13,15 +13,29 @@ local unit = 160000 -- 79500 -- error occurs from about 79500 on osx when repn==
 local repn = 1
 local mod = 119
 
+
 local cl
 cl = net.createConnection(61111, '127.0.0.1', function (err)
   if err then error(err) end
   print("Connected...")
-  
+
+  cl.writecnt = 0
+  cl.tmpstrs = {}
+  function cl:writewrap(str,cb)
+    if cl.writecnt == 0 then
+      cl.tmpstrs = {} -- clear, eventually invoke GCs 
+    end
+    cl.writecnt = cl.writecnt + 1
+    table.insert( cl.tmpstrs, str )
+    self:write(str,function(e)
+        cl.writecnt = cl.writecnt - 1
+        cb(e)          
+      end)
+  end
 
   cl:on("error", function(e)
       p(e)
-      io.stderr:write("E:"..e) 
+      error("fatal")
     end)
 
   
@@ -50,10 +64,8 @@ cl = net.createConnection(61111, '127.0.0.1', function (err)
           sendcnt = sendcnt + 1
         end
         local s = table.concat( t )
+
         cl:write(s,function(e)
-            if not e then 
-              -- collectgarbage("step")  Without this, memory is used up soon!
-            end            
             io.stderr:write("w")
             if e then assert(false,"we:"..e) end
           end)
