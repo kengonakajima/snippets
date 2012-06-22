@@ -4,3 +4,6 @@
 [submodule "ruby/rumino"]
 	path = ruby/rumino
 	url = git@github.com:kengonakajima/rumino.git
+[submodule "ruby/luap/lua-parser"]
+	path = ruby/luap/lua-parser
+	url = git@github.com:kengonakajima/lua-parser.git

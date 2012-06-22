@@ -4,8 +4,8 @@ require "../rumino/rumino"
 
 @p = RubyParser.new
 
-#s=readFile("../rumino/rumino.rb")
-s=readFile("src.rb")
+s=readFile("../rumino/rumino.rb")
+#s=readFile("src.rb")
 
 out=@p.parse(s)
 
