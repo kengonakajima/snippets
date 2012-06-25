@@ -44,9 +44,9 @@ formal_parameter_list__opt
 	;
 
 identifier__opt
-	:
-	| IDENTIFIER
-	;
+: { ep"idopt-empty "; }
+| IDENTIFIER { ep"idopt-id "; }
+;
 
 statement
 	: block
@@ -128,8 +128,8 @@ iteration_statement
 	;
 
 continue_statement
-	: CONTINUE identifier__opt ';'
-	;
+: CONTINUE identifier__opt ';' { ep"continue "; }
+;
 
 break_statement
 	: BREAK identifier__opt ';'
@@ -208,50 +208,50 @@ case_clauses__opt
 	;
 
 literal
-	: null_literal
-	| boolean_literal
-	| NUMERIC_LITERAL
-	| STRING_LITERAL
-	| REGEXP_LITERAL
-	;
+: null_literal { ep"lit-null "; }
+| boolean_literal { ep"lit-bool "; }
+| NUMERIC_LITERAL { ep"lit-num "; }
+| STRING_LITERAL { ep"lit-str "; }
+| REGEXP_LITERAL { ep"lit-regex "; }
+;
 
 null_literal
-	: NULL
-	;
+: NULL { ep"null-lit "; push(:null) }
+;
 
 boolean_literal
-	: TRUE
-	| FALSE
-	;
+: TRUE { ep"bool-true-lit "; push(:true) }
+| FALSE { ep"bool-false-lit "; push(:false) }
+;
 
 primary_expression
-	: THIS
-	| IDENTIFIER
-	| literal
-	| array_literal
-	| object_literal
-	| '(' expression ')'
-	;
+: THIS { ep"pexp-this "; push(:this) }
+| IDENTIFIER { ep"pexp-id "; push(:id, val[0].to_sym ) }
+| literal { ep"pexp-lit "; }
+| array_literal { ep"pexp-ary-lit "; }
+| object_literal { ep"pexp-obj-lit "; }
+| '(' expression ')' { ep"pexp-paren-exp "; }
+;
 
 array_literal
-	: '[' elision__opt ']'
-	| '[' element_list ']'
-	| '[' element_list ',' elision__opt ']'
-	;
+: '[' elision__opt ']' { ep"ary-lit-[elision] "; }
+| '[' element_list ']' { ep"ary-lit-[elemlist] "; }
+| '[' element_list ',' elision__opt ']' { ep"ary-list-[elemlist,elision] "; }
+;
 
 element_list
-	: elision__opt assignment_expression
-	| element_list ',' elision__opt assignment_expression
-	;
+: elision__opt assignment_expression { ep"elemlist-elision-asgnexp "; }
+| element_list ',' elision__opt assignment_expression { ep"elemlist-elemlist-el-as "; }
+;
 
 elision
-	: ','
-	| elision ','
-	;
+: ',' { ep"elision-comma "; }
+| elision ',' { ep"elision-elision "; }
+;
 
 object_literal
-	: '{' property_name_and_value_list__opt '}'
-	;
+: '{' property_name_and_value_list__opt '}' { ep"obj-lit "; }
+;
 
 property_name_and_value_list__opt
 	:
@@ -264,18 +264,18 @@ property_name_and_value_list
 	;
 
 property_name
-	: IDENTIFIER
-	| STRING_LITERAL
-	| NUMERIC_LITERAL
-	;
+: IDENTIFIER { ep"propname-id "; }
+| STRING_LITERAL { ep"propname-strlit "; }
+| NUMERIC_LITERAL { ep"propname-numlit "; }
+;
 
 member_expression
-	: primary_expression
-	| function_expression
-	| member_expression '[' expression ']'
-	| member_expression '.' IDENTIFIER
-	| NEW member_expression arguments
-	;
+: primary_expression { ep"mexp-pexp "; }
+| function_expression { ep"mexp-func "; }
+| member_expression '[' expression ']' { ep"mexp-mexp[] "; }
+| member_expression '.' IDENTIFIER { ep"mexp-dot-id "; }
+| NEW member_expression arguments { ep"mexp-new-mexp-args "; }
+;
 
 new_expression
 	: member_expression
@@ -290,14 +290,14 @@ call_expression
 	;
 
 arguments
-	: '(' ')'
-	| '(' argument_list ')'
-	;
+: '(' ')' { ep"args-empty "; }
+| '(' argument_list ')' { ep"args-arglist "; }
+;
 
 argument_list
-	: assignment_expression
-	| argument_list ',' assignment_expression
-	;
+: assignment_expression { ep"arglist-first "; }
+| argument_list ',' assignment_expression { ep"arglist-append "; }
+;
 
 left_hand_side_expression
 	: new_expression
@@ -439,9 +439,9 @@ conditional_expression_no_in
 	;
 
 assignment_expression
-	: conditional_expression
-	| left_hand_side_expression assignment_operator assignment_expression
-	;
+: conditional_expression { ep"asgnexp-cond "; }
+| left_hand_side_expression assignment_operator assignment_expression { ep"asgnexp-left-op-asgn "; }
+;
 
 assignment_expression_no_in
 	: conditional_expression_no_in
@@ -449,24 +449,24 @@ assignment_expression_no_in
 	;
 
 assignment_operator
-	: '='
-	| MUL_LET
-	| DIV_LET
-	| MOD_LET
-	| ADD_LET
-	| SUB_LET
-	| SHIFT_LEFT_LET
-	| SHIFT_RIGHT_LET
-	| U_SHIFT_RIGHT_LET
-	| AND_LET
-	| NOT_LET
-	| OR_LET
-	;
+: '=' { ep"asgnop-equal "; }
+| MUL_LET { ep"asgnop-mul-let "; }
+| DIV_LET { ep"asgnop-div-let "; }
+| MOD_LET { ep"asgnop-mod-let "; }
+| ADD_LET { ep"asgnop-add-let "; }
+| SUB_LET { ep"asgnop-sub-let "; }
+| SHIFT_LEFT_LET { ep"asgnop-shift-left-let "; }
+| SHIFT_RIGHT_LET { ep"asgnop-shift-right-let "; }
+| U_SHIFT_RIGHT_LET { ep"asgnop-u-shift-right-let "; }
+| AND_LET { ep"asgnop-and-let "; }
+| NOT_LET { ep"asgnop-not-let "; }
+| OR_LET { ep"asgnop-or-let "; }
+;
 
 expression
-	: assignment_expression
-	| expression ',' assignment_expression
-	;
+: assignment_expression { ep"exp-asgn "; }
+| expression ',' assignment_expression { ep"asgn-exp-,-asgn "; }
+;
 
 expression_no_in
 	: assignment_expression_no_in

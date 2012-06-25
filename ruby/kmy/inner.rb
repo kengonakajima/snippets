@@ -491,7 +491,7 @@ def parse(s,fmt,exectest)
 
   while true 
     ntk = get()
-    p "tk: #{typeof(ntk[0])} #{ntk[0]} val:#{ntk[1]}"
+    prt " T:#{ntk[0]} val:#{ntk[1]}"
     if typeof(ntk[0]) != Symbol and typeof(ntk[0]) != String and typeof(ntk[0]) != Fixnum then
       raise "FATAL: invalid type:#{typeof(ntk[0])}" 
     end
@@ -517,7 +517,7 @@ def parse(s,fmt,exectest)
 
   topary = @stack.pop
   if @stack.size > 0 then
-    ep "stack mismatch! size:#{@stack.size} : \n"
+    ep "\n\nstack mismatch! size:#{@stack.size}\n\n"
     pp @stack
     raise "FATAL"
   end
