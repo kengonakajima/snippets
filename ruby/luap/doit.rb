@@ -55,6 +55,7 @@ def scan(d,ary)
         origun = nil
       end
       logDefn($uppername,fname)
+      pp "FDEEP:", deepcount(fb)
       $uppername = fname
     end
     scan(d+1,fb)
@@ -103,10 +104,19 @@ def scan(d,ary)
 end
 
 
-
+def deepcount(ary)
+  cnt=1
+  if typeof(ary) == Array then
+    ary.each do |e|
+      cnt += deepcount(e)
+    end
+  end
+  return cnt
+end
 
 scan(0,ary)
 
+pp "DEEPCOUNT:", deepcount(ary)
 
 
 
