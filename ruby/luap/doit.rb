@@ -8,6 +8,7 @@ comments = eval( cmd( "ruby lua-parser/lua2sexp -c #{f}" ) )
 
 $calls=Hash.new(0)
 
+$outary=[]
 
 def logDefn(up,cur,sz,md )
   if up then
@@ -25,9 +26,9 @@ def logDefn(up,cur,sz,md )
   curary.shift if upary  # omit local var name typically
 
   if upary then
-    print( {:action=>"funcdef", :up=>upary[0], :name=>curary[0], :size=>sz, :sha1=>md }.to_json,"\n")
+    $outary.push( {:action=>"funcdef", :up=>upary[0], :name=>curary[0], :size=>sz, :sha1=>md } )
   else
-    print( {:action=>"gfuncdef", :up=>nil, :name=>curary[0],:size=>sz, :sha1=>md }.to_json,"\n")
+    $outary.push( {:action=>"gfuncdef", :up=>nil, :name=>curary[0],:size=>sz, :sha1=>md } )
   end
 end
 
@@ -102,7 +103,7 @@ def scan(d,ary)
   when :str
     s=ary[1]
     if s =~ /\%/ or s =~ /\*/ or s =~ /\$$/ or s =~ /^\^/ then
-      print( { :action=>"pattern", :val=>s}.to_json,"\n" )
+      $outary.push( { :action=>"pattern", :val=>s} )
     end
   else
     ary[1..-1].each do |e|
@@ -126,7 +127,7 @@ end
 
 scan(0,ary)
 
-print( { :action=>"total", :size=> deepcount(ary) }.to_json , "\n" )
+$outary.push( { :action=>"total", :size=> deepcount(ary) } )
 
 
 
@@ -136,10 +137,12 @@ print( { :action=>"total", :size=> deepcount(ary) }.to_json , "\n" )
 
 
 $calls.valsort.reverse.each do |name,cnt|
-  print( { :action=>"call", :name=>name, :count => cnt }.to_json ,"\n")
+  $outary.push( { :action=>"call", :name=>name, :count => cnt } )
 end
 
 comments[1..-1].each do |c|
   content = c[1]
-  print( { :action=>"comment", :val=>content}.to_json,"\n")
+  $outary.push( { :action=>"comment", :val=>content} )
 end
+
+pp $outary
