@@ -2,6 +2,8 @@
 require "../rumino/rumino"
 require "pp"
 
+$KCODE='u'
+
 f=ARGV[0]
 cmd( "ulimit -s unlimited")
 ary = eval( cmd( "ruby lua-parser/lua2sexp -a #{f}" ) )
