@@ -9,7 +9,7 @@ comments = eval( cmd( "ruby lua-parser/lua2sexp -c #{f}" ) )
 $calls=Hash.new(0)
 
 
-def logDefn(up,cur,sz )
+def logDefn(up,cur,sz,md )
   if up then
     upary = up[1][1..-1]
     upary.push(up[2]) if up[2]
@@ -25,9 +25,9 @@ def logDefn(up,cur,sz )
   curary.shift if upary  # omit local var name typically
 
   if upary then
-    print( {:action=>"funcdef", :up=>upary[0], :name=>curary[0], :size=>sz}.to_json,"\n")
+    print( {:action=>"funcdef", :up=>upary[0], :name=>curary[0], :size=>sz, :sha1=>md }.to_json,"\n")
   else
-    print( {:action=>"gfuncdef", :up=>nil, :name=>curary[0],:size=>sz}.to_json,"\n")
+    print( {:action=>"gfuncdef", :up=>nil, :name=>curary[0],:size=>sz, :sha1=>md }.to_json,"\n")
   end
 end
 
@@ -54,7 +54,7 @@ def scan(d,ary)
       else
         origun = nil
       end
-      logDefn($uppername,fname, deepcount(fb) )
+      logDefn($uppername,fname, deepcount(fb), sha1(fb.to_s) )
       $uppername = fname
     end
     scan(d+1,fb)
