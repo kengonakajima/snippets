@@ -4,7 +4,7 @@ require "pp"
 
 f=ARGV[0]
 ary = eval( cmd( "ruby lua-parser/lua2sexp -a #{f}" ) )
-
+comments = eval( cmd( "ruby lua-parser/lua2sexp -c #{f}" ) )
 
 $calls=Hash.new(0)
 
@@ -99,6 +99,11 @@ def scan(d,ary)
     if explist then
       explist[1..-1].each do |e| scan(d+1,e) end
     end
+  when :str
+    s=ary[1]
+    if s =~ /\%/ or s =~ /\*/ or s =~ /\$$/ or s =~ /^\^/ then
+      print( { :action=>"pattern", :val=>s}.to_json,"\n" )
+    end
   else
     ary[1..-1].each do |e|
       if typeof(e)==Array then
@@ -134,5 +139,7 @@ $calls.valsort.reverse.each do |name,cnt|
   print( { :action=>"call", :name=>name, :count => cnt }.to_json ,"\n")
 end
 
-
-
+comments[1..-1].each do |c|
+  content = c[1]
+  print( { :action=>"comment", :val=>content}.to_json,"\n")
+end
