@@ -103,9 +103,9 @@ def scan(d,ary)
     end
   when :str
     s=ary[1]
-    if s =~ /\%/ or s =~ /\*/ or s =~ /\$$/ or s =~ /^\^/ then
-      $outary.push( { :action=>"pattern", :val=>s} )
-    end
+#    if s =~ /\%/ or s =~ /\*/ or s =~ /\$$/ or s =~ /^\^/ then
+      $outary.push( { :action=>"strlit", :val=>s} )
+#    end
   else
     ary[1..-1].each do |e|
       if typeof(e)==Array then
