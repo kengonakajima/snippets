@@ -9,7 +9,7 @@ ary = eval( cmd( "ruby lua-parser/lua2sexp -a #{f}" ) )
 $calls=Hash.new(0)
 
 
-def logDefn(up,cur)
+def logDefn(up,cur,sz )
   if up then
     upary = up[1][1..-1]
     upary.push(up[2]) if up[2]
@@ -25,9 +25,9 @@ def logDefn(up,cur)
   curary.shift if upary  # omit local var name typically
 
   if upary then
-    print "DEFUN: #{upary} . #{curary}\n"
+    print( {:action=>"funcdef", :up=>upary[0], :name=>curary[0], :size=>sz}.to_json,"\n")
   else
-    print "DEFGFUN: #{curary}\n"
+    print( {:action=>"gfuncdef", :up=>nil, :name=>curary[0],:size=>sz}.to_json,"\n")
   end
 end
 
@@ -54,8 +54,7 @@ def scan(d,ary)
       else
         origun = nil
       end
-      logDefn($uppername,fname)
-      pp "FDEEP:", deepcount(fb)
+      logDefn($uppername,fname, deepcount(fb) )
       $uppername = fname
     end
     scan(d+1,fb)
@@ -77,7 +76,7 @@ def scan(d,ary)
     ary[1..-1].each do |e| scan(d+1,e) end
   when :call
     pf,meth,args = ary[1],ary[2],ary[3]
-    pp pf, meth, args
+#    pp pf, meth, args
     if pf[0]==:prefixexp and pf[1][0] == :var and pf[1][1][0]==:name then
       if pf[1][1][1] == :require then
         if args[0]==:args and args[1][0] == :explist and args[1][1][0] == :exp and args[1][1][1][0] ==:str then
@@ -91,7 +90,7 @@ def scan(d,ary)
         else
           lastname = pf[1][1][-1].to_s
         end
-        print "CALL-LASTNAME:", lastname, "\n"
+#        print "CALL-LASTNAME:", lastname, "\n"
         $calls[lastname]+=1
       end
     end
@@ -116,7 +115,7 @@ end
 
 scan(0,ary)
 
-pp "DEEPCOUNT:", deepcount(ary)
+print( { :action=>"total", :size=> deepcount(ary) }.to_json , "\n" )
 
 
 
@@ -126,7 +125,7 @@ pp "DEEPCOUNT:", deepcount(ary)
 
 
 $calls.valsort.reverse.each do |name,cnt|
-  p "CALL: #{name}: #{cnt}"
+  print( { :action=>"call", :name=>name, :count => cnt }.to_json ,"\n")
 end
 
 
