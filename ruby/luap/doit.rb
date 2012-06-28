@@ -3,6 +3,7 @@ require "../rumino/rumino"
 require "pp"
 
 f=ARGV[0]
+cmd( "ulimit -s unlimited")
 ary = eval( cmd( "ruby lua-parser/lua2sexp -a #{f}" ) )
 comments = eval( cmd( "ruby lua-parser/lua2sexp -c #{f}" ) )
 
