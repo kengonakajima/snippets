@@ -76,7 +76,7 @@ def scan(d,ary)
     ary[1..-1].each do |e| scan(d+1,e) end
   when :call
     pf,meth,args = ary[1],ary[2],ary[3]
-#    pp pf, meth, args
+#    pp "PPPPPP", pf, meth, args
     if pf[0]==:prefixexp and pf[1][0] == :var and pf[1][1][0]==:name then
       if pf[1][1][1] == :require then
         if args[0]==:args and args[1][0] == :explist and args[1][1][0] == :exp and args[1][1][1][0] ==:str then
@@ -98,6 +98,12 @@ def scan(d,ary)
     explist = args[1]
     if explist then
       explist[1..-1].each do |e| scan(d+1,e) end
+    end
+  else
+    ary[1..-1].each do |e|
+      if typeof(e)==Array then
+        scan(d+1,e)
+      end
     end
   end
 end
