@@ -7,3 +7,6 @@
 [submodule "ruby/luap/lua-parser"]
 	path = ruby/luap/lua-parser
 	url = git@github.com:kengonakajima/lua-parser.git
+[submodule "luvit/luvit-websocket"]
+	path = luvit/luvit-websocket
+	url = git@github.com:kengonakajima/luvit-websocket.git

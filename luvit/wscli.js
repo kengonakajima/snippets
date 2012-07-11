@@ -1,6 +1,6 @@
 if( "WebSocket" in window ) {
     var cnt=0;
-    var ws = new WebSocket("ws://localhost:8080/","echo-protocol");
+    var ws = new WebSocket("ws://localhost:8080/ws","echo-protocol");
     console.log(ws);
     ws.onopen = function() {
         console.log("onopen");
