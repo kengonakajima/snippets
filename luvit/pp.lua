@@ -135,6 +135,24 @@ end
 
 
 --
+-- Simple wrapper to handle the hook.  You should not
+-- be calling this directly. Duplicated to reduce overhead.
+--
+function _profiler_hook_wrapper_by_call(action)
+  if _profiler.running == nil then
+    debug.sethook( nil )
+  end
+  _profiler.running:_internal_profile_by_call(action)
+end
+function _profiler_hook_wrapper_by_time(action)
+  if _profiler.running == nil then
+    debug.sethook( nil )
+  end
+  _profiler.running:_internal_profile_by_time(action)
+end
+
+
+--
 -- This function starts the profiler.  It will do nothing
 -- if this (or any other) profiler is already running.
 --
@@ -148,8 +166,10 @@ function _profiler.start(self)
   self.callstack = {}
   if self.variant == "time" then
     self.lastclock = os.clock()
-    debug.sethook( _profiler_hook_wrapper_by_time, "", self.sampledelay )
+    print("sethook0")    
+    debug.sethook( _profiler_hook_wrapper_by_time, "c", self.sampledelay )
   elseif self.variant == "call" then
+    print("sethook1")
     debug.sethook( _profiler_hook_wrapper_by_call, "cr" )
   else
     print("Profiler method must be 'time' or 'call'.")
@@ -173,22 +193,6 @@ function _profiler.stop(self)
 end
 
 
---
--- Simple wrapper to handle the hook.  You should not
--- be calling this directly. Duplicated to reduce overhead.
---
-function _profiler_hook_wrapper_by_call(action)
-  if _profiler.running == nil then
-    debug.sethook( nil )
-  end
-  _profiler.running:_internal_profile_by_call(action)
-end
-function _profiler_hook_wrapper_by_time(action)
-  if _profiler.running == nil then
-    debug.sethook( nil )
-  end
-  _profiler.running:_internal_profile_by_time(action)
-end
 
 
 --
@@ -204,7 +208,7 @@ function _profiler._internal_profile_by_call(self,action)
     return
   end
   
-  --SHG_LOG("[_profiler._internal_profile] "..(caller_info.name or "<nil>"))
+  print("[_profiler._internal_profile] "..(caller_info.name or "<nil>"))
 
   -- Retrieve the most recent activation record...
   local latest_ar = nil
@@ -609,7 +613,7 @@ _profiler.prevented_functions = {
   [_profiler._internal_profile_by_time] = 2,
   [_profiler._internal_profile_by_call] = 2,
   [_profiler_hook_wrapper_by_time] = 2,
-  [_profiler_hook_wrapper_by_call] = 2,
+--  [_profiler_hook_wrapper_by_call] = 2,
   [_profiler.prevent] = 2,
   [_profiler._get_func_rec] = 2,
   [_profiler.report] = 2,
