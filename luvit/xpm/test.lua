@@ -1,11 +1,6 @@
 local string = require("string")
 local table = require("table")
 
--- t
-
--- 幅 高さ 色数 １色当たりのバイト数
-
-
 function XPMImage(w,h)
   local img = {}
   img.colors = {}
