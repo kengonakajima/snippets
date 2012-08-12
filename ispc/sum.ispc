@@ -1,7 +1,7 @@
 export uniform float fsum( uniform float vin[], uniform int n ) {
   float tot = 0;
   foreach( index=0 ... n ) {
-    tot += vin[index];
+    tot += sqrt(vin[index]);
   }
   return reduce_add(tot);
 }

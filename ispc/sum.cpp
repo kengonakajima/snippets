@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 
 float fsum( float *vin, int n ) {
     float tot=0;
     for(int i=0;i<n;i++){
-        tot += vin[i];
+        tot += sqrt(vin[i]);
     }
     return tot;    
 }
