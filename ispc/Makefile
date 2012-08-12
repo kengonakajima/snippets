@@ -1,6 +1,6 @@
 ISPC=/Users/ringo/bin/ispc
 
-all: sumcpp sumispc isumcpp isumispc hitcpp
+all: sumcpp sumispc isumcpp isumispc hitcpp hitispc
 
 sumcpp: sum.cpp
 	g++ sum.cpp -o sumcpp
@@ -18,6 +18,10 @@ isumispc: isumispc.cpp isum.ispc
 
 hitcpp: hit.cpp
 	g++ hit.cpp -o hitcpp
+
+hitispc: hitispc.cpp
+	$(ISPC) -O2 --arch=x86-64 --target=sse4 -h hit_ispc.h -o hit_ispc.o hit.ispc 
+	g++ hitispc.cpp -o hitispc hit_ispc.o
 
 clean:
 	rm sumispc sumcpp

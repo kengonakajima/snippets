@@ -3,32 +3,33 @@
 #include <math.h>
 
 
-class Point
+struct Point
 {
-public:
     float x,y;
-    void randomize() {
-        x = (random() % 100)/100.0f;
-        y = (random() % 100)/100.0f;
-    }
-    Point* hit(Point*points, int n) {
-        for(int i=0;i<n;i++){
-            Point *tgt = & points[i];
-            float d=4;
-            if( this->x+d > tgt->x-d && this->x-d < tgt->x+d && this->y+d > tgt->y-d && this->y-d < tgt->y+d ) {
-                return tgt;
-            }
-        }
-        return NULL;
-    }
 };
+
+void randomize(Point *p) {
+    p->x = (random() % 100)/100.0f;
+    p->y = (random() % 100)/100.0f;
+}
+
+Point* hit(Point *p, Point*points, int n) {
+    for(int i=0;i<n;i++){
+        Point *tgt = & points[i];
+        float d=4;
+        if( p->x+d > tgt->x-d && p->x-d < tgt->x+d && p->y+d > tgt->y-d && p->y-d < tgt->y+d ) {
+            return tgt;
+        }
+    }
+    return NULL;
+}
 
 
 void hitall( Point*points, Point**hits, int n ) {
     int i;
     for(i=0;i<n;i++){
         Point *p = & points[i];
-        Point *hitpt = p->hit(points,n);
+        Point *hitpt = hit(p,points,n);
         hits[i] = hitpt;
     }
 }
@@ -38,7 +39,7 @@ void hitall( Point*points, Point**hits, int n ) {
 void doit(int n ) {
     Point *points = (Point*)malloc( sizeof(Point)*n);
     for(int i=0;i<n;i++){
-        points[i].randomize();
+        randomize( & points[i] );
     }
     Point **hits = (Point**)malloc( sizeof(Point*)*n);
     for(int i=0;i<n;i++){
