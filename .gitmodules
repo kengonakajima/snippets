@@ -14,3 +14,6 @@
 [submodule "moai/lumino"]
 	path = moai/lumino
 	url = git@github.com:kengonakajima/lumino.git
+[submodule "c/cumino"]
+	path = c/cumino
+	url = git@github.com:kengonakajima/cumino.git
