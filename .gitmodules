@@ -10,3 +10,7 @@
 [submodule "luvit/luvit-websocket"]
 	path = luvit/luvit-websocket
 	url = git@github.com:kengonakajima/luvit-websocket.git
+
+[submodule "moai/lumino"]
+	path = moai/lumino
+	url = git@github.com:kengonakajima/lumino.git

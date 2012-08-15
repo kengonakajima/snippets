@@ -19,7 +19,7 @@ isumispc: isumispc.cpp isum.ispc
 hitcpp: hit.cpp
 	g++ hit.cpp -o hitcpp
 
-hitispc: hitispc.cpp
+hitispc: hitispc.cpp hit.ispc
 	$(ISPC) -O2 --arch=x86-64 --target=sse4 -h hit_ispc.h -o hit_ispc.o hit.ispc 
 	g++ hitispc.cpp -o hitispc hit_ispc.o
 
