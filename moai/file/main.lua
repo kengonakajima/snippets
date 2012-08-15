@@ -1,6 +1,6 @@
 --
 
-require("lumino")
+
 
 path = "dir/dir2/sol.png"
 
@@ -20,14 +20,13 @@ print("test ok")
 
 n = 5000
 
-t = measure( function()
-    for i=1,n do
-      b = MOAIDataBuffer.new()
-      b:load(path)
-      sha1 = crypto.evp.new("sha1")
-      s = sha1:digest( b:getString())
-      assert( s == "5503856fe2d30d95332a7e4be12ad53d07865fa4" )
-    end
-  end)
 
-print("total time:", t )
+for i=1,n do
+  b = MOAIDataBuffer.new()
+  b:load(path)
+  sha1 = crypto.evp.new("sha1")
+  s = sha1:digest( b:getString())
+  assert( s == "5503856fe2d30d95332a7e4be12ad53d07865fa4" )
+end
+
+
