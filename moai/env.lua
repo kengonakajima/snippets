@@ -1,7 +1,11 @@
-print( "devname:", MOAIEnvironment.getDevName() )
-print( "devmodel:", MOAIEnvironment.getDevModel() )
-print( "devproduct:", MOAIEnvironment.getDevProduct() )
-print( "osver:", MOAIEnvironment.getOSVersion() )
+
+
+print( "devname:", MOAIEnvironment.devName )
+print( "devmodel:", MOAIEnvironment.devModel )
+print( "devproduct:", MOAIEnvironment.devProduct )
+print( "osver:", MOAIEnvironment.osVersion )
+print( "osbrand:", MOAIEnvironment.osBrand )
+print( "country:", MOAIEnvironment.countryCode )
 
 print( "moaiapp:", MOAIApp )
 
