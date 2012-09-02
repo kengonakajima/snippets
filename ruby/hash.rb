@@ -9,4 +9,10 @@ a = {
   }
 }
 
-print a
+print a,"\n"
+
+sh = a.sort do |x,y|
+  x[0] <=> y[0]
+end
+
+print sh, "\n"
