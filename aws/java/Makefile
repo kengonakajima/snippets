@@ -1,11 +1,12 @@
-AWS=/Users/ringo/aws/aws-java-sdk-1.3.18/lib/aws-java-sdk-1.3.18.jar
+AWS=./aws-java-sdk-1.3.18.jar
 all:
-	javac -classpath $(AWS)  ArchiveUploadHighLevel.java  2>&1| ~/bin/nkf -w
+#	javac -classpath $(AWS)  ArchiveUploadHighLevel.java  2>&1| ~/bin/nkf -w
+	javac -classpath $(AWS)  ArchiveUploadHighLevel.java 
 
 run:
 #	java -classpath $(AWS) ArchiveUploadHighLevel
-#	java -cp $(AWS) ArchiveUploadHighLevel
-	java  -cp . ArchiveUploadHighLevel 
+
+	java  -cp $(AWS) ArchiveUploadHighLevel 
 
 
 cps:
