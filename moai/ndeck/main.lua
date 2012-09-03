@@ -18,7 +18,7 @@ Sim.pushRenderPass(layer)
 
 -------------------------------
 
-ndeck = 300
+ndeck = 2
 n = 1500
 dur = 10
 
