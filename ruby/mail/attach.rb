@@ -10,8 +10,8 @@ require "kconv"
 require 'digest/sha1'
 
 
-fn = "../../moai/sol.png"
-pngdata = File.open( fn,"r").read
+pngdata = File.open( "../../moai/sol.png","r").read
+pdfdata = File.open( "./0x10c.pdf","r").read
 
 
 begin
@@ -42,6 +42,12 @@ begin
   text += "Content-Transfer-Encoding: base64\n"
   text += "\n"
   text += [pngdata].pack("m") # base64 encode
+  text += "--" + boundary + "\n"
+  text += "Content-Type: application/octet-stream; name=\"0x10c.pdf\"\n"
+  text += "Content-Disposition: attachment; filename=\"0x10c.pdf\"\n"
+  text += "Content-Transfer-Encoding: base64\n"
+  text += "\n"
+  text += [pdfdata].pack("m")
   text += "--" + boundary + "--\n"
 
 
