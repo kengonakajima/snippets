@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <wchar.h>
 
 int main(){
     wchar_t hoge;
@@ -10,5 +11,6 @@ printf("size:%d\n", (int)sizeof(hoge));
     for(int i=0;i<20;i++){
         printf("%d:%x\n", i, v[i] );
     }
+    printf("Len:%d\n", wcslen(s) );
     
 }

@@ -19,5 +19,15 @@ int main(){
     }
     et = now();
     print("qtot:%f t:%f", tot, (et-st));
+
+    st = now();
+    tot=0;
+    for(int i=0;i<n;i++){
+        tot += i;
+    }
+    et = now();
+    print("itot:%f t:%f", tot, (et-st));
+
+
     return 0;
 }
