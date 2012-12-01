@@ -2,6 +2,7 @@ require "rubygems"
 require "sinatra"
 require "erb"
 require "json"
+require "slim"
 
 helpers do
   def mul(x)
@@ -26,4 +27,8 @@ end
 
 not_found do
   "not found!!!!!!!!!!"
+end
+
+get "/slim" do
+  slim :s, :locals => { :localpoo => 23456, :agent => request.user_agent, :lang => request.env["HTTP_ACCEPT_LANGUAGE"] }
 end
