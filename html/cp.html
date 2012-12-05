@@ -1,0 +1,34 @@
+<html>
+  <head>
+    <script type="text/javascript" src="jquery.js" charset="utf-8"></script>    
+  </head>
+  <body>
+    <div id="hoge"> XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</div>
+    <div id="fuga"> FFFFFFFFFFFFFFFFFFFFFFFF</div>
+    <textarea id="tapoo">text area text area</textarea>
+  </body>
+  <script type="text/javascript">
+    $(document).ready( function() {
+
+    });
+    $(document).click( function() {
+      console.log("click on doc");
+      // non-IE
+      if( window.getSelection ) {
+        var selObj = window.getSelection();
+        var selRange = selObj.getRangeAt(0);
+        var newElement = document.createElement("b");
+        var documentFragment = selRange.extractContents();
+        newElement.appendChild(documentFragment);
+        selRange.insertNode(newElement);
+      }    
+    });
+
+    $("#fuga").click( function() {
+      console.log("click on fuga");
+      $("#fuga").html("    <textarea >text area text area</textarea>" );
+      return false;
+    });
+
+  </script>
+</html>
