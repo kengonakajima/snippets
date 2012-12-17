@@ -25,7 +25,8 @@
     });
 
     $("#fuga").click( function() {
-      console.log("click on fuga");
+      var h = $("#fuga").html();
+      console.log("click on fuga. html:", h );
       $("#fuga").html("    <textarea >text area text area</textarea>" );
       return false;
     });
