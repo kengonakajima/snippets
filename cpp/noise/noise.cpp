@@ -29,7 +29,7 @@ float noise(int x) {
 int main() {
     float x0=0,x1=0,x2=0;
     float dx0=0.1,dx1=0.1,dx2=0.1;
-    for(int i=0;i<100;i++) {
+    for(int i=0;i<200;i++) {
         x0 += dx0;
         x1 += dx1;
         x2 += dx2;

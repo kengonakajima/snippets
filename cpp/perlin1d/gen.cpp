@@ -1,13 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-inline double rnd() {
-    return (double)rand() / (double)(RAND_MAX);
-}
 
-// 
+// generate 1-dimensional perlin noise with no special magical optimization
 void perlin1D( float *out, int n ) {
-    
     float *tables[30];
     int tablesz[30];
     int tn = n;
@@ -20,7 +16,7 @@ void perlin1D( float *out, int n ) {
         tablesz[i] = tn+1;
         units[i] = u;
         for(int j=0;j<tn+1;j++) {
-            tables[i][j] = rnd();
+            tables[i][j] = (float)rand() / (float)(RAND_MAX);
         }
         u *= 2;
         tn /= 2;
