@@ -1,4 +1,4 @@
-var connection = new WebSocket('ws://localhost:8999/echo', ['binary'] );
+var connection = new WebSocket('ws://106.187.55.104:8999/echo', ['binary'] );
 connection.binaryType = "arraybuffer";
 console.log("ws", connection);
 
@@ -15,6 +15,7 @@ connection.onmessage = function (e) {
     var dv = new DataView(e.data);
     for(var i=0;i<e.data.byteLength;i++) {
         console.log("byte:",i,dv.getInt8(i) );
+        $("#log").append( "byte:" + i + "," + dv.getInt8(i) + " <br>" );
     }
 };
 
