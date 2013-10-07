@@ -1,0 +1,2 @@
+all:
+	tsc hoge.ts
