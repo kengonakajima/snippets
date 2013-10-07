@@ -57,16 +57,12 @@ public:
 };
 class Skeleton : public Enemy {
 public:
-    int hp;
-    double dec_hp_at;
+    int cnt;
     static bool skeletonPoll( Skeleton *self, double dt ) {
-        if( self->accum_time > self->dec_hp_at ) {
-            self->hp --;
-            self->dec_hp_at = self->accum_time + 2;
-        }
+        self->cnt ++;
         return true;
     }
-    Skeleton() : Enemy(), hp(100000), dec_hp_at(2) {
+    Skeleton() : Enemy(), cnt(0) {
         Enemy::callback = (bool (*)(Enemy*,double))skeletonPoll;
     }
 };
@@ -74,7 +70,7 @@ public:
 
 int main( int argc, char **argv ) {
     // init
-    int n = 100000;
+    int n = 10000;
     Base *top=NULL;
     for(int i=0;i<n;i++){
         Skeleton *s = new Skeleton();
@@ -83,14 +79,24 @@ int main( int argc, char **argv ) {
     }
 
     // loop
-    int ln = 1000000000;
-    Base *cur = top;
-    for(int i=0;i<ln;i++) {
+    for(int i=0;i<100000;i++) {
+        Base *cur = top;
         while(cur) {
             cur->poll(0.016);
             cur = cur->next;
         }
     }
+
+    // fin
+    double tot=0;
+    Skeleton *s= (Skeleton*)top;
+    while(s) {
+        tot += s->cnt; 
+        s = (Skeleton*)s->next;
+    }
+    printf("tot:%f",tot);
+
+    
     return 0;
 }
 
