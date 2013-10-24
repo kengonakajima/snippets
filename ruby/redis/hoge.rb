@@ -1,7 +1,7 @@
 require "rubygems"
 require "redis"
-require "redis/list"
-require "redis/hash_key"
+#require "redis/list"
+#require "redis/hash_key"
 require "json"
 
 Redis.current = Redis.new(  :host=>"localhost", :port=>6379 )
