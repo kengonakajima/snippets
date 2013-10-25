@@ -11,11 +11,13 @@
 #include <errno.h>
 
 unsigned char dest_mac[6] = {
-    //           0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
-    0x90, 0x27, 0xe4, 0xfd, 0xa3, 0x17 // mbp win7
-           
+    //        0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
     //    0xb8, 0xf6, 0xb1, 0x14, 0xdb, 0x67 // retina mbp  
-    //    0x08, 0x00, 0x27, 0xa6, 0x34, 0x8a // VM(centos64local)
+    //    0x08, 0x00, 0x27, 0xa6, 0x34, 0x8a // VM on osx mbp (centos64local)
+         0x90, 0x27, 0xe4, 0xfd, 0xa3, 0x17 // mbp win7
+    
+    //     0x08, 0x00, 0x27, 0x3c, 0xae, 0x12 // VM on win7 mbp
+               
 };
 unsigned char src_mac[6] = {
     //0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
@@ -48,7 +50,7 @@ int main( int argc, char *argv ) {
 
         memset( &sll, 0, sizeof(sll));
         sll.sll_family = AF_PACKET;
-        sll.sll_protocol = htons( ETH_P_IP );// 何でもいい
+        sll.sll_protocol = 0;// htons( ETH_P_802_3 );// 何でもいい
         sll.sll_halen = ETH_ALEN;
         sll.sll_ifindex = ifr.ifr_ifindex;
         //sll.sll_pkttype = PACKET_BROADCAST;
@@ -65,8 +67,9 @@ int main( int argc, char *argv ) {
         for(i=0;i<6;i++) buffer[0+i] = dest_mac[i];
         for(i=0;i<6;i++) buffer[6+i] = src_mac[i];
         
-        buffer[12] = 0x00;
-        buffer[13] = 0x05;
+        buffer[12] = 0x05;
+        buffer[13] = 0x00;
+  
 
         buffer[14] = 'h';
         buffer[15] = 'e';
@@ -85,7 +88,8 @@ int main( int argc, char *argv ) {
             return 1;
         }
         printf( "sendlen:%d\n", sendlen );
-        sleep(1);
+        usleep(500*1000);
+        //        sleep(1);
         printf("loop %d..\n", cnt );
         cnt ++;
     }
