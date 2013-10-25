@@ -5,12 +5,26 @@
 #include <sys/ioctl.h> // ioctl, SIOCGIFINDEX
 #include <netpacket/packet.h> // struct sockaddr_ll
 #include <net/if_arp.h>
+#include <netinet/ip.h> // IPPROTO_RAW
 
 #include <string.h> // memset
 #include <errno.h>
 
+unsigned char dest_mac[6] = {
+    //           0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
+    0x90, 0x27, 0xe4, 0xfd, 0xa3, 0x17 // mbp win7
+           
+    //    0xb8, 0xf6, 0xb1, 0x14, 0xdb, 0x67 // retina mbp  
+    //    0x08, 0x00, 0x27, 0xa6, 0x34, 0x8a // VM(centos64local)
+};
+unsigned char src_mac[6] = {
+    //0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
+    // 0xb8, 0xf6, 0xb1, 0x14, 0xdb, 0x67 // retina mbp
+    0x08, 0x00, 0x27, 0xa6, 0x34, 0x8a // VM(centos64local)    
+};
+
 int main( int argc, char *argv ) {
-    int sockfd = socket( PF_PACKET, SOCK_RAW, htons( ETH_P_ALL ));   // need root
+    int sockfd = socket( PF_PACKET, SOCK_RAW, IPPROTO_RAW ); //htons( ETH_P_ALL ));   // need root
     if(sockfd<0) {
         perror("socket");
         return 1;
@@ -27,24 +41,45 @@ int main( int argc, char *argv ) {
     printf( "if index: %d\n", ifr.ifr_ifindex );
 
     int cnt=0;
+    int i;
     
     while(1){
         struct sockaddr_ll sll;
 
+        memset( &sll, 0, sizeof(sll));
         sll.sll_family = AF_PACKET;
-        sll.sll_protocol = htons( ETH_P_ALL );
+        sll.sll_protocol = htons( ETH_P_IP );// 何でもいい
         sll.sll_halen = ETH_ALEN;
         sll.sll_ifindex = ifr.ifr_ifindex;
-        sll.sll_pkttype = PACKET_BROADCAST; 
+        //sll.sll_pkttype = PACKET_BROADCAST;
+        sll.sll_pkttype = PACKET_OTHERHOST;
         sll.sll_hatype = ARPHRD_ETHER;
-        // b8:f6:b1:14:db:67
+        for(i=0;i<6;i++) sll.sll_addr[i] = src_mac[i];
 
-        printf("eth_alen:%d\n", ETH_ALEN );
-        
         int sendlen;
-        char buffer[5] = { 'h', 'e', 'l', 'l', 'o' };
+        char buffer[6+6+2+5+4];
+        memset( buffer, 0, sizeof(buffer));
+
+
         
-        sendlen = sendto( sockfd, buffer, 5, 0, (struct sockaddr*) &sll, sizeof(sll));
+        for(i=0;i<6;i++) buffer[0+i] = dest_mac[i];
+        for(i=0;i<6;i++) buffer[6+i] = src_mac[i];
+        
+        buffer[12] = 0x00;
+        buffer[13] = 0x05;
+
+        buffer[14] = 'h';
+        buffer[15] = 'e';
+        buffer[16] = 'l';
+        buffer[17] = 'l';
+        buffer[18] = 'o';
+        
+        buffer[19] = 0;
+        buffer[20] = 0;
+        buffer[21] = 0;
+        buffer[22] = 0;        
+            
+        sendlen = sendto( sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*) &sll, sizeof(sll));
         if( sendlen < 0 ) {
             perror("sendto");
             return 1;
@@ -53,7 +88,6 @@ int main( int argc, char *argv ) {
         sleep(1);
         printf("loop %d..\n", cnt );
         cnt ++;
-        if( cnt > 5 )break;
     }
     printf("finished\n");
 
