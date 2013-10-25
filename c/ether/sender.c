@@ -6,7 +6,6 @@
 #include <netpacket/packet.h> // struct sockaddr_ll
 #include <net/if_arp.h>
 
-#include <assert.h>
 #include <string.h> // memset
 #include <errno.h>
 
@@ -27,16 +26,8 @@ int main( int argc, char *argv ) {
     }
     printf( "if index: %d\n", ifr.ifr_ifindex );
 
-    struct sockaddr_ll sa;
-    sa.sll_family = AF_PACKET;
-    sa.sll_protocol = htons( ETH_P_ALL );
-    sa.sll_ifindex = ifr.ifr_ifindex;
-
-    if( bind( sockfd, (struct sockaddr*) &sa, sizeof(sa) ) < 0 ) {
-        perror( "bind" );
-        return 1;
-    }
-
+    int cnt=0;
+    
     while(1){
         struct sockaddr_ll sll;
 
@@ -44,8 +35,11 @@ int main( int argc, char *argv ) {
         sll.sll_protocol = htons( ETH_P_ALL );
         sll.sll_halen = ETH_ALEN;
         sll.sll_ifindex = ifr.ifr_ifindex;
-        sll.sll_pkttype = PACKET_BROADCAST;
+        sll.sll_pkttype = PACKET_BROADCAST; 
         sll.sll_hatype = ARPHRD_ETHER;
+        // b8:f6:b1:14:db:67
+
+        printf("eth_alen:%d\n", ETH_ALEN );
         
         int sendlen;
         char buffer[5] = { 'h', 'e', 'l', 'l', 'o' };
@@ -57,9 +51,11 @@ int main( int argc, char *argv ) {
         }
         printf( "sendlen:%d\n", sendlen );
         sleep(1);
-        printf("loop..\n");
+        printf("loop %d..\n", cnt );
+        cnt ++;
+        if( cnt > 5 )break;
     }
-
+    printf("finished\n");
 
     return 0;
 }
