@@ -1,0 +1,7 @@
+b0:c7:45:69:c0:24 router
+b8:f6:b1:14:db:67 retinambp
+08:00:27:a6:34:8a VMonosxmbp(centos64local)
+90:27:e4:fd:a3:17 mbpwin7
+08:00:27:3c:ae:12 VMonwin7  mbp
+
+

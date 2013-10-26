@@ -8,24 +8,25 @@
 #include <netinet/ip.h> // IPPROTO_RAW
 
 #include <string.h> // memset
+#include <ctype.h> // tolower
+#include <unistd.h>
 #include <errno.h>
 
-unsigned char dest_mac[6] = {
-    //        0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
-    //    0xb8, 0xf6, 0xb1, 0x14, 0xdb, 0x67 // retina mbp  
-    //    0x08, 0x00, 0x27, 0xa6, 0x34, 0x8a // VM on osx mbp (centos64local)
-    //         0x90, 0x27, 0xe4, 0xfd, 0xa3, 0x17 // mbp win7
-    
-         0x08, 0x00, 0x27, 0x3c, 0xae, 0x12 // VM on win7 mbp
-               
-};
-unsigned char src_mac[6] = {
-    //0xb0, 0xc7, 0x45, 0x69, 0xc0, 0x24 // router
-    // 0xb8, 0xf6, 0xb1, 0x14, 0xdb, 0x67 // retina mbp
-    0x08, 0x00, 0x27, 0xa6, 0x34, 0x8a // VM(centos64local)    
-};
 
-int main( int argc, char *argv ) {
+void getMacAddress( unsigned char *out, char *in ) {
+    if( strlen(in) != ( (6*3)-1 ) ) { perror("mac format"); }
+    int i;
+    for(i=0;i<6;i++) out[i] = strtol(in+(i*3), NULL, 16 );
+}
+
+int main( int argc, char **argv ) {
+    if( argc != 3 ) { printf("arg: sender SRCMAC DESTMAC\n"); return 1; }
+
+    unsigned char src_mac[6], dest_mac[6];
+
+    getMacAddress( src_mac, argv[1] );
+    getMacAddress( dest_mac, argv[2] );    
+                 
     int sockfd = socket( PF_PACKET, SOCK_RAW, IPPROTO_RAW ); //htons( ETH_P_ALL ));   // need root
     if(sockfd<0) {
         perror("socket");
