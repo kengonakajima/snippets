@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 
 #define error_exit(msg) { perror(msg); exit(1); }
@@ -37,7 +38,7 @@ int main( int argc, char **argv ) {
 
         while(1){
             char buf[100];
-            int readsz = read( cli_sockfd, buf, sizeof(buf));
+            int readsz = recv( cli_sockfd, buf, sizeof(buf), 0);
             if( readsz <= 0 ) {
                 printf("close client: %d\n", cli_sockfd );
                 close(cli_sockfd);
