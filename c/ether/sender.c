@@ -60,7 +60,7 @@ int main( int argc, char **argv ) {
         for(i=0;i<6;i++) sll.sll_addr[i] = src_mac[i];
 
         int sendlen;
-        char buffer[6+6+2+5+4];
+        char buffer[6+6+2+46+4];
         memset( buffer, 0, sizeof(buffer));
 
 
@@ -77,11 +77,12 @@ int main( int argc, char **argv ) {
         buffer[16] = 'l';
         buffer[17] = 'l';
         buffer[18] = 'o';
+        for(i=19;i<14+46;i++) buffer[i] = 0;
         
-        buffer[19] = 0;
-        buffer[20] = 0;
-        buffer[21] = 0;
-        buffer[22] = 0;        
+        buffer[60] = 0;
+        buffer[61] = 0;
+        buffer[62] = 0;
+        buffer[63] = 0;        
             
         sendlen = sendto( sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*) &sll, sizeof(sll));
         if( sendlen < 0 ) {
