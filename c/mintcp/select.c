@@ -2,7 +2,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <unistd.h> // read, write
+#include <unistd.h> // close
 
 #include <stdlib.h>
 
@@ -96,7 +96,7 @@ int main( int argc, char **argv ) {
                     if( FD_ISSET( g_sockets[i], &fds ) ) {
                         printf("readable: %d\n", g_sockets[i] );
                         char buf[1000];
-                        ret = read( g_sockets[i], buf, sizeof(buf));
+                        ret = recv( g_sockets[i], buf, sizeof(buf), 0);
                         if(ret<=0){
                             close( g_sockets[i] );
                             del_socket( g_sockets[i] );
@@ -104,7 +104,7 @@ int main( int argc, char **argv ) {
                             if( ret < sizeof(buf)-1 ) {
                                 buf[ret] = '\0';
                                 printf( "echo: '%s'\n", buf );
-                                write( g_sockets[i], buf, ret );
+                                send( g_sockets[i], buf, ret, 0 );
                             }
                         }
                             
