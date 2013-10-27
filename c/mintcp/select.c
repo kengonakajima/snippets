@@ -62,7 +62,7 @@ int main( int argc, char **argv ) {
     ret = bind( sockfd, (struct sockaddr *) &svaddr, sizeof(svaddr));
     if(ret<0) error_exit("bind");
 
-    ret = listen(sockfd,5);
+    ret = listen(sockfd,3);
     if(ret<0) error_exit("listen");
 
     while(1) {
