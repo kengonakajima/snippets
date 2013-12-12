@@ -16,7 +16,7 @@ public:
         loc.x = random();
         loc.y = random();
     }
-#if 1
+#if 0
     bool hit( Prop *tgt, float sz ) {
         if( abs( loc.x - tgt->loc.x ) < sz && abs(loc.y - tgt->loc.y ) < sz ) {
             return true;
@@ -25,7 +25,7 @@ public:
         }
     }
 #endif    
-#if 0    
+#if 1
     bool hit( Prop *tgt, float sz ) {
         float l = sqrt( (loc.x-tgt->loc.x) * (loc.x-tgt->loc.x)  + (loc.y-tgt->loc.y) * (loc.y-tgt->loc.y)  );
         if( l < sz ) {
@@ -34,7 +34,19 @@ public:
             return false;
         }
     }
-#endif    
+#endif
+
+#if 0
+    bool hit( Prop *tgt, float sz ) {
+        float l2 =  (loc.x-tgt->loc.x) * (loc.x-tgt->loc.x)  + (loc.y-tgt->loc.y) * (loc.y-tgt->loc.y)  ;
+        if( l2 < sz*sz ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+#endif
+
 #if 0
     bool hit( Prop *tgt, float sz ) {
         sz/=2.0;
