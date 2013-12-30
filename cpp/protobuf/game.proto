@@ -1,0 +1,12 @@
+package game;
+
+message Vec2 {
+  required float x = 1;
+  required float y = 2;
+}
+
+message UpdatePos {
+  required int32 char_id = 1;
+  required int32 motion_type = 2;
+  required Vec2 location = 3;
+}
