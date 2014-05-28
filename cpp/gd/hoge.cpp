@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <gd.h>
 
+#include "cumino.h"
+
 #define SCRW 640
 #define SCRH 480
 
@@ -23,12 +25,24 @@ int main ( int argc, char **argv ) {
   gdImageLine ( im, 0, 0, 32, 32, black );  
   gdImageLine ( im, 0, 32, 32, 0, red );  
 
-  // スプライトを描画
-  gdImageCopy( scr, im, 100,100, 0,0, 32,32 );
-  gdImageCopy( scr, im, 200,200, 0,0, 32,32 );
-  gdImageCopy( scr, im, 100,200, 0,0, 32,32 );    
+  int n = 5000;
+
+  for(int i=0;i<n;i++) {
+      for(int j=0;j<200;j++) {
+          int x = irange(0,600), y = irange(0,400);
+          gdImageCopy( scr, im, x,y, 0,0, 32,32 ); // スプライトを描画
+      }
+      //      gdImagePng ( scr, stdout );
+      void *out;
+      int sz;
+      out = gdImagePngPtr( scr, &sz );
+      //      print("outsz:%d",sz);
+      if( i==5) {
+          writeFile( "poo.png", (char*) out,sz );
+      }
+      gdFree(out);
+  }
   
-  gdImagePng ( scr, stdout );
 
   /* 作成したイメージを破棄する */
   gdImageDestroy ( im );
