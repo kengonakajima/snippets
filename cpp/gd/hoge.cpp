@@ -4,8 +4,8 @@
 
 #include "cumino.h"
 
-#define SCRW 640
-#define SCRH 480
+#define SCRW (640/2)
+#define SCRH (480/2)
 
 int main ( int argc, char **argv ) {
   gdImagePtr scr;
@@ -25,8 +25,8 @@ int main ( int argc, char **argv ) {
   gdImageLine ( im, 0, 0, 32, 32, black );  
   gdImageLine ( im, 0, 32, 32, 0, red );  
 
-  int n = 5000;
-
+  int n = 500;
+  double st = now();
   for(int i=0;i<n;i++) {
       for(int j=0;j<200;j++) {
           int x = irange(0,600), y = irange(0,400);
@@ -36,13 +36,15 @@ int main ( int argc, char **argv ) {
       void *out;
       int sz;
       out = gdImagePngPtr( scr, &sz );
-      //      print("outsz:%d",sz);
+      
       if( i==5) {
           writeFile( "poo.png", (char*) out,sz );
+          print("outsz:%d",sz);          
       }
       gdFree(out);
   }
-  
+  double et = now();
+  print("%.2f sec for %d loop, (%.1f/sec)", (et-st), n, (float)n / (float)(et-st) );
 
   /* 作成したイメージを破棄する */
   gdImageDestroy ( im );
