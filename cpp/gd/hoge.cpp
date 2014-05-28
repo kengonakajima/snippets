@@ -2,31 +2,37 @@
 #include <stdio.h>
 #include <gd.h>
 
+#define SCRW 640
+#define SCRH 480
+
 int main ( int argc, char **argv ) {
+  gdImagePtr scr;
   gdImagePtr im;
   int white,black,red;
 
-  /* 100x100 のイメージを作成する */
-  im = gdImageCreate ( 100, 100 );
 
-  /* 白色を割り当てる. 最初の割当だから, 白色が背景色になる */
-  white = gdImageColorAllocate ( im, 255, 255, 255 );
+  scr = gdImageCreate ( SCRW, SCRH ); // 出力
+  im = gdImageCreate ( 32,32 ); // スプライトのつもり
 
-  /* 黒色と赤色を割り当てる */
+  
+  white = gdImageColorAllocate ( im, 255, 255, 255 ); // 最初の割当だから, 白色が背景色になる 
   black = gdImageColorAllocate ( im,   0,   0,   0 );
   red   = gdImageColorAllocate ( im, 255,   0,   0 );
 
-  /* (0,0)-(100,100) に斜めの黒い線を描く */
-  gdImageLine ( im, 0, 0, 100, 100, black );  
+  // スプライトの絵を作る
+  gdImageLine ( im, 0, 0, 32, 32, black );  
+  gdImageLine ( im, 0, 32, 32, 0, red );  
 
-  /* (0,100)-(100,0) に斜めの赤い線を描く */
-  gdImageLine ( im, 0, 100, 100, 0, red );  
-
-  /* 標準出力にイメージを gif フォーマットで出力する */
-  gdImageGif ( im, stdout );
+  // スプライトを描画
+  gdImageCopy( scr, im, 100,100, 0,0, 32,32 );
+  gdImageCopy( scr, im, 200,200, 0,0, 32,32 );
+  gdImageCopy( scr, im, 100,200, 0,0, 32,32 );    
+  
+  gdImagePng ( scr, stdout );
 
   /* 作成したイメージを破棄する */
   gdImageDestroy ( im );
-
+  gdImageDestroy ( scr );
+  
   return ( 0 );
 }
