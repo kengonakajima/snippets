@@ -12,6 +12,7 @@ public:
     }
 };
 
+
 int main() {
     for(int i=0;i<100000000;i++) {
         printf("%s\n", Format( "%d %s", 5, "ringo" ).buf );
