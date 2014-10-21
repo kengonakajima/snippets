@@ -33,7 +33,7 @@
 
 #include "snappy-stubs-internal.h"
 
-typedef int ssize_t;
+//typedef int ssize_t;
 
 namespace snappy {
 namespace internal {
