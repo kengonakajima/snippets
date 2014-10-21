@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "cumino.h"
 #include "snappy/snappy-c.h"
+#include <jpeglib.h>
 
 int memCompressSnappy( char *out, int outlen, char *in, int inlen ) {
     size_t maxsz = snappy_max_compressed_length(inlen);
@@ -23,7 +24,13 @@ int memDecompressSnappy( char *out, int outlen, char *in, int inlen ) {
 int main() {
     int width = 256, height = 256;
     size_t image_size = width * height * 4;
-    unsigned char *image = (unsigned char*) malloc( width * height * 4 );
+    unsigned char *image = (unsigned char*) malloc( width * height * 4 ); // PNG用の画像
+    // JPEG用の画像
+    JSAMPARRAY jsimg = (JSAMPARRAY) malloc( sizeof(JSAMPROW) * height );
+    for(int y=0;y<height;y++) {
+        jsimg[y] = (JSAMPROW) malloc( sizeof(JSAMPLE)*3*width);
+    }
+    
     size_t snpsize = image_size * 2;
     char *snappied = (char*) malloc( snpsize);
     for(int i=0;i<100;i++) {
@@ -45,12 +52,16 @@ int main() {
             image[ii*4+0] = x%0xff;
             image[ii*4+1] = (y/16)*15;
             image[ii*4+2] = (x/16)*15;
-#endif            
+#endif
+
+            // JPEG用
+            jsimg[y][x*3+0] = x%0xff; 
+            jsimg[y][x*3+1] = y%0xff;
+            jsimg[y][x*3+2] = (x+y)%0xff;
         }
 
         double t1 = now();
-        
-
+        // LodePNG        
         std::vector<unsigned char> png;    
         unsigned e = lodepng::encode( png, image, width, height );
         if(e) {
@@ -65,17 +76,36 @@ int main() {
         fclose(fp);
 
         double t3 = now();
-        
-
+        // Snappy
         int sr = memCompressSnappy( snappied, snpsize, (char*) image, image_size );
 
         double t4 = now();
-
+        // LZ4
         int lr = memCompressLZ4( snappied, snpsize, (const char*)image, image_size );
-
         double t5 = now();
+
+        // libjpeg
+
+
+        struct jpeg_compress_struct cinfo;
+        struct jpeg_error_mgr jerr;
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_compress( &cinfo);
+        FILE *jfp = fopen( "hoge.jpg", "w");
+        jpeg_stdio_dest(&cinfo,jfp);
+        cinfo.image_width = width;
+        cinfo.image_height = height;
+        cinfo.input_components = 3;
+        cinfo.in_color_space = JCS_RGB;
+        jpeg_set_defaults( &cinfo);
+        jpeg_set_quality( &cinfo, 75, true );
+        jpeg_start_compress( &cinfo, true );
+        jpeg_write_scanlines( &cinfo, jsimg, height );
+        jpeg_finish_compress( &cinfo );
+        fclose(jfp);
+        double t6 = now();
         
-        print("img:%f png:%f pngsz:%d snp:%f snpsz:%d lz4:%f lz4sz:%d",t1-t0,t2-t1, writesz, t4-t3, sr, t5-t4, lr );
+        print("img:%f png:%f pngsz:%d snp:%f snpsz:%d lz4:%f lz4sz:%d jpeg:%f",t1-t0,t2-t1, writesz, t4-t3, sr, t5-t4, lr, t6-t5 );
         
         
     }
