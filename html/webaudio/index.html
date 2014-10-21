@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>SAMPLE</title>
+  </head>
+  <body>
+    hoge
+    <audio id="audio">ok?</audio>
+    hoge
+    <script>
+     navigator.getUserMedia = navigator.getUserMedia
+     || navigator.webkitGetUserMedia
+     || navigator.mozGetUserMedia;
+     window.AudioContext = window.AudioContext
+     || window.webkitAudioContext
+     || window.mozAudioContext;
+
+     navigator.getUserMedia({audio:true}, function(stream) {
+       var audio = document.getElementById('audio');
+       var context = new AudioContext();
+       var mediaStreamSource = context.createMediaStreamSource(stream);
+       var filter = context.createBiquadFilter();
+       mediaStreamSource.connect(filter);
+       filter.type = 0;
+       filter.frequency.value = 1000;
+       var delay = context.createDelay(1.0);
+       filter.connect(delay);
+       delay.connect(context.destination);
+     }, function() {
+       alert('error');
+     });
+    </script>
+  </body>
+</html>
