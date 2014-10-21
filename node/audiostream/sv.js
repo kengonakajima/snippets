@@ -17,6 +17,21 @@ var wss = new (require('ws').Server)({
 var buf = new Float32Array(8192);
 var idx = 0;
 
+var blllbuf = new Float32Array(1024*1024);
+var blllidx = 0;
+
+pcm.getPcmData( "blll.wav",
+                { stereo:false, sampleRate:44100 },
+                function(sample,channel) {
+                    blllbuf[blllidx++] = sample;
+                },
+                function(a,b) {
+                    console.log("bllll load finished. size:", blllidx);
+                }
+              );
+                
+
+
 wss.on('connection', function (ws) {
     console.log('connected');
     // モノラル、44.1kHz
@@ -41,5 +56,8 @@ wss.on('connection', function (ws) {
 
     ws.on('close', function () {
         console.log('close');
+    });
+    ws.on("message", function(data) {
+        console.log("data:",data);
     });
 });

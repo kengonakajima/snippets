@@ -6,9 +6,10 @@
 </head>
 
 <body>
-<span id="counter">hoge</span>
+kcode: <div id="counter">hoge</div>
   
 <script type="text/javascript">
+
 
 var ws = new WebSocket('ws://localhost:8888'),
     ctx = new (window.AudioContext||window.webkitAudioContext),
@@ -33,7 +34,7 @@ function playAudioStream(audio_f32) {
     audio_src.buffer = audio_buf;
     audio_src.connect(ctx.destination);
 
-    console.log( current_time, scheduled_time );
+//    console.log( current_time, scheduled_time );
     if (current_time < scheduled_time) {
         playChunk(audio_src, scheduled_time);
         scheduled_time += audio_buf.duration;
@@ -59,6 +60,13 @@ ws.onmessage = function(evt) {
     playAudioStream(new Float32Array(evt.data));
 };
 
+$(window).keydown( function(e) {
+ console.log("kcode:",e.keyCode);
+ $("#counter").text(e.keyCode);
+ ws.send( "keypress:" + e.keyCode );                      
+ return false;
+});
+                       
 </script>
 </body>
 </html>
