@@ -36,7 +36,7 @@ int main() {
             // rgbaにならべるが、メモリは、 abgrにならんでいるのと、上下逆
             image[ii*4+3] = 0xff; // alpha
 #if 0
-            // これでやるとsnappyの最悪ケースになるようだ。。
+            // これでやるとsnappyとlz4は、最悪ケースになるようだ。。
             image[ii*4+0] = x%0xff; // r
             image[ii*4+1] = y%0xff; // g 
             image[ii*4+2] = (x+y)%0xff; // b
@@ -70,8 +70,12 @@ int main() {
         int sr = memCompressSnappy( snappied, snpsize, (char*) image, image_size );
 
         double t4 = now();
+
+        int lr = memCompressLZ4( snappied, snpsize, (const char*)image, image_size );
+
+        double t5 = now();
         
-        print("img:%f png:%f pngsz:%d snp:%f snpsz:%d",t1-t0,t2-t1, writesz, t4-t3, sr );
+        print("img:%f png:%f pngsz:%d snp:%f snpsz:%d lz4:%f lz4sz:%d",t1-t0,t2-t1, writesz, t4-t3, sr, t5-t4, lr );
         
         
     }
