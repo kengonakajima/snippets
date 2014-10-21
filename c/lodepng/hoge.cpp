@@ -22,7 +22,8 @@ int memDecompressSnappy( char *out, int outlen, char *in, int inlen ) {
 
 
 int main() {
-    int width = 256, height = 256;
+    //    int width = 256, height = 256;
+    int width = 512, height = 384;    
     size_t image_size = width * height * 4;
     unsigned char *image = (unsigned char*) malloc( width * height * 4 ); // PNG用の画像
     // JPEG用の画像
