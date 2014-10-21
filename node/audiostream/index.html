@@ -33,6 +33,7 @@ function playAudioStream(audio_f32) {
     audio_src.buffer = audio_buf;
     audio_src.connect(ctx.destination);
 
+    console.log( current_time, scheduled_time );
     if (current_time < scheduled_time) {
         playChunk(audio_src, scheduled_time);
         scheduled_time += audio_buf.duration;
