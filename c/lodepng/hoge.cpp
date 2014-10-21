@@ -98,7 +98,7 @@ int main() {
         cinfo.input_components = 3;
         cinfo.in_color_space = JCS_RGB;
         jpeg_set_defaults( &cinfo);
-        jpeg_set_quality( &cinfo, 75, true );
+        jpeg_set_quality( &cinfo, 95, true );
         jpeg_start_compress( &cinfo, true );
         jpeg_write_scanlines( &cinfo, jsimg, height );
         jpeg_finish_compress( &cinfo );
