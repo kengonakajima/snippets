@@ -34,6 +34,7 @@ function playAudioStream(audio_f32) {
     audio_src.buffer = audio_buf;
     audio_src.connect(ctx.destination);
 
+//    console.log( "datalen:", audio_f32.length );
 //    console.log( current_time, scheduled_time );
     if (current_time < scheduled_time) {
         playChunk(audio_src, scheduled_time);
@@ -63,7 +64,7 @@ ws.onmessage = function(evt) {
 $(window).keydown( function(e) {
  console.log("kcode:",e.keyCode);
  $("#counter").text(e.keyCode);
- ws.send( "keypress:" + e.keyCode );                      
+ ws.send( e.keyCode );                      
  return false;
 });
                        
