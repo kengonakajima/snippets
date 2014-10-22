@@ -26,10 +26,7 @@ var mixbuf = new Float32Array(mixlen);
 // 送信用のバッファとmix用のバッファは別なので、常にバッファの先頭から書き込むのでOK
 // mixlenより長い音は再生できない
 function play(buf) {
-    console.log( "play: len:", buf.length );
-    
-    var i;
-    for(i=0;i<buf.length && i < mixlen ;i++) {
+    for(var i=0;i<buf.length && i < mixlen ;i++) {
         mixbuf[i] += buf[i];
     }
 }
@@ -81,7 +78,7 @@ pcm.getPcmData( "blll.wav",
                 
 
 // モノラル、44.1kHz
-pcm.getPcmData('nobara_hayakawa_trail_cc.mp3',
+pcm.getPcmData('gym1.mp3',
                { stereo: false, sampleRate: 44100 },
                function(sample, channel) {
                    bgmbuf[bgmidx++] = sample;
@@ -91,6 +88,18 @@ pcm.getPcmData('nobara_hayakawa_trail_cc.mp3',
                }
               );
 
+var bgm_idx=0;
+function bgmStreamCallback() {
+    var to_play = new Float32Array(sample_per_cb);
+    for(var i=0;i<sample_per_cb;i++) {
+        to_play[i] = bgmbuf[bgm_idx++];
+        if(bgm_idx>bgmbuf.length) {
+            bgm_idx=0;
+            console.log( "BGM looped!");
+        }
+    }
+    play(to_play);
+}
 
 function regConnection(c) {
     connections.push(c);
@@ -103,6 +112,7 @@ function delConnection(c) {
 wss.on('connection', function (ws) {
     console.log('connected');
     regConnection(ws);
+    setInterval( bgmStreamCallback, interval_ms );
     
     ws.on('close', function () {
         console.log('close');
@@ -114,7 +124,7 @@ wss.on('connection', function (ws) {
         if( data == 65 ) { // a
             play(blllbuf);            
         }
-        if( data == 66 ) {
+        if( data == 66 ) { // b
             var i;
             for(i=0;i<1000;i++) console.log( mixbuf[i] );
         }
