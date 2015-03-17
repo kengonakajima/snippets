@@ -1,1 +1,4 @@
 img*.jpg
+out*.jpg
+.DS_Store
+*.o
