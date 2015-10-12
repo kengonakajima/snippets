@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <!-- script type="text/javascript" src="jquery.js" charset="utf-8" --><!-- /script -->    
+  </head>
+  <body>
+    <div id="avail">avavavav</div>
+    <div id="log">logloglog</div>    
+  </body>
+  <script type="text/javascript">
+    function successCallback( pos ) {
+      console.log( "got pos:", pos );
+      var div = document.getElementById("log");
+      div.innerHTML = "lat:" + pos.coords.latitude + " long:" + pos.coords.longitude + " alt:" + pos.coords.altitude + " noise:" + pos.coords.accuracy + " head:" + pos.coords.heading + " sp:" + pos.coords.speed;
+    }
+    function errorCallback( e ) {
+      console.log( "error:", e );
+    }
+    if( navigator.geolocation ) {
+      console.log( "geolocation available" );
+      var div = document.getElementById("avail");
+      div.innerHTML = "available";
+
+      navigator.geolocation.getCurrentPosition( successCallback, errorCallback );
+    
+    } else {
+      console.log( "geolocation not available" );
+      var div = document.getElementById("avail");
+      div.innerHTML = "not available";    
+    }
+  </script>
+</html>
