@@ -2,7 +2,7 @@ LIBS=libavcodec.a libavutil.a libavformat.a  -lbz2 -framework CoreFoundation -fr
 
 CFLAGS=-I/usr/local/include/SDL -I/Users/ringo/tmp -I/Users/ringo/tmp/FFmpeg -D__STDC_CONSTANT_MACROS
 
-all: t1 t2 t3 t4 t5 t6
+all: t1 t2 t3 t4 t5 t6 ffplay
 
 t1: tutorial01.cpp cumino.o cumino.h
 	g++ -o t1 tutorial01.cpp $(LIBS)
@@ -16,9 +16,11 @@ t5: tutorial05gh.c
 	gcc -o t5 tutorial05gh.c $(LIBS) $(CFLAGS) -lSDL -lSDLmain -framework CoreGraphics -framework AppKit
 t6: tutorial06gh.c
 	gcc -o t6 tutorial06gh.c $(LIBS) $(CFLAGS) -lSDL -lSDLmain -framework CoreGraphics -framework AppKit
+ffplay: ffplay.c
+	gcc -o ffplay ffplay.c cmdutils.c $(LIBS) libavdevice.a libavfilter.a $(CFLAGS) -lSDL -lSDLmain -framework CoreGraphics -framework AppKit -framework CoreMedia -framework AVFoundation -framework QTKit
 
 cumino.o : cumino.cpp cumino.h
 	g++ -c cumino.cpp
 
 clean:
-	rm t1 t2 t3 t4 t5 t6
+	rm t1 t2 t3 t4 t5 t6 ffplay
