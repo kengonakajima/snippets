@@ -3,6 +3,7 @@ class A
 {
  public:
     virtual void x(){ printf("hoge\n");};
+    void y() { x(); }
 };
 
 class B : public A
@@ -18,5 +19,6 @@ int main()
 {
     B *b = new B();
     b->x();
+    b->y();
     
 }
