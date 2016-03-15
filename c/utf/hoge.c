@@ -21,4 +21,6 @@ int main( int argc, char **argv ) {
     res = ConvertUTF32toUTF8( (const UTF32**)&src32, src32+8, &work8, work8+8, 0 );
     printf("ptf:%p to %p\n", src32, src32+7);
     printf("res:%d out:%x %x %x %x %x %x %x %x\n",res,out8[0], out8[1], out8[2], out8[3], out8[4], out8[5], out8[6], out8[7] );
+    size_t outlen = work8 - out8;
+    printf("len:%d",outlen);
 }
