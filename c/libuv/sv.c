@@ -50,8 +50,16 @@ void on_new_connection(uv_stream_t *server, int status) {
     uv_tcp_init( uv_default_loop(), client);
     if (uv_accept(server, (uv_stream_t*) client) == 0) {
         uv_read_start((uv_stream_t*) client, alloc_buffer, echo_read);
-    }
-    else {
+#if 1 // write before any read happens
+        uv_buf_t wbuf;
+        wbuf.base = malloc(10);
+        memcpy( wbuf.base, "hogehoge\r\n", 10 );
+        wbuf.len = 10;
+        uv_write_t *write_req = (uv_write_t*)malloc(sizeof(uv_write_t));
+        write_req->data = (void*)wbuf.base;
+        uv_write(write_req, (uv_stream_t*)client, &wbuf, 1, echo_write );
+#endif        
+    } else {
         uv_close((uv_handle_t*) client, NULL);
     }
 }
