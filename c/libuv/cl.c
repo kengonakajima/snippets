@@ -3,7 +3,7 @@
 #include <uv.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <unistd.h>
 
 void alloc_buffer( uv_handle_t *handle, size_t suggested_size, uv_buf_t *outbuf ) {
     *outbuf = uv_buf_init( (char*) malloc(suggested_size), suggested_size );
@@ -30,6 +30,7 @@ void on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t *buf) {
         for(int i=0;i<nread;i++) {
             printf("%02x ", buf->base[i] );
         }
+#if 0        
         uv_write_t *wreq = (uv_write_t*)malloc(sizeof(uv_write_t));
         uv_buf_t wb;
         wb.base = (char*)malloc(nread);
@@ -37,6 +38,7 @@ void on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t *buf) {
         memcpy( wb.base, buf->base, nread );
         wb.base[0] = 0x40 + (rand()%20);        
         uv_write( wreq, tcp, &wb, 1, on_write );
+#endif        
 	} else {
 		//we got an EOF
         uv_close((uv_handle_t*)tcp, on_close);
@@ -46,6 +48,8 @@ void on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t *buf) {
 	free(buf->base);
 }
 
+
+uv_stream_t *g_stream;
 
 void on_connect(uv_connect_t* connection, int status) {
 	printf("connected.\n");
@@ -61,10 +65,20 @@ void on_connect(uv_connect_t* connection, int status) {
 
 	uv_write( request, stream, buffer, 2, on_write);
 	uv_read_start( stream, alloc_buffer, on_read);
+    g_stream = stream;
 }
 
-
-
+void writeSome( uv_stream_t *s ) { 
+    uv_write_t *wreq = (uv_write_t*)malloc(sizeof(uv_write_t));
+    uv_buf_t wb;
+    wb.base = (char*)malloc(8);
+    wb.len = 8;
+    strcpy( wb.base, "0123456" ); // 8 bytes
+    int r = uv_write( wreq, s, &wb, 1, on_write );
+    fprintf(stderr,"writeSome uv_write ret:%d",r);
+}
+            
+    
 int main() {
     uv_loop_t *loop = uv_default_loop();
 
@@ -82,6 +96,15 @@ int main() {
         fprintf(stderr, "error: uv_tcp_connect: ret:%d",r);
         return 1;
     }
-    return uv_run(loop, UV_RUN_DEFAULT);
+    int loopcnt=0;
+    while(1) {
+        usleep(1000);
+        loopcnt++;
+        if( loopcnt%1000==0 && g_stream ) {
+            writeSome(g_stream);
+        }
+        uv_run(loop, UV_RUN_NOWAIT);
+    }
+    return 0;
 }
 
