@@ -1,8 +1,6 @@
 // libuv 1.8.0 example
 
 #include <uv.h>
-
-#include <uv.h>
 #include <stdio.h>
 #include <stdlib.h>
 
