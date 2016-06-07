@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 void alloc_buffer( uv_handle_t *handle, size_t suggested_size, uv_buf_t *outbuf ) {
     *outbuf = uv_buf_init( (char*) malloc(suggested_size), suggested_size );
@@ -19,15 +20,15 @@ void on_write(uv_write_t* req, int status) {
     }
     printf("wrote.\n");
 	//uv_close((uv_handle_t*)req->handle, on_close);
-    free(req->data);
     free(req);
 }
 
 void on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t *buf) {
+    int i;
 	if(nread >= 0) {
 		//printf("read: %s\n", tcp->data);
 		printf("read len:%zu\n", nread );
-        for(int i=0;i<nread;i++) {
+        for(i=0;i<nread;i++) {
             printf("%02x ", buf->base[i] );
         }
 #if 0        
