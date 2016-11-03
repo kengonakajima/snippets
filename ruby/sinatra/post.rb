@@ -5,8 +5,8 @@ require "json"
 
 class MyServer  < Sinatra::Base
   post '/', provides: :json do
-	params = JSON.parse(request.body.read)
-    open( "saved." + DateTime.now.strftime( "%Y%m%d%H%M" ), 'a'){ |f| f.puts( params ) }
+	data = request.body.read
+    open( "saved." + DateTime.now.strftime( "%Y%m%d%H%M" ), 'a'){ |f| f.write(data) }
     end
 end
 
