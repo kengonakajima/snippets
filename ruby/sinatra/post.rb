@@ -1,8 +1,5 @@
 require 'sinatra/base'
 require 'webrick'
-require 'webrick/https'
-require 'hashie'
-require 'pathname'
 require "json"
 
 
