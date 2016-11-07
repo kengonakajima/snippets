@@ -8,7 +8,7 @@ end
 
 print "not running, start!\n"
 
-p = PidFile.new
+p = PidFile.new( :piddir => "/var/tmp", :pidfile => "hogehoge.pid" )
 
 puts p.pidfile
 puts p.piddir
