@@ -20,7 +20,6 @@ nv.addGraph(function() {
       .axisLabel('Voltage (v)')
       .tickFormat(d3.format('.0f'));
 
-  /* Done setting the chart up? Time to render it!*/
   var myData = sinAndCos();   //You need data...
 
   d3.select('#chart2 svg')    //Select the <svg> element you want to render the chart in.   
