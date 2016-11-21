@@ -34,34 +34,24 @@ nv.addGraph(function() {
  * Simple test data generator
  */
 function sinAndCos() {
-  var sin = [],sin2 = [],
-      cos = [];
 
-  //Data is represented as an array of {x,y} pairs.
-  for (var i = 0; i < 100; i++) {
-    sin.push({x: i, y: Math.sin(i/10)});
-    sin2.push({x: i, y: Math.sin(i/10) *0.25 + 0.5});
-    cos.push({x: i, y: .5 * Math.cos(i/10)});
-  }
-
-  //Line chart data should be sent as an array of series objects.
   return [
-    {
-      values: sin,      //values - represents the array of {x,y} data points
-      key: 'Sine Wave', //key  - the name of the series.
-      color: '#ff7f0e'  //color - optional: choose your own line color.
-    },
-    {
-      values: cos,
-      key: 'Cosine Wave',
-      color: '#2ca02c'
-    },
-    {
-      values: sin2,
-      key: 'Another sine wave',
-      color: '#7777ff',
-      area: true      //area - set to true if you want this line to turn into a filled area chart.
-    }
+      {
+          values: [{x:0,y:10}, {x:1,y:15},{x:2,y:8},{x:3,y:11},{x:4,y:18}],      //values - represents the array of {x,y} data points
+          key: 'magician', //key  - the name of the series.
+          color: '#ff7f0e'  //color - optional: choose your own line color.
+      },
+      {
+          values: [{x:0,y:3}, {x:1,y:7},{x:2,y:10},{x:3,y:14},{x:4,y:28}],     
+          key: 'fighter',
+          color: '#2ca02c'
+      },
+      {
+          values: [{x:0,y:1}, {x:1,y:2},{x:2,y:1},{x:3,y:3},{x:4,y:2}],     
+          key: 'druid',
+          color: '#7777ff'
+          //          area: true      //area - set to true if you want this line to turn into a filled area chart.
+      }
   ];
 }
 
