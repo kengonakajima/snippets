@@ -21,7 +21,7 @@ nv.addGraph(function() {
 //        .tickFormat(d3.time.day,1);
             
       .tickFormat(function(d) {
-        return d3.time.format('%Y-%m-%d')(new Date(d))
+          return d; //d3.time.format('%Y-%m-%d')(new Date(d))
       });
 
     
@@ -45,11 +45,11 @@ nv.addGraph(function() {
  */
 function sinAndCos() {
     var tf = d3.time.format("%Y-%m-%d");
-    var t0 = tf.parse("2016-10-10");
-    var t1 = tf.parse("2016-10-11");
-    var t2 = tf.parse("2016-10-12");
-    var t3 = tf.parse("2016-10-13");
-    var t4 = tf.parse("2016-10-14");
+    var t0 = "2016-10-10";
+    var t1 = "2016-10-11";
+    var t2 = "2016-10-12";
+    var t3 = "2016-10-13";
+    var t4 = "2016-10-14";
 
     console.log(t0,t1,t2,t3,t4);
     
