@@ -19,14 +19,24 @@ nv.addGraph(function() {
 //            new Date('2016-10-14')  // 終了日時
 //        ])    
 //        .tickFormat(d3.time.day,1);
-            
+//        .showMaxMin(false)
+//        .tickValues( function(values) {
+//            var a = [ d3.time.format('%Y-%m-%d')(new Date("2016-10-10")),
+//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-11")),
+//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-12")),
+//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-13")),
+//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-14"))
+//                    ];
+//            return a;
+//        })
+//    ;
       .tickFormat(function(d) {
-          d3.time.format('%Y-%m-%d')(new Date(d));
+          return d3.time.format('%Y-%m-%d')(new Date(d));
       });
-
+    ;
     
   chart.yAxis     //Chart y-axis settings
-      .axisLabel('Voltage (v)')
+      .axisLabel('Voltage (v)')    
       .tickFormat(d3.format('.0f'));
 
   /* Done setting the chart up? Time to render it!*/
