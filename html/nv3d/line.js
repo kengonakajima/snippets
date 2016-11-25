@@ -13,23 +13,16 @@ nv.addGraph(function() {
 
   chart.xAxis     //Chart x-axis settings
       .axisLabel('Date')
-//    .tickFormat(d3.format(',r'));
-//        .domain([
-//            new Date('2016-10-10'), // 開始日時
-//            new Date('2016-10-14')  // 終了日時
-//        ])    
-//        .tickFormat(d3.time.day,1);
-//        .showMaxMin(false)
-//        .tickValues( function(values) {
-//            var a = [ d3.time.format('%Y-%m-%d')(new Date("2016-10-10")),
-//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-11")),
-//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-12")),
-//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-13")),
-//                      d3.time.format('%Y-%m-%d')(new Date("2016-10-14"))
-//                    ];
-//            return a;
-//        })
-//    ;
+
+        .showMaxMin(false)
+        .rotateLabels(-45)
+        .tickValues( function(values) {
+    var tf = d3.time.format("%Y-%m-%d");            
+            var a = [ tf.parse("2016-10-10"),tf.parse("2016-10-11"),tf.parse("2016-10-12"),tf.parse("2016-10-13"),tf.parse("2016-10-14"),
+                    ];
+            return a;
+        })
+
       .tickFormat(function(d) {
           return d3.time.format('%Y-%m-%d')(new Date(d));
       });
