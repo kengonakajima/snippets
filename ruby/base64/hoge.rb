@@ -6,9 +6,13 @@ ss = Base64.encode64(s)
 print ss,"\n"
 
 sss = Base64.decode64(ss)
-
 print s,"\n"
 print sss,"\n"
+print s.encoding,"\n"
+print sss.encoding,"\n"
+
+sss.force_encoding("UTF-8")
+
 print s.inspect,"\n"
 print sss.inspect,"\n"
 print s.length,"\n"
