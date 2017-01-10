@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Processing Demo</title>
+  <script src="./processing.min.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="200" height="200"></canvas>
+
+  <script>
+  function sketchProc(processing) {
+    processing.setup = function() {
+      processing.size(200, 200);
+      processing.background(125);
+      processing.fill(255);
+      processing.noLoop();
+    }
+
+    processing.draw = function() {
+      processing.text("Hello World!", 20, 20);
+    }
+  }
+
+  var canvas = document.getElementById("canvas");
+  var p = new Processing(canvas, sketchProc);
+  </script>
+</body>
+</html>
