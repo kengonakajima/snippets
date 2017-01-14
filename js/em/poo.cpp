@@ -2,9 +2,16 @@
 
 extern "C" {
     
-int poo(int i ) {
-    return i+999;
-}
+    int poo(int i ) {
+        return i+999;
+    };
 
+    void zzz(int *out ) {
+        *out=100;
+    }
+    int iii(int *out, int n ) {
+        for(int i=0;i<n;i++) out[i]*=2;
+        return 12345;
+    }                                 
 
 }
