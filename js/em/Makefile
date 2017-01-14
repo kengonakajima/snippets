@@ -1,5 +1,9 @@
-all:
-	emcc hoge.c -o f.js -s EXPORTED_FUNCTIONS="['_hoge']"
+all: f.js g.js
 
-test: 
+f.js: hoge.c
+	emcc hoge.c -o f.js -s EXPORTED_FUNCTIONS="['_hoge','_lll']"
+g.js: poo.cpp
+	emcc poo.cpp -o g.js -s EXPORTED_FUNCTIONS="['_poo']"
+
+test: f.js g.js
 	node test.js

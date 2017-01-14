@@ -5837,42 +5837,15 @@ function getTempRet0() {
   return tempRet0|0;
 }
 
-function _hoge($i) {
+function _poo($i) {
  $i = $i|0;
  var $0 = 0, $1 = 0, $2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $i;
  $1 = $0;
- $2 = (($1) + 2)|0;
+ $2 = (($1) + 999)|0;
  STACKTOP = sp;return ($2|0);
-}
-function _lll($s) {
- $s = $s|0;
- var $0 = 0, $1 = 0, $10 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0, $n = 0, label = 0, sp = 0;
- sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
- $0 = $s;
- $n = 0;
- $i = 0;
- while(1) {
-  $1 = $i;
-  $2 = $0;
-  $3 = (($2) + ($1)|0);
-  $4 = HEAP8[$3>>0]|0;
-  $5 = $4 << 24 >> 24;
-  $6 = ($5|0)==(0);
-  $7 = $n;
-  if ($6) {
-   break;
-  }
-  $8 = (($7) + 1)|0;
-  $n = $8;
-  $9 = $i;
-  $10 = (($9) + 1)|0;
-  $i = $10;
- }
- STACKTOP = sp;return ($7|0);
 }
 function ___errno_location() {
  var $$0 = 0, $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, label = 0, sp = 0;
@@ -9617,7 +9590,7 @@ var FUNCTION_TABLE_ii = [b0,___stdio_close];
 var FUNCTION_TABLE_iiii = [b1,b1,___stdout_write,___stdio_seek,b1,___stdio_write,b1,b1];
 var FUNCTION_TABLE_vi = [b2,b2,b2,b2,_cleanup392,b2,b2,b2];
 
-  return { _free: _free, _hoge: _hoge, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _lll: _lll, _fflush: _fflush, ___errno_location: ___errno_location, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, establishStackSpace: establishStackSpace, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_ii: dynCall_ii, dynCall_iiii: dynCall_iiii, dynCall_vi: dynCall_vi };
+  return { _free: _free, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _poo: _poo, _fflush: _fflush, ___errno_location: ___errno_location, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, establishStackSpace: establishStackSpace, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_ii: dynCall_ii, dynCall_iiii: dynCall_iiii, dynCall_vi: dynCall_vi };
 })
 // EMSCRIPTEN_END_ASM
 (Module.asmGlobalArg, Module.asmLibraryArg, buffer);
@@ -9627,22 +9600,16 @@ assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it a
 return real__free.apply(null, arguments);
 };
 
-var real__hoge = asm["_hoge"]; asm["_hoge"] = function() {
-assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-return real__hoge.apply(null, arguments);
-};
-
 var real__malloc = asm["_malloc"]; asm["_malloc"] = function() {
 assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
 assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
 return real__malloc.apply(null, arguments);
 };
 
-var real__lll = asm["_lll"]; asm["_lll"] = function() {
+var real__poo = asm["_poo"]; asm["_poo"] = function() {
 assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
 assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-return real__lll.apply(null, arguments);
+return real__poo.apply(null, arguments);
 };
 
 var real__fflush = asm["_fflush"]; asm["_fflush"] = function() {
@@ -9657,14 +9624,13 @@ assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it a
 return real____errno_location.apply(null, arguments);
 };
 var _free = Module["_free"] = asm["_free"];
-var _hoge = Module["_hoge"] = asm["_hoge"];
+var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
-var _lll = Module["_lll"] = asm["_lll"];
+var _poo = Module["_poo"] = asm["_poo"];
 var _fflush = Module["_fflush"] = asm["_fflush"];
 var ___errno_location = Module["___errno_location"] = asm["___errno_location"];
-var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var dynCall_ii = Module["dynCall_ii"] = asm["dynCall_ii"];
 var dynCall_iiii = Module["dynCall_iiii"] = asm["dynCall_iiii"];
 var dynCall_vi = Module["dynCall_vi"] = asm["dynCall_vi"];
