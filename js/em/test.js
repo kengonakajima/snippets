@@ -38,3 +38,25 @@ var output = new Int32Array(dataHeap.buffer,dataHeap.byteOffset,data.length);
 console.log("zzz ret:",r," out:",output );
 g._free(dataHeap.byteOffset);
 
+// heap
+
+function makeI8Heap(mod, i8adata) {
+    var nDataBytes = i8adata.length;
+    var dataPtr = mod._malloc(nDataBytes);
+    var dataHeap = new Uint8Array(mod.HEAPU8.buffer,dataPtr,nDataBytes);
+    dataHeap.set(new Uint8Array(i8adata.buffer));    
+    return dataHeap;
+}
+
+var input_data = new Int8Array(10);
+for(var i in input_data) input_data[i] = i;
+
+var input_heap = makeI8Heap(g,input_data);
+var output_heap = makeI8Heap(g,new Int8Array(10));
+var outputlen_heap = makeI8Heap(g,new Int8Array(4));
+
+var ccc = g.cwrap("ccc","number",["number","number","number","number"]);
+var r = ccc(input_heap.byteOffset,10,output_heap.byteOffset,outputlen_heap.byteOffset);
+output = new Int8Array(output_heap.buffer,output_heap.byteOffset,10);
+var outputlen = new Int8Array(outputlen_heap.buffer,outputlen_heap.byteOffset,4);
+console.log("ccc result:",r,"output:",output,"outputlen:",outputlen);

@@ -5885,6 +5885,48 @@ function _iii($out,$n) {
  }
  STACKTOP = sp;return 12345;
 }
+function _ccc($in,$inlen,$out,$outlen) {
+ $in = $in|0;
+ $inlen = $inlen|0;
+ $out = $out|0;
+ $outlen = $outlen|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0;
+ var $8 = 0, $9 = 0, $i = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+ $0 = $in;
+ $1 = $inlen;
+ $2 = $out;
+ $3 = $outlen;
+ $4 = $1;
+ $5 = $3;
+ HEAP32[$5>>2] = $4;
+ $i = 0;
+ while(1) {
+  $6 = $i;
+  $7 = $1;
+  $8 = ($6|0)<($7|0);
+  if (!($8)) {
+   break;
+  }
+  $9 = $i;
+  $10 = $0;
+  $11 = (($10) + ($9)|0);
+  $12 = HEAP8[$11>>0]|0;
+  $13 = $12 << 24 >> 24;
+  $14 = $13<<1;
+  $15 = (($14) + 1)|0;
+  $16 = $15&255;
+  $17 = $i;
+  $18 = $2;
+  $19 = (($18) + ($17)|0);
+  HEAP8[$19>>0] = $16;
+  $20 = $i;
+  $21 = (($20) + 1)|0;
+  $i = $21;
+ }
+ STACKTOP = sp;return 2;
+}
 function ___errno_location() {
  var $$0 = 0, $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, label = 0, sp = 0;
  sp = STACKTOP;
@@ -9628,7 +9670,7 @@ var FUNCTION_TABLE_ii = [b0,___stdio_close];
 var FUNCTION_TABLE_iiii = [b1,b1,___stdout_write,___stdio_seek,b1,___stdio_write,b1,b1];
 var FUNCTION_TABLE_vi = [b2,b2,b2,b2,_cleanup392,b2,b2,b2];
 
-  return { _fflush: _fflush, _zzz: _zzz, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _iii: _iii, _poo: _poo, _free: _free, ___errno_location: ___errno_location, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, establishStackSpace: establishStackSpace, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_ii: dynCall_ii, dynCall_iiii: dynCall_iiii, dynCall_vi: dynCall_vi };
+  return { _fflush: _fflush, _zzz: _zzz, _ccc: _ccc, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _iii: _iii, _poo: _poo, _free: _free, ___errno_location: ___errno_location, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, establishStackSpace: establishStackSpace, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_ii: dynCall_ii, dynCall_iiii: dynCall_iiii, dynCall_vi: dynCall_vi };
 })
 // EMSCRIPTEN_END_ASM
 (Module.asmGlobalArg, Module.asmLibraryArg, buffer);
@@ -9648,6 +9690,12 @@ var real__zzz = asm["_zzz"]; asm["_zzz"] = function() {
 assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
 assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
 return real__zzz.apply(null, arguments);
+};
+
+var real__ccc = asm["_ccc"]; asm["_ccc"] = function() {
+assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+return real__ccc.apply(null, arguments);
 };
 
 var real__malloc = asm["_malloc"]; asm["_malloc"] = function() {
@@ -9677,6 +9725,7 @@ var _poo = Module["_poo"] = asm["_poo"];
 var _fflush = Module["_fflush"] = asm["_fflush"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var _zzz = Module["_zzz"] = asm["_zzz"];
+var _ccc = Module["_ccc"] = asm["_ccc"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _iii = Module["_iii"] = asm["_iii"];
