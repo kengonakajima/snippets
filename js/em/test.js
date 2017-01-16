@@ -53,7 +53,7 @@ for(var i in input_data) input_data[i] = i;
 
 var input_heap = makeI8Heap(g,input_data);
 var output_heap = makeI8Heap(g,new Int8Array(10));
-var outputlen_heap = makeI8Heap(g,new Int8Array(4));
+var outputlen_heap = makeI8Heap(g,new Int8Array([10,0,0,0]));
 
 var ccc = g.cwrap("ccc","number",["number","number","number","number"]);
 var r = ccc(input_heap.byteOffset,10,output_heap.byteOffset,outputlen_heap.byteOffset);

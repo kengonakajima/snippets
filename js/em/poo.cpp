@@ -14,8 +14,9 @@ extern "C" {
         return 12345;
     }
     int ccc(char *in, int inlen, char *out, int *outlen  ) {
+        int loopc = *outlen;
         *outlen = inlen;
-        for(int i=0;i<inlen;i++) out[i] = in[i]*2+1;
+        for(int i=0;i<inlen&&i<loopc;i++) out[i] = in[i]*2+1;
         return 2;
     }
 }
