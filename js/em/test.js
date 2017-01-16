@@ -50,16 +50,15 @@ function makeI8Heap(mod, i8adata) {
 
 var input_data = new Int8Array(10);
 for(var i in input_data) input_data[i] = i;
-
 var input_heap = makeI8Heap(g,input_data);
 var output_heap = makeI8Heap(g,new Int8Array(10));
 var outputlen_heap = makeI8Heap(g,new Int8Array([10,0,0,0]));
 
 console.log("BOs: input:", input_heap.byteOffset, "output_heap:", output_heap.byteOffset, "outputlen_heap:", outputlen_heap.byteOffset );
 
-for(var i=0;i<10;i++)  console.log("input_heap data :", i, " : ", g.getValue(input_heap.byteOffset+i,"i8"));
-for(var i=0;i<10;i++)  console.log("output_heap data :", i, " : ", g.getValue(output_heap.byteOffset+i,"i8"));
-for(var i=0;i<10;i++)  console.log("outputlen_heap data :", i, " : ", g.getValue(outputlen_heap.byteOffset+i,"i8"));
+//for(var i=0;i<10;i++)  console.log("input_heap data :", i, " : ", g.getValue(input_heap.byteOffset+i,"i8"));
+//for(var i=0;i<10;i++)  console.log("output_heap data :", i, " : ", g.getValue(output_heap.byteOffset+i,"i8"));
+//for(var i=0;i<10;i++)  console.log("outputlen_heap data :", i, " : ", g.getValue(outputlen_heap.byteOffset+i,"i8"));
 
 
 var ccc = g.cwrap("ccc","number",["number","number","number","number"]);
@@ -68,5 +67,27 @@ output = new Int8Array(output_heap.buffer,output_heap.byteOffset,10);
 var outputlen = new Int8Array(outputlen_heap.buffer,outputlen_heap.byteOffset,4);
 console.log("ccc result:",r,"output:",output,"outputlen:",outputlen);
 
-// heap access test
+//
 
+var sizeofsizet = g.cwrap("sizeofsizet","number",[]);
+console.log("sizeofsizet:",sizeofsizet());
+
+// 
+var sss = g.cwrap( "sss", "number", ["number","number","number","number"] );
+
+var input_data = new Int8Array(10);
+for(var i in input_data) input_data[i] = i;
+var input_heap = makeI8Heap(g,input_data);
+var output_heap = makeI8Heap(g,new Int8Array(50));
+var outputlen_heap = makeI8Heap(g,new Int8Array([50,0,0,0]));
+
+for(var i=0;i<10;i++)  console.log("input_heap data :", i, " : ", g.getValue(input_heap.byteOffset+i,"i8"));
+for(var i=0;i<50;i++)  console.log("output_heap data :", i, " : ", g.getValue(output_heap.byteOffset+i,"i8"));
+for(var i=0;i<4;i++)  console.log("outputlen_heap data :", i, " : ", g.getValue(outputlen_heap.byteOffset+i,"i8"));
+
+var r = sss(input_heap.byteOffset,10,output_heap.byteOffset,outputlen_heap.byteOffset);
+console.log("sss ret:",r);
+
+for(var i=0;i<10;i++)  console.log("input_heap data :", i, " : ", g.getValue(input_heap.byteOffset+i,"i8"));
+for(var i=0;i<50;i++)  console.log("output_heap data :", i, " : ", g.getValue(output_heap.byteOffset+i,"i8"));
+for(var i=0;i<4;i++)  console.log("outputlen_heap data :", i, " : ", g.getValue(outputlen_heap.byteOffset+i,"i8"));

@@ -5941,6 +5941,68 @@ function _ccc($in,$inlen,$out,$outlen) {
  }
  return (0)|0;
 }
+function _sss($input,$input_length,$compressed,$compressed_length) {
+ $input = $input|0;
+ $input_length = $input_length|0;
+ $compressed = $compressed|0;
+ $compressed_length = $compressed_length|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $hoge = 0, $i = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+ $0 = $input;
+ $1 = $input_length;
+ $2 = $compressed;
+ $3 = $compressed_length;
+ $4 = $3;
+ $5 = HEAP32[$4>>2]|0;
+ $6 = (($5>>>0) / 2)&-1;
+ $hoge = $6;
+ $i = 0;
+ while(1) {
+  $7 = $i;
+  $8 = $1;
+  $9 = ($7>>>0)<($8>>>0);
+  if (!($9)) {
+   label = 5;
+   break;
+  }
+  $10 = $i;
+  $11 = $hoge;
+  $12 = ($10|0)<($11|0);
+  if (!($12)) {
+   label = 5;
+   break;
+  }
+  $13 = $i;
+  $14 = $0;
+  $15 = (($14) + ($13)|0);
+  $16 = HEAP8[$15>>0]|0;
+  $17 = $16 << 24 >> 24;
+  $18 = $17<<1;
+  $19 = (($18) + 1)|0;
+  $20 = $19&255;
+  $21 = $i;
+  $22 = $2;
+  $23 = (($22) + ($21)|0);
+  HEAP8[$23>>0] = $20;
+  $24 = $i;
+  $25 = (($24) + 1)|0;
+  $i = $25;
+ }
+ if ((label|0) == 5) {
+  $26 = $hoge;
+  $27 = $3;
+  HEAP32[$27>>2] = $26;
+  STACKTOP = sp;return 0;
+ }
+ return (0)|0;
+}
+function _sizeofsizet() {
+ var label = 0, sp = 0;
+ sp = STACKTOP;
+ return 4;
+}
 function ___errno_location() {
  var $$0 = 0, $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, label = 0, sp = 0;
  sp = STACKTOP;
@@ -9684,7 +9746,7 @@ var FUNCTION_TABLE_ii = [b0,___stdio_close];
 var FUNCTION_TABLE_iiii = [b1,b1,___stdout_write,___stdio_seek,b1,___stdio_write,b1,b1];
 var FUNCTION_TABLE_vi = [b2,b2,b2,b2,_cleanup392,b2,b2,b2];
 
-  return { _fflush: _fflush, _zzz: _zzz, _ccc: _ccc, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _iii: _iii, _poo: _poo, _free: _free, ___errno_location: ___errno_location, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, establishStackSpace: establishStackSpace, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_ii: dynCall_ii, dynCall_iiii: dynCall_iiii, dynCall_vi: dynCall_vi };
+  return { _sizeofsizet: _sizeofsizet, _memcpy: _memcpy, _zzz: _zzz, _ccc: _ccc, _memset: _memset, _malloc: _malloc, _free: _free, _iii: _iii, _poo: _poo, _fflush: _fflush, _sss: _sss, ___errno_location: ___errno_location, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, establishStackSpace: establishStackSpace, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_ii: dynCall_ii, dynCall_iiii: dynCall_iiii, dynCall_vi: dynCall_vi };
 })
 // EMSCRIPTEN_END_ASM
 (Module.asmGlobalArg, Module.asmLibraryArg, buffer);
@@ -9694,10 +9756,10 @@ assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it a
 return real__poo.apply(null, arguments);
 };
 
-var real__fflush = asm["_fflush"]; asm["_fflush"] = function() {
+var real__sizeofsizet = asm["_sizeofsizet"]; asm["_sizeofsizet"] = function() {
 assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
 assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-return real__fflush.apply(null, arguments);
+return real__sizeofsizet.apply(null, arguments);
 };
 
 var real__zzz = asm["_zzz"]; asm["_zzz"] = function() {
@@ -9730,13 +9792,25 @@ assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it a
 return real__free.apply(null, arguments);
 };
 
+var real__fflush = asm["_fflush"]; asm["_fflush"] = function() {
+assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+return real__fflush.apply(null, arguments);
+};
+
+var real__sss = asm["_sss"]; asm["_sss"] = function() {
+assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+return real__sss.apply(null, arguments);
+};
+
 var real____errno_location = asm["___errno_location"]; asm["___errno_location"] = function() {
 assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
 assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
 return real____errno_location.apply(null, arguments);
 };
 var _poo = Module["_poo"] = asm["_poo"];
-var _fflush = Module["_fflush"] = asm["_fflush"];
+var _sizeofsizet = Module["_sizeofsizet"] = asm["_sizeofsizet"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var _zzz = Module["_zzz"] = asm["_zzz"];
 var _ccc = Module["_ccc"] = asm["_ccc"];
@@ -9745,6 +9819,8 @@ var _malloc = Module["_malloc"] = asm["_malloc"];
 var _iii = Module["_iii"] = asm["_iii"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _free = Module["_free"] = asm["_free"];
+var _fflush = Module["_fflush"] = asm["_fflush"];
+var _sss = Module["_sss"] = asm["_sss"];
 var ___errno_location = Module["___errno_location"] = asm["___errno_location"];
 var dynCall_ii = Module["dynCall_ii"] = asm["dynCall_ii"];
 var dynCall_iiii = Module["dynCall_iiii"] = asm["dynCall_iiii"];
