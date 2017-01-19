@@ -1,4 +1,6 @@
-function Prop2D(){}
+function Prop2D(){
+    this.prio = 1;
+}
 
 Prop2D.prototype.setIndex = function(ind) {
     this.index = ind;
