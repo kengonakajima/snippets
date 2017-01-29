@@ -21,16 +21,16 @@
 			}
 
 			#left-component {
-				width: 20em; /* Same as divider left */
+				width: 12em; /* Same as divider left */
 			}
 
 			#my-divider {
-				left: 20em;
+				left: 12em;
 				width: 5px;
 			}
 
 			#right-component {
-				left: 20em; /* Same as divider left */
+				left: 12em; /* Same as divider left */
 				margin-left: 5px; /* Same as divider width */
 			}
 
@@ -40,10 +40,10 @@
 			$(function() {
 				$('div.split-pane').splitPane();
 				$('button:first').on('click', function() {
-					$('div.split-pane').splitPane('lastComponentSize', 10);
+//					$('div.split-pane').splitPane('lastComponentSize', 10);
 				});
 				$('button:last').on('click', function() {
-					$('div.split-pane').splitPane('firstComponentSize', 0);
+//					$('div.split-pane').splitPane('firstComponentSize', 0);
 				});
 			});
 		</script>
@@ -53,6 +53,13 @@
 			<div class="split-pane fixed-left">
 				<div class="split-pane-component" id="left-component">
 					<div class="pretty-split-pane-component-inner"><!-- This div is added for styling purposes only. It's not part of the split-pane plugin. -->
+                      <h2>Suarez KPI</h2>
+
+                      
+                        <a href="" style="font-size:15px;">ログ</a><BR>
+                        <a href="" style="font-size:15px;">集計結果</a><BR>
+                        <a href="" style="font-size:15px;">集計関数一覧</a><BR>
+
 						<p>
 							This split pane component is fixed: when re-sizing the browser window, it will
 							keep the same width.
@@ -61,14 +68,12 @@
 							You can, however, re-size this component by dragging the divider, and it will adjust if
 							the right component reaches it's <code>min-width</code> (<code>0px</code> in this example).
 						</p>
-						<p><button>Set last component size to 10px.</button></p>
 					</div>
 				</div>
 				<div class="split-pane-divider" id="my-divider"></div>
 				<div class="split-pane-component" id="right-component">
 					<div class="pretty-split-pane-component-inner"><!-- This div is added for styling purposes only. It's not part of the split-pane plugin. -->
 						<p>This split pane component is dynamic: when re-sizing the browser window, the width will adjust.</p>
-						<p><button>Collapse first component</button></p>
 					</div>
 				</div>
 			</div>
