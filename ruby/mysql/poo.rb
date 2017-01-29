@@ -1,7 +1,7 @@
-require "./wrap"
+require "mysql"
 require "date"
 
-my = MysqlWrapper.new("localhost", "root","", "test")
+my = Mysql.connect("localhost", "root","", "test")
 
 my.query( "drop table if exists hogehoge" )
 
@@ -11,11 +11,29 @@ my.query( "insert into hogehoge set name='aa', createdAt=now() " )
 my.query( "insert into hogehoge set name='aa', createdAt=now() " )
 my.query( "insert into hogehoge set name='aa', createdAt=now() " )
 
+print my.insert_id, "\n"
 
 res = my.query( "select id,name,createdAt from hogehoge" )
 
-res.each do |ent|
-  print("e:",ent["id"], ",", ent["name"], ",", ent["createdAt"].to_i, "\n" )
+print res.methods,"\n"
+
+h = res.fetch_hash
+print h, "\n"
+
+
+
+
+res = my.query( "select id,name,createdAt from hogehoge" )
+
+
+res.each_hash do |h|
+  print h, "\n"  
 end
 
 
+res = my.real_query( "select id,name,createdAt from hogehoge" )
+
+res.each_hash do |h|
+  print h, "\n"
+end
+  
