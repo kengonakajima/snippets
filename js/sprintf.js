@@ -50,3 +50,6 @@ function sprintf() {
 var ss = sprintf("%d:%s",12,"poo");
 
 console.log(ss);
+
+//var ary = [1,2,3,4,5];
+//console.log("aaa:", sprintf( "%d,%d", ary ) ); error
