@@ -14,3 +14,10 @@ function poo() {
 }
 
 poo("zzzae");
+
+function fuga() {
+    console.log(typeof arguments);
+// not an array    console.log(arguments.slice(2));
+}
+
+fuga([1,2,3]);

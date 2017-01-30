@@ -53,3 +53,6 @@ console.log(ss);
 
 //var ary = [1,2,3,4,5];
 //console.log("aaa:", sprintf( "%d,%d", ary ) ); error
+
+var sss = sprintf.apply( this,["%s:%s", "zz","aa"]);
+console.log(sss);
