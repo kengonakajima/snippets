@@ -61,6 +61,8 @@ function init() {
     
 	group = new THREE.Group();
 
+//    mapB.offset = new THREE.Vector2( 0.25, 0); これでずらせるが全部ずれる
+//    mapB.repeat = new THREE.Vector2( 0.25, 1);
 	var materialC = new THREE.SpriteMaterial( { map: mapC, color: 0xffffff, fog: true } );
 	var materialB = new THREE.SpriteMaterial( { map: mapB, color: 0xffffff, fog: true } );
     var materialT = new THREE.SpriteMaterial( { map: tttt, color: 0xffffff, fog: false } );
