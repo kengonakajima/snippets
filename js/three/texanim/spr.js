@@ -156,6 +156,7 @@ function animate() {
             index++;
             if(index>3)index=0;
             updateSpriteUV( g_geom, base_map, 8,8, index );
+            g_sprmesh.position.x += 3.0;
         }
     }
     
