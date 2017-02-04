@@ -141,25 +141,26 @@ function clearScene(scene) {
     });
 }
 
-
-   
+// すべてのスプライトが個別のmatを持っている状態: 1000sprite/60fps
+var g_mat;
 var g_sprites=[];
 
 function createSprite() {
-    var mat = createSpriteMaterial(g_base_map);
+    var ind = parseInt(4*Math.random());
     var geom = createSpriteGeometry(10+50*Math.random(),10+50*Math.random());
-    createSpriteUV(geom,g_base_map,8,8,0);
-    var mesh = new THREE.Mesh(geom,mat);
-    mesh.position.x=10;
-    mesh.position.y=10;
+    createSpriteUV(geom,g_base_map,8,8,ind);
+    var mesh = new THREE.Mesh(geom,g_mat);
+    mesh.position.x= -window.innerWidth+window.innerWidth*2*Math.random();
+    mesh.position.y= -window.innerHeight+window.innerHeight*2*Math.random();
     var vv=100;
     mesh.velocity=new THREE.Vector2( -vv+vv*2*Math.random(), -vv+vv*2*Math.random() );
-    mesh.deck_index=0;
-    mesh.poll_count=0
+    mesh.deck_index=ind;
+    mesh.poll_count=parseInt(500*Math.random());
     return mesh;
 }
 
 function createSprites() {
+    g_mat = createSpriteMaterial(g_base_map);
     var spr = createSprite();
     g_sprites.push(spr);
 }
@@ -174,8 +175,9 @@ function updateGame(dt) {
         if( spr.position.x < -window.innerWidth/2 ) spr.velocity.x *= -1;
         if( spr.position.x > window.innerWidth/2 ) spr.velocity.x *= -1;
         if( spr.position.y < -window.innerHeight/2 ) spr.velocity.y *= -1;
-        if( spr.position.y > window.innerHeight/2 ) spr.velocity.y *= -1;        
-        if(spr.poll_count%10==0) {
+        if( spr.position.y > window.innerHeight/2 ) spr.velocity.y *= -1;
+
+        if(spr.poll_count%10000==0) {
             spr.deck_index++;
             if(spr.deck_index>3)spr.deck_index=0;
             if( g_base_map && g_base_map.image) {
