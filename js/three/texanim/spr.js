@@ -145,15 +145,14 @@ function clearScene(scene) {
 var g_mat;
 var g_sprites=[];
 
-function createSprite() {
+function createSprite(x,y,vx,vy,w,h) {
     var ind = parseInt(4*Math.random());
-    var geom = createSpriteGeometry(10+50*Math.random(),10+50*Math.random());
+    var geom = createSpriteGeometry(w,h);
     createSpriteUV(geom,g_base_map,8,8,ind);
     var mesh = new THREE.Mesh(geom,g_mat);
-    mesh.position.x= -window.innerWidth+window.innerWidth*2*Math.random();
-    mesh.position.y= -window.innerHeight+window.innerHeight*2*Math.random();
-    var vv=100;
-    mesh.velocity=new THREE.Vector2( -vv+vv*2*Math.random(), -vv+vv*2*Math.random() );
+    mesh.position.x= x;
+    mesh.position.y= y;
+    mesh.velocity=new THREE.Vector2(vx,vy);
     mesh.deck_index=ind;
     mesh.poll_count=parseInt(500*Math.random());
     return mesh;
@@ -161,8 +160,12 @@ function createSprite() {
 
 function createSprites() {
     g_mat = createSpriteMaterial(g_base_map);
-    var spr = createSprite();
+    var spr = createSprite(0,0,0,0,100,100);
     g_sprites.push(spr);
+    spr = createSprite(50,0,0,0,100,100);
+    g_sprites.push(spr);
+    spr = createSprite(100,0,0,0,100,100);
+    g_sprites.push(spr);    
 }
 
 
@@ -190,7 +193,14 @@ function updateGame(dt) {
 
 window.onmousedown = function(ev) {
     for(var i=0;i<50;i++) {
-        var spr = createSprite();
+        var x= -window.innerWidth+window.innerWidth*2*Math.random();
+        var y= -window.innerHeight+window.innerHeight*2*Math.random();
+        var vv = 50;
+        var vx = -vv+vv*2*Math.random();
+        var vy = -vv+vv*2*Math.random();
+        var w = 10+50*Math.random();
+        var h = 10+50*Math.random();
+        var spr = createSprite(x,y,vx,vy,w,h);
         g_sprites.push(spr);
     }
     console.log("sprites:",g_sprites.length);
