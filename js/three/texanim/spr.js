@@ -1,7 +1,8 @@
 
 
-var renderer;
-var camera, scene;
+var g_renderer;
+var g_camera
+var g_scene;
 
 
 
@@ -104,7 +105,7 @@ function loadTexture(info) {
 }
 */
 
-var base_map;
+var g_base_map;
 
 function init() {
 
@@ -112,52 +113,95 @@ function init() {
 	var height = window.innerHeight;
 
 	// renderer
-	renderer = new THREE.WebGLRenderer( { antialias:false, sortObjects:true });
-	renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setClearColor(0x000000,1);
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	renderer.autoClear = false; // To allow render overlay on top of sprited sphere
-    document.body.appendChild( renderer.domElement );
+	g_renderer = new THREE.WebGLRenderer( { antialias:false, sortObjects:true });
+	g_renderer.setPixelRatio( window.devicePixelRatio );
+    g_renderer.setClearColor(0x000000,1);
+	g_renderer.setSize( window.innerWidth, window.innerHeight );
+	g_renderer.autoClear = false; // To allow render overlay on top of sprited sphere
+    document.body.appendChild( g_renderer.domElement );
     
-	camera = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, -1, 10 );
-	camera.position.z = 10;
+	g_camera = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, -1, 10 );
+	g_camera.position.z = 10;
 
 
 	// create sprites
 	var textureLoader = new THREE.TextureLoader();
-	base_map = textureLoader.load( "base.png", createSprites );
-    base_map.magFilter = THREE.NearestFilter;
-    base_map.minFilter = THREE.LinearMipMapLinearFilter;
-    renderer.clear();
+	g_base_map = textureLoader.load( "base.png", createSprites );
+    g_base_map.magFilter = THREE.NearestFilter;
+    g_base_map.minFilter = THREE.LinearMipMapLinearFilter;
+    g_renderer.clear();
 
-    scene = new THREE.Scene();
+    g_scene = new THREE.Scene();
 }
 
-var g_sprmesh;
-var g_geom;
+
+function clearScene(scene) {
+    scene.children.forEach(function(object){
+        scene.remove(object);
+    });
+}
+
+
+   
+var g_sprites=[];
+
+function createSprite() {
+    var mat = createSpriteMaterial(g_base_map);
+    var geom = createSpriteGeometry(10+50*Math.random(),10+50*Math.random());
+    createSpriteUV(geom,g_base_map,8,8,0);
+    var mesh = new THREE.Mesh(geom,mat);
+    mesh.position.x=10;
+    mesh.position.y=10;
+    var vv=100;
+    mesh.velocity=new THREE.Vector2( -vv+vv*2*Math.random(), -vv+vv*2*Math.random() );
+    mesh.deck_index=0;
+    mesh.poll_count=0
+    return mesh;
+}
 
 function createSprites() {
-
-    var mat = createSpriteMaterial(base_map);
-    console.log("sprite mat:",mat);
-    g_geom = createSpriteGeometry(100,100);
-    createSpriteUV(g_geom,base_map,8,8,0);
-    g_sprmesh = new THREE.Mesh(g_geom,mat);
-    scene.add(g_sprmesh);
+    var spr = createSprite();
+    g_sprites.push(spr);
 }
 
 
-var index=0;
-var loopcnt=0;
-function animate() {
-    loopcnt++;
-    if(loopcnt%10==0) {
-        if( base_map && base_map.image) {
-            index++;
-            if(index>3)index=0;
-            updateSpriteUV( g_geom, base_map, 8,8, index );
-            g_sprmesh.position.x += 3.0;
+function updateGame(dt) {
+    for(var i in g_sprites) {
+        var spr = g_sprites[i];
+        spr.poll_count++;
+        spr.position.x += spr.velocity.x*dt;
+        spr.position.y += spr.velocity.y*dt;
+        if( spr.position.x < -window.innerWidth/2 ) spr.velocity.x *= -1;
+        if( spr.position.x > window.innerWidth/2 ) spr.velocity.x *= -1;
+        if( spr.position.y < -window.innerHeight/2 ) spr.velocity.y *= -1;
+        if( spr.position.y > window.innerHeight/2 ) spr.velocity.y *= -1;        
+        if(spr.poll_count%10==0) {
+            spr.deck_index++;
+            if(spr.deck_index>3)spr.deck_index=0;
+            if( g_base_map && g_base_map.image) {
+                updateSpriteUV( spr.geometry, g_base_map, 8,8, spr.deck_index );
+            }
         }
+    }    
+}
+
+
+window.onmousedown = function(ev) {
+    for(var i=0;i<50;i++) {
+        var spr = createSprite();
+        g_sprites.push(spr);
+    }
+    console.log("sprites:",g_sprites.length);
+}
+
+function animate() {
+    var dt = 1.0/60.0;
+    updateGame(dt);
+
+    clearScene(g_scene);
+    for(var i in g_sprites) {
+        var spr = g_sprites[i];
+        g_scene.add(spr);
     }
     
 	requestAnimationFrame( animate );
@@ -168,10 +212,9 @@ function animate() {
 function render() {
 
 
-	renderer.clear();
-	renderer.clearDepth();    
-	renderer.render( scene, camera );
-    console.log("ren");
+	g_renderer.clear();
+	g_renderer.clearDepth();    
+	g_renderer.render( g_scene, g_camera );
 
 }
 
