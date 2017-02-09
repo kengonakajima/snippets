@@ -1,0 +1,33 @@
+body{
+  width: 480px;
+  margin: 0 auto;
+  background-color: #888;
+}
+#header{
+	width: 480px;
+  background-color: #0ff;    
+}
+#wrapper{
+	float: left;
+  background-color: #f00;        
+}
+#main{
+	width: 270px;
+    float: right;
+  background-color: #ff0;            
+}
+#side01{
+	width: 105px;
+    float: left;
+  background-color: #0ff;                
+}
+#side02{
+	width: 105px;
+    float: right;
+  background-color: #00f;                
+}
+#footer{
+	clear: both;
+    width: 480px;
+  background-color: #f0f;                
+}
