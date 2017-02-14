@@ -105,7 +105,7 @@ function loadTexture(info) {
 }
 */
 
-var g_line;
+var g_line,g_rect;
 var g_base_map;
 
 function init() {
@@ -134,6 +134,7 @@ function init() {
 
     // line
     g_line = createLine();
+    g_rect = createRect();
     
     g_scene = new THREE.Scene();
 }
@@ -179,6 +180,30 @@ function createLine() {
     geometry.vertices.push( new THREE.Vector3( 0, 150, 0) ); 
     var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0xffff00, linewidth:10} ) );
     return line;
+}
+/*
+      0--1
+      |\ |
+      | \|
+      3--2
+      */
+function createRect() {
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(new THREE.Vector3(0,0,0));
+    geometry.vertices.push(new THREE.Vector3(50,0,0));
+    geometry.vertices.push(new THREE.Vector3(50,-50,0));
+    geometry.vertices.push(new THREE.Vector3(0,-50,0));
+    geometry.faces.push(new THREE.Face3(0, 2, 1));
+    geometry.faces.push(new THREE.Face3(0, 3, 2));
+    var material = new THREE.MeshBasicMaterial({ color:0x00ff00 /*,depthTest:true, transparent: true*/ });
+    material.shading = THREE.FlatShading;
+    material.side = THREE.FrontSide;
+    material.alphaTest = 0.5;
+    material.needsUpdate = true;
+    
+    var mesh = new THREE.Mesh(geometry,material);
+    mesh.position.x = 400;
+    return mesh;
 }
 
 function updateGame(dt) {
@@ -227,6 +252,7 @@ function animate() {
         var spr = g_sprites[i];
         g_scene.add(spr);
     }
+    g_scene.add(g_rect);
     g_scene.add(g_line);
     
 	requestAnimationFrame( animate );
