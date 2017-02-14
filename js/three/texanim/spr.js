@@ -105,6 +105,7 @@ function loadTexture(info) {
 }
 */
 
+var g_line;
 var g_base_map;
 
 function init() {
@@ -131,6 +132,9 @@ function init() {
     g_base_map.minFilter = THREE.LinearMipMapLinearFilter;
     g_renderer.clear();
 
+    // line
+    g_line = createLine();
+    
     g_scene = new THREE.Scene();
 }
 
@@ -165,9 +169,17 @@ function createSprites() {
     spr = createSprite(50,0,0,0,100,100);
     g_sprites.push(spr);
     spr = createSprite(100,0,0,0,100,100);
-    g_sprites.push(spr);    
+    g_sprites.push(spr);
+    
 }
 
+function createLine() {
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push( new THREE.Vector3( 150, 0, 0) ); 
+    geometry.vertices.push( new THREE.Vector3( 0, 150, 0) ); 
+    var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0xffff00, linewidth:10} ) );
+    return line;
+}
 
 function updateGame(dt) {
     for(var i in g_sprites) {
@@ -215,6 +227,7 @@ function animate() {
         var spr = g_sprites[i];
         g_scene.add(spr);
     }
+    g_scene.add(g_line);
     
 	requestAnimationFrame( animate );
 	render();

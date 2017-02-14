@@ -16851,7 +16851,7 @@
 				encoding = GammaEncoding;
 
 			}
-
+            console.log("ringo:",encoding, LinearEncoding, map, GammaEncoding );
 			return encoding;
 
 		}
@@ -17015,7 +17015,7 @@
 			}
 
 			if ( program === undefined ) {
-
+                console.log("ringo:", JSON.stringify(parameters));
 				program = new WebGLProgram( renderer, code, material, parameters );
 				programs.push( program );
 
