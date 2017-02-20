@@ -22,7 +22,7 @@ def program(name,&blk)
 end
 
 # 以下が定義ファイルに対応
-hoge = program(:gameprotocol) do
+prog = program(:gameprotocol) do
   group(:Chat) do
     function(:EnterRoom) do
       argument(:room_id, :int )
@@ -34,6 +34,17 @@ hoge = program(:gameprotocol) do
 end
 
 
-pp hoge,"\n"
+pp prog,"\n"
 
+# 最後に階層構造をたどりながらソース出力
+
+progname = prog[:name]
+prog[:groups].each do |grpname,grp|
+  grp.each do |fncname,fnc|
+    argdefs = fnc[:args].map do |h| "#{h[:type]} #{h[:name]}" end
+    argdefstr = argdefs.join(",")
+    print "void #{progname}_#{grpname}_#{fncname}(#{argdefstr}){\n"
+    print "}\n"
+  end
+end
 
