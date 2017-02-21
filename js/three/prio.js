@@ -102,7 +102,7 @@ function updateHUDSprites () {
 	spriteTL.position.set( - width + imageWidth,   height - imageHeight, 1 ); // top left
     spriteTL.renderOrder = 1;
 	spriteBL.position.set( - width + imageWidth, - height + imageHeight, 1 ); // bottom left    
-    spriteBL.renderOrder = 2;    
+    spriteBL.renderOrder = 0.9;    
 	spriteTR.position.set(   width - imageWidth,   height - imageHeight, 1 ); // top right
 	spriteBR.position.set(   width - imageWidth, - height + imageHeight, 1 ); // bottom right
 	spriteC.position.set( 0, 0, 1 ); // center
