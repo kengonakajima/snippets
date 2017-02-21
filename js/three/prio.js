@@ -7,7 +7,7 @@ var spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
 
 var mapC;
 
-var group;
+
 
 init();
 animate();
@@ -58,8 +58,13 @@ function init() {
 
 }
 
+var group_left, group_right;
+
 function createHUDSprites ( texture ) {
 
+    group_left = new THREE.Group();
+    group_right = new THREE.Group();
+    
 	var material = new THREE.SpriteMaterial( { map: texture } );
 
 	var width = material.map.image.width;
@@ -67,45 +72,50 @@ function createHUDSprites ( texture ) {
 
 	spriteTL = new THREE.Sprite( material );
 	spriteTL.scale.set( width, height, 1 );
-	sceneOrtho.add( spriteTL );
 
 	spriteTR = new THREE.Sprite( material );
 	spriteTR.scale.set( width, height, 1 );
-	sceneOrtho.add( spriteTR );
-
+    
 	spriteBL = new THREE.Sprite( material );
 	spriteBL.scale.set( width, height, 1 );
-	sceneOrtho.add( spriteBL );
 
 	spriteBR = new THREE.Sprite( material );
 	spriteBR.scale.set( width, height, 1 );
-	sceneOrtho.add( spriteBR );
 
-	spriteC = new THREE.Sprite( material );
-	spriteC.scale.set( width, height, 1 );
-	sceneOrtho.add( spriteC );
 
+    group_left.add(spriteTL);
+    group_left.add(spriteBL);
+    group_right.add(spriteTR);
+    group_right.add(spriteBR);
+
+
+    group_left.renderOrder = 1;
+    group_right.renderOrder = 2;    
+	sceneOrtho.add( group_left );
+	sceneOrtho.add( group_right );
+    
 	updateHUDSprites();
 
 }
 
 function updateHUDSprites () {
 
-	var width = window.innerWidth / 2;
-	var height = window.innerHeight / 2;
+	var width = window.innerWidth / 20;
+	var height = window.innerHeight / 15;
 
 	var material = spriteTL.material;
 
-	var imageWidth = material.map.image.width / 2;
-	var imageHeight = material.map.image.height / 2;
+	var imageWidth = material.map.image.width / 4;
+	var imageHeight = material.map.image.height / 4;
 
 	spriteTL.position.set( - width + imageWidth,   height - imageHeight, 1 ); // top left
     spriteTL.renderOrder = 1;
 	spriteBL.position.set( - width + imageWidth, - height + imageHeight, 1 ); // bottom left    
-    spriteBL.renderOrder = 0.9;    
+    spriteBL.renderOrder = 3;    
 	spriteTR.position.set(   width - imageWidth,   height - imageHeight, 1 ); // top right
+    spriteTR.renderOrder = 0;
 	spriteBR.position.set(   width - imageWidth, - height + imageHeight, 1 ); // bottom right
-	spriteC.position.set( 0, 0, 1 ); // center
+    spriteBR.renderOrder = 2;    
 
 }
 
