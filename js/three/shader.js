@@ -16,7 +16,7 @@ var vertex_col_v_glsl =
     "  gl_Position = vec4(position, 1.0);\n"+
     "}\n";
 
-var vertex_glsl_2 =
+var vertex_uv_glsl =
     "varying vec2 vUv;// fragmentShaderに渡すためのvarying変数\n"+  // varying:
     "void main()\n"+
     "{\n"+
@@ -28,7 +28,7 @@ var vertex_glsl_2 =
     "  gl_Position = projectionMatrix * mvPosition;\n"+
     "}\n";
 
-var vertex_glsl_3 = 
+var vertex_fixed_glsl = 
 	"uniform float time;\n"+
 	"uniform vec2 resolution;\n"+
 	"void main()	{\n"+
@@ -36,12 +36,12 @@ var vertex_glsl_3 =
 	"}\n";
 
 
-var fragment_glsl =
+var fragment_fixed_glsl =
     "void main(void) {\n" +
     "gl_FragColor = vec4(1.0, .0, .0, 1.);\n"+
     "}";
 
-var fragment_glsl_2 =
+var fragment_uv_glsl =
     "//uniform 変数としてテクスチャのデータを受け取る\n"+
     "uniform sampler2D texture;\n"+
     "// vertexShaderで処理されて渡されるテクスチャ座標\n"+
@@ -49,10 +49,11 @@ var fragment_glsl_2 =
     "void main()\n"+
     "{\n"+
     "  // テクスチャの色情報をそのままピクセルに塗る\n"+
+    "  vec4 ccc = texture2D(texture,vUv);\n"+
     "  gl_FragColor = texture2D(texture, vUv);\n"+
     "}\n";
 
-var fragment_glsl_3 = 
+var fragment_mod_glsl = 
 	"uniform float time;\n"+
 	"uniform vec2 resolution;\n"+
 	"void main()	{\n"+
@@ -61,18 +62,18 @@ var fragment_glsl_3 =
 	"	gl_FragColor = vec4(vec3(min(x, y)), 1.);\n"+
 	"}\n";
 
-var fragment_glsl_4 = 
+var fragment_fixed_glsl = 
 	"void main()	{\n"+
 	"	gl_FragColor = vec4(1,0,1,1);\n"+
 	"}\n";
 
-var fragment_glsl_5 =
+var fragment_color_glsl =
     "varying vec4 vColor;\n"+
 	"void main()	{\n"+
 	"	gl_FragColor = vColor;\n"+
 	"}\n";
 
-var replacer_glsl = 
+var replacer_uv_color_glsl = 
 	"uniform sampler2D texture;\n"+
 	"uniform vec3 color1;\n"+
 	"uniform vec3 replace1;\n"+
@@ -108,7 +109,7 @@ function init() {
 
 	var textureLoader = new THREE.TextureLoader();
 
-	textureLoader.load( "textures/sprite0.png", createHUDSprites );
+	textureLoader.load( "textures/test32.png", createHUDSprites );
 
 	// renderer
 	renderer = new THREE.WebGLRenderer();
@@ -141,50 +142,37 @@ function createRectGeometry(width,height) {
     geometry.faces[0].vertexColors[2] = new THREE.Color(1,1,1);
     geometry.faces[1].vertexColors[0] = new THREE.Color(1,1,1);
     geometry.faces[1].vertexColors[1] = new THREE.Color(1,1,1);
-    geometry.faces[1].vertexColors[2] = new THREE.Color(1,1,1);    
+    geometry.faces[1].vertexColors[2] = new THREE.Color(1,1,1);
+    var u0=0, v0=0, u1=1,v1=1;
+    geometry.faceVertexUvs[0].push([ new THREE.Vector2(u0,v0), new THREE.Vector2(u1,v1), new THREE.Vector2(u1,v0) ]);
+    geometry.faceVertexUvs[0].push([ new THREE.Vector2(u0,v0), new THREE.Vector2(u0,v1), new THREE.Vector2(u1,v1) ]);
+    
     return geometry;
 }
 
 function createHUDSprites ( texture ) {
-/*
-void ColorReplacerShader::updateUniforms(){
-	float fromcol[]={ from_color.r, from_color.g, from_color.b};
-	GLuint uniid1=glGetUniformLocation(program,"color1");
-	glUniform3fv( uniid1,1,fromcol);
-
-	float tocol[]={ to_color.r, to_color.g, to_color.b };
-	GLuint uniid2=glGetUniformLocation(program,"replace1");
-	glUniform3fv( uniid2,1,tocol);
-
-	GLuint uniid3=glGetUniformLocation(program,"texture");
-	glUniform1i(uniid3, 0 );
-
-	GLuint uniid4=glGetUniformLocation(program,"eps");
-	glUniform1f(uniid4, epsilon );
-}
-*/
-
+    console.log("texture:",texture);
     uniforms_0={}
-    uniforms_1={
+    uniforms_tex={
         "texture" : { type: "t", value: texture }
     };
-    uniforms_2={
+    uniforms_replacer={
         "texture" : { type: "t", value: texture },        
         "color1" : { type: "v3", value: new THREE.Vector3(1,0,0) },
         "replace1" : { type: "v3", value: new THREE.Vector3(0,1,0) },
         "eps" : { type: "f", value: 0.1 }
     };
-    uniforms_3={
+    uniforms_time_reso={
 		time: { type: "f", value: 1.0 },
 		resolution: { type: "v2", value: new THREE.Vector2() }        
     };
-	uniforms_3.resolution.value.x = window.innerWidth;
-	uniforms_3.resolution.value.y = window.innerHeight;
+	uniforms_time_reso.resolution.value.x = window.innerWidth;
+	uniforms_time_reso.resolution.value.y = window.innerHeight;
     
     var material = new THREE.ShaderMaterial( {
-        uniforms : uniforms_0,
-        vertexShader : vertex_col_v_glsl,
-        fragmentShader : fragment_glsl_5
+        uniforms : uniforms_tex,
+        vertexShader : vertex_uv_glsl,
+        fragmentShader : fragment_uv_glsl
     });
 //    var material = new THREE.SpriteMaterial( { map: texture } );
 	var geom = createRectGeometry(1,1);
