@@ -17,7 +17,7 @@ var vertex_col_v_glsl =
     "}\n";
 
 var vertex_uv_glsl =
-    "varying vec2 vUv;// fragmentShaderに渡すためのvarying変数\n"+  // varying:
+    "varying vec2 vUv;// fragmentShaderに渡すためのvarying変数\n"+  
     "void main()\n"+
     "{\n"+
     "  // 処理する頂点ごとのuv(テクスチャ)座標をそのままfragmentShaderに横流しする\n"+
@@ -25,6 +25,18 @@ var vertex_uv_glsl =
     "  // 変換：ローカル座標 → 配置 → カメラ座標\n"+
     "  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);\n"+
     "  // 変換：カメラ座標 → 画面座標\n"+
+    "  gl_Position = projectionMatrix * mvPosition;\n"+
+    "}\n";
+
+var vertex_uv_color_glsl =
+    "varying vec2 vUv;\n"+
+    "varying vec4 vColor;\n"+
+    "attribute vec3 color;\n"+
+    "void main()\n"+
+    "{\n"+
+    "  vUv = uv;\n"+
+    "  vColor = vec4(color,1);\n"+
+    "  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);\n"+
     "  gl_Position = projectionMatrix * mvPosition;\n"+
     "}\n";
 
@@ -52,6 +64,17 @@ var fragment_uv_glsl =
     "  vec4 ccc = texture2D(texture,vUv);\n"+
     "  gl_FragColor = texture2D(texture, vUv);\n"+
     "}\n";
+
+var fragment_uv_color_glsl =
+    "uniform sampler2D texture;\n"+
+    "varying vec2 vUv;\n"+
+    "varying vec4 vColor;\n"+    
+    "void main()\n"+
+    "{\n"+
+    "  vec4 tc = texture2D(texture,vUv);\n"+
+    "  gl_FragColor = vec4( tc.r * vColor.r, tc.g * vColor.g, tc.b * vColor.b, vColor.a);\n"+
+    "}\n";
+
 
 var fragment_mod_glsl = 
 	"uniform float time;\n"+
@@ -139,10 +162,10 @@ function createRectGeometry(width,height) {
     geometry.faces.push(new THREE.Face3(0, 3, 2));
     geometry.faces[0].vertexColors[0] = new THREE.Color(1,0,1);
     geometry.faces[0].vertexColors[1] = new THREE.Color(1,1,1);
-    geometry.faces[0].vertexColors[2] = new THREE.Color(1,1,1);
-    geometry.faces[1].vertexColors[0] = new THREE.Color(1,1,1);
-    geometry.faces[1].vertexColors[1] = new THREE.Color(1,1,1);
-    geometry.faces[1].vertexColors[2] = new THREE.Color(1,1,1);
+    geometry.faces[0].vertexColors[2] = new THREE.Color(0,1,1);
+    geometry.faces[1].vertexColors[0] = new THREE.Color(1,1,0);
+    geometry.faces[1].vertexColors[1] = new THREE.Color(1,0,0);
+    geometry.faces[1].vertexColors[2] = new THREE.Color(0,0,1);
     var u0=0, v0=0, u1=1,v1=1;
     geometry.faceVertexUvs[0].push([ new THREE.Vector2(u0,v0), new THREE.Vector2(u1,v1), new THREE.Vector2(u1,v0) ]);
     geometry.faceVertexUvs[0].push([ new THREE.Vector2(u0,v0), new THREE.Vector2(u0,v1), new THREE.Vector2(u1,v1) ]);
@@ -171,8 +194,8 @@ function createHUDSprites ( texture ) {
     
     var material = new THREE.ShaderMaterial( {
         uniforms : uniforms_tex,
-        vertexShader : vertex_uv_glsl,
-        fragmentShader : fragment_uv_glsl
+        vertexShader : vertex_uv_color_glsl,
+        fragmentShader : fragment_uv_color_glsl
     });
 //    var material = new THREE.SpriteMaterial( { map: texture } );
 	var geom = createRectGeometry(1,1);
