@@ -3,13 +3,21 @@
 var renderer;
 var cameraOrtho, sceneOrtho;
 
-var vertex_glsl =
+var vertex_v_glsl =
     "void main(void){\n" +
     "gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);\n" +
     "}";
 
+var vertex_col_v_glsl =
+    "attribute vec3 color;\n"+
+    "varying vec4 vColor;\n"+
+    "void main(){\n"+
+    "  vColor = vec4(color.r,color.g,color.b,1);\n"+
+    "  gl_Position = vec4(position, 1.0);\n"+
+    "}\n";
+
 var vertex_glsl_2 =
-    "varying vec2 vUv;// fragmentShaderに渡すためのvarying変数\n"+
+    "varying vec2 vUv;// fragmentShaderに渡すためのvarying変数\n"+  // varying:
     "void main()\n"+
     "{\n"+
     "  // 処理する頂点ごとのuv(テクスチャ)座標をそのままfragmentShaderに横流しする\n"+
@@ -53,6 +61,16 @@ var fragment_glsl_3 =
 	"	gl_FragColor = vec4(vec3(min(x, y)), 1.);\n"+
 	"}\n";
 
+var fragment_glsl_4 = 
+	"void main()	{\n"+
+	"	gl_FragColor = vec4(1,0,1,1);\n"+
+	"}\n";
+
+var fragment_glsl_5 =
+    "varying vec4 vColor;\n"+
+	"void main()	{\n"+
+	"	gl_FragColor = vColor;\n"+
+	"}\n";
 
 var replacer_glsl = 
 	"uniform sampler2D texture;\n"+
@@ -78,7 +96,6 @@ init();
 animate();
 
 
-var uniforms_3;
 
 function init() {
 
@@ -119,6 +136,12 @@ function createRectGeometry(width,height) {
     geometry.vertices.push(new THREE.Vector3(-sizeHalfX, -sizeHalfY, 0)); //3
     geometry.faces.push(new THREE.Face3(0, 2, 1));
     geometry.faces.push(new THREE.Face3(0, 3, 2));
+    geometry.faces[0].vertexColors[0] = new THREE.Color(1,0,1);
+    geometry.faces[0].vertexColors[1] = new THREE.Color(1,1,1);
+    geometry.faces[0].vertexColors[2] = new THREE.Color(1,1,1);
+    geometry.faces[1].vertexColors[0] = new THREE.Color(1,1,1);
+    geometry.faces[1].vertexColors[1] = new THREE.Color(1,1,1);
+    geometry.faces[1].vertexColors[2] = new THREE.Color(1,1,1);    
     return geometry;
 }
 
@@ -141,7 +164,7 @@ void ColorReplacerShader::updateUniforms(){
 }
 */
 
-    uniforms={}
+    uniforms_0={}
     uniforms_1={
         "texture" : { type: "t", value: texture }
     };
@@ -159,9 +182,9 @@ void ColorReplacerShader::updateUniforms(){
 	uniforms_3.resolution.value.y = window.innerHeight;
     
     var material = new THREE.ShaderMaterial( {
-        uniforms : uniforms_1,
-        vertexShader : vertex_glsl_3,
-        fragmentShader : fragment_glsl_3
+        uniforms : uniforms_0,
+        vertexShader : vertex_col_v_glsl,
+        fragmentShader : fragment_glsl_5
     });
 //    var material = new THREE.SpriteMaterial( { map: texture } );
 	var geom = createRectGeometry(1,1);
@@ -172,9 +195,9 @@ void ColorReplacerShader::updateUniforms(){
 }
 var startTime = Date.now();
 function animate() {
-	var elapsedMilliseconds = Date.now() - startTime;
-	var elapsedSeconds = elapsedMilliseconds / 1000.;
-	if(uniforms_3) uniforms_3.time.value = 60. * elapsedSeconds;
+//	var elapsedMilliseconds = Date.now() - startTime;
+//	var elapsedSeconds = elapsedMilliseconds / 1000.;
+//	if(uniforms_3) uniforms_3.time.value = 60. * elapsedSeconds;
     
 	requestAnimationFrame( animate );
 	render();
