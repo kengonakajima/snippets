@@ -96,20 +96,23 @@ var fragment_color_glsl =
 	"	gl_FragColor = vColor;\n"+
 	"}\n";
 
-var replacer_uv_color_glsl = 
+var fragment_replacer_glsl = 
 	"uniform sampler2D texture;\n"+
-	"uniform vec3 color1;\n"+
+    "varying vec2 vUv;\n"+
+	"varying vec4 vColor;\n"+
+	"uniform vec3 color1;\n"+    
 	"uniform vec3 replace1;\n"+
 	"uniform float eps;\n"+
 	"void main() {\n"+
-	"	vec4 pixel = texture2D(texture, gl_TexCoord[0].xy); \n"+
-	"	if(pixel.r > color1.r - eps && pixel.r < color1.r + eps && pixel.g > color1.g - eps && pixel.g < color1.g + eps && pixel.b > color1.b - eps && pixel.b < color1.b + eps ){\n"+
+	"	vec4 pixel = texture2D(texture, vUv); \n"+
+	"	if( pixel.r > color1.r - eps && pixel.r < color1.r + eps && pixel.g > color1.g - eps && pixel.g < color1.g + eps && pixel.b > color1.b - eps && pixel.b < color1.b + eps ){\n"+
+//    "   if(pixel.g>color1.g-eps && pixel.g < color1.g+eps && pixel.r>-0.01 && pixel.r<0.1) {\n"+
 	"		pixel = vec4(replace1, pixel.a );\n"+
 	"    }\n"+
-	"   pixel.r = gl_Color.r * pixel.r;\n"+
-	"   pixel.g = gl_Color.g * pixel.g;\n"+
-	"   pixel.b = gl_Color.b * pixel.b;\n"+
-	"   pixel.a = gl_Color.a * pixel.a;\n" +   
+	"   pixel.r = vColor.r * pixel.r;\n"+
+	"   pixel.g = vColor.g * pixel.g;\n"+
+	"   pixel.b = vColor.b * pixel.b;\n"+
+	"   pixel.a = vColor.a * pixel.a;\n" +   
 	"	gl_FragColor = pixel;\n"+
 	"}\n";
 
@@ -160,12 +163,12 @@ function createRectGeometry(width,height) {
     geometry.vertices.push(new THREE.Vector3(-sizeHalfX, -sizeHalfY, 0)); //3
     geometry.faces.push(new THREE.Face3(0, 2, 1));
     geometry.faces.push(new THREE.Face3(0, 3, 2));
-    geometry.faces[0].vertexColors[0] = new THREE.Color(1,0,1);
+    geometry.faces[0].vertexColors[0] = new THREE.Color(1,1,1);
     geometry.faces[0].vertexColors[1] = new THREE.Color(1,1,1);
-    geometry.faces[0].vertexColors[2] = new THREE.Color(0,1,1);
-    geometry.faces[1].vertexColors[0] = new THREE.Color(1,1,0);
-    geometry.faces[1].vertexColors[1] = new THREE.Color(1,0,0);
-    geometry.faces[1].vertexColors[2] = new THREE.Color(0,0,1);
+    geometry.faces[0].vertexColors[2] = new THREE.Color(1,1,1);
+    geometry.faces[1].vertexColors[0] = new THREE.Color(1,1,1);
+    geometry.faces[1].vertexColors[1] = new THREE.Color(1,1,1);
+    geometry.faces[1].vertexColors[2] = new THREE.Color(1,1,1);
     var u0=0, v0=0, u1=1,v1=1;
     geometry.faceVertexUvs[0].push([ new THREE.Vector2(u0,v0), new THREE.Vector2(u1,v1), new THREE.Vector2(u1,v0) ]);
     geometry.faceVertexUvs[0].push([ new THREE.Vector2(u0,v0), new THREE.Vector2(u0,v1), new THREE.Vector2(u1,v1) ]);
@@ -174,6 +177,8 @@ function createRectGeometry(width,height) {
 }
 
 function createHUDSprites ( texture ) {
+    console.log(texture);
+    texture.magFilter = THREE.NearestFilter;    
     console.log("texture:",texture);
     uniforms_0={}
     uniforms_tex={
@@ -181,9 +186,9 @@ function createHUDSprites ( texture ) {
     };
     uniforms_replacer={
         "texture" : { type: "t", value: texture },        
-        "color1" : { type: "v3", value: new THREE.Vector3(1,0,0) },
-        "replace1" : { type: "v3", value: new THREE.Vector3(0,1,0) },
-        "eps" : { type: "f", value: 0.1 }
+        "color1" : { type: "v3", value: new THREE.Vector3(0,1,0) },
+        "replace1" : { type: "v3", value: new THREE.Vector3(0,0,1) },
+        "eps" : { type: "f", value: 0.2 }
     };
     uniforms_time_reso={
 		time: { type: "f", value: 1.0 },
@@ -193,14 +198,14 @@ function createHUDSprites ( texture ) {
 	uniforms_time_reso.resolution.value.y = window.innerHeight;
     
     var material = new THREE.ShaderMaterial( {
-        uniforms : uniforms_tex,
+        uniforms : uniforms_replacer,
         vertexShader : vertex_uv_color_glsl,
-        fragmentShader : fragment_uv_color_glsl
+        fragmentShader : fragment_replacer_glsl
     });
 //    var material = new THREE.SpriteMaterial( { map: texture } );
 	var geom = createRectGeometry(1,1);
     var mesh = new THREE.Mesh(geom,material);
-	mesh.scale.set( 50, 50, 1 );
+	mesh.scale.set( 150, 150, 1 );
 	mesh.position.set(0,0,1);
 	sceneOrtho.add(mesh);
 }
