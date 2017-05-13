@@ -13,10 +13,11 @@ echo ccc > 1/2/cc
 tar zcfv 1.tgz 1
 wc 1.tgz
 
-echo yyyy > 1/a
-echo xxxx > 1/2/bb
+touch -d 2018-01-01 1/c
+touch -d 2018-01-01 1/2/cc
 
-tar zcfv 1.1.tar.gz -N diff 1
+
+tar zcfv 1.1.tar.gz -N 2017-11-11 1
 echo OUTPUT of 1.1.tar.gz
 tar tvfz 1.1.tar.gz
 
