@@ -1,11 +1,11 @@
 if diff 1 2 ; then
-	echo XXX
+	echo eq
 else
-	echo YYY
+	echo differ
 fi
 
 if diff 2 3 ; then
-	echo XXX
+	echo eq
 else
-	echo YYY
+	echo differ
 fi
