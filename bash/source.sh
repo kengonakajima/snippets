@@ -1,0 +1,3 @@
+source sss.sh
+
+func
