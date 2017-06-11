@@ -27,17 +27,20 @@ var getAudioBuffer = function(url, fn) {
   req.send('');
 };
 
+var g_last_played_source = null;
+
 // サウンドを再生
 var playSound = function(buffer) {
     console.log(buffer);
-  // source を作成
-  var source = context.createBufferSource();
-  // buffer をセット
-  source.buffer = buffer;
-  // context に connect
-  source.connect(context.destination);
-  // 再生
-  source.start(0);
+    // source を作成
+    var source = context.createBufferSource();
+    // buffer をセット
+    source.buffer = buffer;
+    // context に connect
+    source.connect(context.destination);
+    // 再生
+    source.start(0);
+    g_last_played_source = source;
 };
 
 function makeMemoryAudioBuf() {
@@ -68,6 +71,13 @@ window.onload = function() {
         var btn2 = document.getElementById("btn2");
         btn2.onclick = function() {
             playSound(membuf);
+        }
+        var btn3 = document.getElementById("btn3");
+        btn3.onclick = function() {
+            console.log("PPPPP", g_last_played_source );
+            if(g_last_played_source) {
+                g_last_played_source.stop(0);
+            }
         }
     });
 };
