@@ -1,0 +1,343 @@
+TAG_Compound(""): 40 entries
+{
+  TAG_Int("HurtByTimestamp"): 252710
+  TAG_Short("SleepTimer"): 0
+  TAG_Byte("SpawnForced"): 0
+  TAG_List("Attributes"): 8 entries of type TAG_Compound
+  {
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 20.0
+      TAG_String("Name"): generic.maxHealth
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 0.0
+      TAG_String("Name"): generic.knockbackResistance
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 0.10000000149011612
+      TAG_String("Name"): generic.movementSpeed
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 0.0
+      TAG_String("Name"): generic.armor
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 0.0
+      TAG_String("Name"): generic.armorToughness
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 1.0
+      TAG_String("Name"): generic.attackDamage
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 4.0
+      TAG_String("Name"): generic.attackSpeed
+    }
+    TAG_Compound: 2 entries
+    {
+      TAG_Double("Base"): 0.0
+      TAG_String("Name"): generic.luck
+    }
+  }
+  TAG_Byte("Invulnerable"): 0
+  TAG_Byte("FallFlying"): 0
+  TAG_Int("PortalCooldown"): 0
+  TAG_Float("AbsorptionAmount"): 0.0
+  TAG_Compound("abilities"): 7 entries
+  {
+    TAG_Byte("invulnerable"): 0
+    TAG_Byte("mayfly"): 0
+    TAG_Byte("instabuild"): 0
+    TAG_Float("walkSpeed"): 0.10000000149011612
+    TAG_Byte("mayBuild"): 1
+    TAG_Byte("flying"): 0
+    TAG_Float("flySpeed"): 0.05000000074505806
+  }
+  TAG_Float("FallDistance"): 0.0
+  TAG_Short("DeathTime"): 0
+  TAG_Int("XpSeed"): -1885340670
+  TAG_Int("XpTotal"): 595
+  TAG_Int("playerGameType"): 0
+  TAG_List("Motion"): 3 entries of type TAG_Double
+  {
+    TAG_Double: 0.0
+    TAG_Double: -0.0784000015258789
+    TAG_Double: 0.0
+  }
+  TAG_Int("SpawnY"): 78
+  TAG_Long("UUIDLeast"): -7685244924847706995
+  TAG_Float("Health"): 20.0
+  TAG_Int("SpawnZ"): 260
+  TAG_Float("foodSaturationLevel"): 0.0
+  TAG_Int("SpawnX"): 22
+  TAG_Short("Air"): 300
+  TAG_Byte("OnGround"): 1
+  TAG_Int("Dimension"): 0
+  TAG_List("Rotation"): 2 entries of type TAG_Float
+  {
+    TAG_Float: -6.750720977783203
+    TAG_Float: 29.700111389160156
+  }
+  TAG_Int("XpLevel"): 20
+  TAG_Int("Score"): 595
+  TAG_Long("UUIDMost"): -8461790203229093588
+  TAG_Byte("Sleeping"): 0
+  TAG_List("Pos"): 3 entries of type TAG_Double
+  {
+    TAG_Double: 16.49829542724815
+    TAG_Double: 114.0
+    TAG_Double: 244.95154246480402
+  }
+  TAG_Short("Fire"): -20
+  TAG_Float("XpP"): 0.7258065342903137
+  TAG_List("EnderItems"): 0 entries of type TAG_End
+  {
+  }
+  TAG_Int("DataVersion"): 922
+  TAG_Int("foodLevel"): 17
+  TAG_Float("foodExhaustionLevel"): 2.803705930709839
+  TAG_Short("HurtTime"): 0
+  TAG_Int("SelectedItemSlot"): 7
+  TAG_List("Inventory"): 33 entries of type TAG_Compound
+  {
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 0
+      TAG_String("id"): minecraft:diamond_shovel
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 106
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 1
+      TAG_String("id"): minecraft:torch
+      TAG_Byte("Count"): 24
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 2
+      TAG_String("id"): minecraft:diamond_pickaxe
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 681
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 3
+      TAG_String("id"): minecraft:iron_sword
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 125
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 4
+      TAG_String("id"): minecraft:stone_hoe
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 65
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 5
+      TAG_String("id"): minecraft:iron_axe
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 6
+      TAG_String("id"): minecraft:bread
+      TAG_Byte("Count"): 4
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 7
+      TAG_String("id"): minecraft:dirt
+      TAG_Byte("Count"): 4
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 8
+      TAG_String("id"): minecraft:ladder
+      TAG_Byte("Count"): 20
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 9
+      TAG_String("id"): minecraft:sign
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 10
+      TAG_String("id"): minecraft:iron_ingot
+      TAG_Byte("Count"): 5
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 12
+      TAG_String("id"): minecraft:rotten_flesh
+      TAG_Byte("Count"): 2
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 15
+      TAG_String("id"): minecraft:stick
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 16
+      TAG_String("id"): minecraft:wool
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 17
+      TAG_String("id"): minecraft:dirt
+      TAG_Byte("Count"): 27
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 18
+      TAG_String("id"): minecraft:red_flower
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 19
+      TAG_String("id"): minecraft:log
+      TAG_Byte("Count"): 16
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 20
+      TAG_String("id"): minecraft:cobblestone
+      TAG_Byte("Count"): 63
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 23
+      TAG_String("id"): minecraft:cobblestone
+      TAG_Byte("Count"): 64
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 25
+      TAG_String("id"): minecraft:coal
+      TAG_Byte("Count"): 31
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 26
+      TAG_String("id"): minecraft:planks
+      TAG_Byte("Count"): 36
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 28
+      TAG_String("id"): minecraft:birch_door
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 29
+      TAG_String("id"): minecraft:iron_pickaxe
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 128
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 30
+      TAG_String("id"): minecraft:stone
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 3
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 31
+      TAG_String("id"): minecraft:golden_pickaxe
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 32
+      TAG_String("id"): minecraft:cooked_mutton
+      TAG_Byte("Count"): 2
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 33
+      TAG_String("id"): minecraft:iron_shovel
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 34
+      TAG_String("id"): minecraft:water_bucket
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 35
+      TAG_String("id"): minecraft:water_bucket
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 0
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 100
+      TAG_String("id"): minecraft:iron_boots
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 35
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 101
+      TAG_String("id"): minecraft:iron_leggings
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 35
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 102
+      TAG_String("id"): minecraft:iron_chestplate
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 35
+    }
+    TAG_Compound: 4 entries
+    {
+      TAG_Byte("Slot"): 103
+      TAG_String("id"): minecraft:iron_helmet
+      TAG_Byte("Count"): 1
+      TAG_Short("Damage"): 35
+    }
+  }
+  TAG_Int("foodTickTimer"): 0
+}
