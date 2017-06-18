@@ -55,24 +55,16 @@ sio = StringIO.new(inflated)
 print sio, "\n"
 last_byte = sio.read(1).bytes.first
 klass = NBTUtils::Tag.tag_type_to_class(last_byte)
-tag = klass.new(sio,true)
+top = klass.new(sio,true)
 
-print tag, "\n"
+#print top,"\n"
 
-exit 0
+level = top.payload[0], "\n"
+data_version = top.payload[1]
 
-tmp_path = "/tmp/poo"
-f = File.open(tmp_path,"wb")
-f.write(f)
-f.close
-system( "gzip #{tmp_path}" )
+print "data_version:", data_version, "\n"
 
-nbtfile = NBTUtils::File.new
-tag = nbtfile.read(tmp_path + ".gz")
-puts tag.to_s
-
-
-
-
-
+#print level[0].payload, "\n"
+heightmap = level[0].payload[2].payload, "\n"
+print heightmap, "\n"
 
