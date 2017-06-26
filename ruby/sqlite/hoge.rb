@@ -14,6 +14,11 @@ db.execute( "select * from entries" ) do |row|
   puts "row:  " + row.join(":")
 end
 
+print "---\n"
+db.execute( "select * from sqlite_master") do |row|
+  puts row.join(":")
+end
+  
 db.close
 
 

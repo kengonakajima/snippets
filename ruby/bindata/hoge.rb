@@ -67,4 +67,5 @@ print "data_version:", data_version, "\n"
 #print level[0].payload, "\n"
 heightmap = level[0].payload[2].payload, "\n"
 print heightmap, "\n"
+print level[0], "\n"
 
