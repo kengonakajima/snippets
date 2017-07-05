@@ -1,8 +1,8 @@
 function f() {
-    echo poo
+    echo "poo $1"
 }
 
-HOGE="$(f) $(f)"
+HOGE="$(f aa) $(f)"
 
 echo $HOGE
 
