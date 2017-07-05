@@ -1,6 +1,7 @@
-HOGE=$1
+#HOGE=$1
 
-case "${HOGE}" in
+#case "${HOGE}" in
+case "$1" in
 poo|hoge)
 	echo TTTTTTTTTTT
     ;;
