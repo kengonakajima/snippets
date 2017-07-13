@@ -1,3 +1,5 @@
+Process.daemon  # do this after thread.new then ok
+
 a=Thread.new  do
   while true
     sleep 1
@@ -5,7 +7,6 @@ a=Thread.new  do
   end
 end
 
-Process.daemon
 
 10.times do 
   sleep 1
