@@ -12,7 +12,7 @@ pcap = FFI::PCap::Live.new( :dev =>  ARGV[0],
                             :promisc => true,
                             :handler => FFI::PCap::Handler )
 pcap.nonblocking=true
-pcap.setfilter("tcp")
+pcap.setfilter("")
 
 
 
@@ -22,9 +22,9 @@ while Kernel.select([io],nil,nil)
   pcap.dispatch() do |this,pkt|
     p = Packet.new( pkt.body)  # pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
     h = p.to_hash
-    if h[:tcp_dest_port]==443 then
+    if h[:ipv4_protocol]==17 then
       STDERR.puts "#{pkt.time} : "
-      STDERR.print p.to_s
+      STDERR.print p.to_s(true)
     end
     
 #    STDERR.print pkt.header.methods.sort, "\n"

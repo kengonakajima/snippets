@@ -74,6 +74,17 @@ class Packet
         if tcp_payload_len != out_h[:tcp_payload].size then
           STDERR.print "warning: tcp payload size mismatch? #{ipv4_payload_len}, #{tcp_payload_len}, #{out_h[:tcp_payload].size}\n"
         end
+      elsif ipv4_protocol == 17 then
+        udptop = 14+ipv4_header_len*4
+        out_h[:udp_src_port] = @bytes[udptop]*256 + @bytes[udptop+1]
+        out_h[:udp_dest_port] = @bytes[udptop+2]*256 + @bytes[udptop+3]
+        out_h[:udp_total_data_len] = @bytes[udptop+4]*256 + @bytes[udptop+5] # including header and payload
+        out_h[:udp_checksum] = to_hex( @bytes[(udptop+6)..(udptop+7)], ":")
+        out_h[:udp_payload] = @bytes[(udptop+8)..-1]
+        udp_payload_len = ipv4_payload_len - 8
+        if udp_payload_len != out_h[:udp_payload].size then
+          STDERR.print "warning: udp payload size mismatch? #{ipv4_payload_len}, #{udp_payload_len}, #{out_h[:udp_payload].size}\n"
+        end
       end
     end
     return out_h
