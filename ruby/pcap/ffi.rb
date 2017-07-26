@@ -1,5 +1,7 @@
 require "ffi/pcap"
 
+require "./packet.rb"
+
 if !ARGV[0] then 
   STDERR.print "need intf name\n"
   exit 1
@@ -19,8 +21,9 @@ io=IO.new(fd)
 while Kernel.select([io],nil,nil)
   pcap.dispatch() do |this,pkt|
     STDERR.puts "#{pkt.time} : "
-    # pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
-    STDERR.print pkt.header.methods.sort, "\n"
+    p = Packet.new( pkt.body)  # pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
+    STDERR.print p.to_s        
+#    STDERR.print pkt.header.methods.sort, "\n"
     STDERR.puts "----"
   end
 end
