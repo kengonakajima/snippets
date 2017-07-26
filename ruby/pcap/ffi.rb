@@ -20,11 +20,14 @@ fd = pcap.fileno
 io=IO.new(fd)
 while Kernel.select([io],nil,nil)
   pcap.dispatch() do |this,pkt|
-    STDERR.puts "#{pkt.time} : "
     p = Packet.new( pkt.body)  # pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
-    STDERR.print p.to_s        
+    h = p.to_hash
+    if h[:tcp_dest_port]==443 then
+      STDERR.puts "#{pkt.time} : "
+      STDERR.print p.to_s
+    end
+    
 #    STDERR.print pkt.header.methods.sort, "\n"
-    STDERR.puts "----"
   end
 end
 
