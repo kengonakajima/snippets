@@ -5,6 +5,10 @@ def to_hex(bary,delim)
   bary.each do |b| out.push( sprintf("%02x",b) ) end
   return out.join(delim)
 end
+def to_i32(bary)
+  return (bary[0]<<24) + (bary[1]<<16) + (bary[2]<<8) + bary[3]
+end
+
 
 class Packet
   
@@ -35,7 +39,8 @@ class Packet
       out_h[:ipv4_flag] = (@bytes[20] & 0xff)>>5 
       out_h[:ipv4_fragpos] =  (@bytes[20] & 0x1f)*256 + @bytes[21]
       out_h[:ipv4_ttl] = @bytes[22]
-      out_h[:ipv4_protocol] = @bytes[23] # 6 for TCP, 17 for UDP
+      ipv4_protocol = @bytes[23] # 6 for TCP, 17 for UDP
+      out_h[:ipv4_protocol] = ipv4_protocol
       out_h[:ipv4_checksum] = to_hex( @bytes[24..25],":")
       out_h[:ipv4_src_addr] = @bytes[26..29].join(".")
       out_h[:ipv4_dest_addr] = @bytes[30..33].join(".")
@@ -43,10 +48,28 @@ class Packet
       ipv4_payload_len = ipv4_total_len - ipv4_header_len*4
       out_h[:ipv4_payload_len] = ipv4_payload_len
 
-
-      
+      if ipv4_protocol == 6 then
+        tcptop = 14+ipv4_header_len*4  # mostly 14+5*4=34
+        out_h[:tcp_src_port] = @bytes[tcptop]*256 + @bytes[tcptop+1]
+        out_h[:tcp_dest_port] = @bytes[tcptop+2]*256 + @bytes[tcptop+3]
+        out_h[:tcp_seqnum] = to_i32( @bytes[(tcptop+4)..(tcptop+7)] )
+        out_h[:tcp_ack_num] = to_i32( @bytes[(tcptop+8)..(tcptop+11)] )
+        out_h[:tcp_data_ofs] = (@bytes[tcptop+12]&0xff)>>4
+        out_h[:tcp_flag_ns] = (@bytes[tcptop+12]&0x1)
+        out_h[:tcp_flag_cwr] = (@bytes[tcptop+13]>>7)
+        out_h[:tcp_flag_ece] = (@bytes[tcptop+13]>>6)&0x1
+        out_h[:tcp_flag_urg] = (@bytes[tcptop+13]>>5)&0x1
+        out_h[:tcp_flag_ack] = (@bytes[tcptop+13]>>4)&0x1
+        out_h[:tcp_flag_psh] = (@bytes[tcptop+13]>>3)&0x1
+        out_h[:tcp_flag_rst] = (@bytes[tcptop+13]>>2)&0x1
+        out_h[:tcp_flag_syn] = (@bytes[tcptop+13]>>1)&0x1
+        out_h[:tcp_flag_fin] = @bytes[tcptop+13]&0x1
+        out_h[:tcp_window_size] = @bytes[tcptop+14]*256 + @bytes[tcptop+15]
+        out_h[:tcp_checksum] = to_hex( @bytes[(tcptop+16)..(tcptop+17)], ":")
+        out_h[:tcp_urg_pointer] = @bytes[tcptop+18]*256 + @bytes[tcptop+19]
+      end
     end
-    return JSON.generate(out_h)
+    return JSON.pretty_generate(out_h)
   end
   
 end
