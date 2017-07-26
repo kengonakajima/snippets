@@ -1,6 +1,11 @@
 require "ffi/pcap"
 
-pcap = FFI::PCap::Live.new( :dev =>  "en0",
+if !ARGV[0] then 
+  STDERR.print "need intf name\n"
+  exit 1
+end
+
+pcap = FFI::PCap::Live.new( :dev =>  ARGV[0],
                             :timeout => 1,
                             :promisc => true,
                             :handler => FFI::PCap::Handler )
@@ -8,9 +13,9 @@ pcap = FFI::PCap::Live.new( :dev =>  "en0",
 pcap.setfilter("tcp")
 
 pcap.loop() do |this, pkt|
-  puts "#{pkt.time} : "
-  pkt.body.each_byte {|x| print "%0.2x " % x }
-  putc "\n"
+  STDERR.puts "#{pkt.time} : "
+  pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
+  STDERR.putc "\n"
 end
 
 
