@@ -17,6 +17,7 @@ class Packet
   def initialize(s)
     @size = s.size
     @bytes = s.bytes
+    @h = to_hash()
   end
   def to_hash
     src_mac = @bytes[0..5]
@@ -91,17 +92,40 @@ class Packet
     end
     return out_h
   end
-  def to_s(include_payload=false)
-    h = to_hash()
-    if !include_payload then
-      h[:tcp_payload]=nil
-      h[:udp_payload]=nil
-    end
-    return JSON.pretty_generate(h)
+  def get_protonum()
+    return @h[:ipv4_protocol]
   end
-  
+  def to_id_str()
+    sp = (@h[:udp_src_port] or @h[:tcp_src_port])
+    dp = (@h[:udp_dest_port] or @h[:tcp_dest_port])
+    return "#{@h[:ipv4_protocol]}:#{@h[:ipv4_src_addr]}:#{@h[:ipv4_dest_addr]}:#{sp}:#{dp}"
+  end  
 end
 
+
+
+class Session
+  def initialize(pkt)
+    @idstr = pkt.to_id_str
+    @packet_count=0
+  end
+  def same_session?(pkt)
+    s = pkt.to_id_istr
+    return (@idstr == s)
+  end
+end
+
+$sessions={}  
+
+def updateSessions(pkt)
+  idstr = pkt.to_id_str
+  s = $sessions[idstr]
+  if !s then 
+    s = Session.new(pkt)
+    $sessions[idstr]=s
+    STDERR.print "new session for #{idstr} count:#{$sessions.size}\n"
+  end
+end
 
 ######################
 
@@ -127,13 +151,10 @@ io=IO.new(fd)
 while Kernel.select([io],nil,nil)
   pcap.dispatch() do |this,pkt|
     p = Packet.new( pkt.body)  # pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
-    h = p.to_hash
-    if h[:ipv4_protocol]==17 then
-      STDERR.puts "#{pkt.time} : "
-      STDERR.print p.to_s(true)
+    pn = p.get_protonum
+    if pn == 6 or pn == 17 then 
+      updateSessions(p)
     end
-    
-#    STDERR.print pkt.header.methods.sort, "\n"
   end
 end
 
