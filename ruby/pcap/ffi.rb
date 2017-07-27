@@ -92,13 +92,17 @@ class Packet
     end
     return out_h
   end
-  def get_protonum()
-    return @h[:ipv4_protocol]
+  def get(name)
+    return @h[name]
   end
-  def to_id_str()
+  # src addr:port, dest addr:port が交換の関係にある状態でも同じセッションとみなす. 文字列にしてソートしたら入れ替わっても同じになる。
+  def to_session_id()
     sp = (@h[:udp_src_port] or @h[:tcp_src_port])
     dp = (@h[:udp_dest_port] or @h[:tcp_dest_port])
-    return "#{@h[:ipv4_protocol]}:#{@h[:ipv4_src_addr]}:#{@h[:ipv4_dest_addr]}:#{sp}:#{dp}"
+    sorted_addr = [ @h[:ipv4_src_addr], @h[:ipv4_dest_addr] ].sort
+    sorted_port = [ sp.to_s, dp.to_s ].sort
+    sorted = [ @h[:ipv4_protocol].to_s ] + sorted_addr + sorted_port
+    return sorted.join(":")
   end  
 end
 
@@ -106,26 +110,32 @@ end
 
 class Session
   def initialize(pkt)
-    @idstr = pkt.to_id_str
+    @idstr = pkt.to_session_id
     @packet_count=0
+    @recv_bytes=0  
+    @send_bytes=0
+    @orig_pkt=pkt
   end
-  def same_session?(pkt)
-    s = pkt.to_id_istr
-    return (@idstr == s)
+  def updateStat(pkt,dev_addr)  # 逆向きも含む
+    if @orig_pkt.get(:ipv4_src_addr) == pkt.get(:ipv4_src_addr) then 
+      @packet_count += 1
+      
+    end
   end
 end
 
 $sessions={}  
 
-def updateSessions(pkt)
-  idstr = pkt.to_id_str
-  s = $sessions[idstr]
-  if !s then 
-    s = Session.new(pkt)
-    $sessions[idstr]=s
-    STDERR.print "new session for #{idstr} count:#{$sessions.size}\n"
-  end
+
+def get_dev_addr(devname)
+`ifconfig #{devname}`.split("\n").each do |line|
+   line.strip!
+   tks = line.split(/\s+/)
+   if tks[0] == "inet" then
+     return tks[1]
+   end
 end
+
 
 ######################
 
@@ -136,8 +146,12 @@ if !ARGV[0] then
   STDERR.print "need intf name\n"
   exit 1
 end
+devname = ARGV[0]
 
-pcap = FFI::PCap::Live.new( :dev =>  ARGV[0],
+dev_addr = get_dev_addr(devname)
+
+
+pcap = FFI::PCap::Live.new( :dev =>  devname,
                             :timeout => 1,
                             :promisc => true,
                             :handler => FFI::PCap::Handler )
@@ -151,9 +165,18 @@ io=IO.new(fd)
 while Kernel.select([io],nil,nil)
   pcap.dispatch() do |this,pkt|
     p = Packet.new( pkt.body)  # pkt.body.each_byte {|x| STDERR.print "%0.2x " % x }
-    pn = p.get_protonum
+    pn = p.get(:ipv4_protocol)
     if pn == 6 or pn == 17 then 
-      updateSessions(p)
+
+      idstr = pkt.to_session_id
+      s = $sessions[idstr]
+      if !s then 
+        s = Session.new(pkt)
+        $sessions[idstr]=s
+        STDERR.print "new session for #{idstr} count:#{$sessions.size}\n"
+      else
+        s.updateStat(pkt,dev_addr)
+      end
     end
   end
 end
