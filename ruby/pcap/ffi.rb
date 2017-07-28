@@ -77,6 +77,7 @@ class Packet
         if tcp_payload_len != out_h[:tcp_payload].size then
           STDERR.print "warning: tcp payload size mismatch? #{ipv4_payload_len}, #{tcp_payload_len}, #{out_h[:tcp_payload].size}\n"
         end
+        out_h[:app_payload_len] = tcp_payload_len
       elsif ipv4_protocol == 17 then
         udptop = 14+ipv4_header_len*4
         out_h[:udp_src_port] = @bytes[udptop]*256 + @bytes[udptop+1]
@@ -88,6 +89,7 @@ class Packet
         if udp_payload_len != out_h[:udp_payload].size then
           STDERR.print "warning: udp payload size mismatch? #{ipv4_payload_len}, #{udp_payload_len}, #{out_h[:udp_payload].size}\n"
         end
+        out_h[:app_payload_len] = udp_payload_len
       end
     end
     return out_h
@@ -111,15 +113,29 @@ end
 class Session
   def initialize(pkt)
     @idstr = pkt.to_session_id
-    @packet_count=0
-    @recv_bytes=0  
-    @send_bytes=0
-    @orig_pkt=pkt
+
+    @recv_packet_count=0
+    @send_packet_count=0
+
+    @datalink_recv_bytes=0  
+    @datalink_send_bytes=0
+    @ipv4_recv_bytes=0
+    @ipv4_send_bytes=0
+    @app_recv_bytes=0
+    @app_send_bytes=0
   end
+
   def updateStat(pkt,dev_addr)  # 逆向きも含む
-    if @orig_pkt.get(:ipv4_src_addr) == pkt.get(:ipv4_src_addr) then 
-      @packet_count += 1
-      
+    if pkt.get(:ipv4_src_addr) == dev_addr then
+      @send_packet_count += 1
+      @datalink_send_bytes += pkt.get(:size)
+      @ipv4_send_bytes += pkt.get(:ipv4_total_len)
+      @app_send_bytes += pkt.get(:app_payload_len)
+    elsif pkt.get(:ipv4_dest_addr) == dev_addr then
+      @recv_packet_count += 1
+      @datalink_recv_bytes += pkt.get(:size)
+      @ipv4_recv_bytes += pkt.get(:ipv4_total_len)
+      @app_recv_bytes += pkt.get(:app_payload_len)
     end
   end
 end
