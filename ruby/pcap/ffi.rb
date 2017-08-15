@@ -1,6 +1,6 @@
 require "ffi/pcap"
 require "json"
-
+require "curses"
 
 def to_hex(bary,delim)
   out=[]
@@ -189,12 +189,13 @@ while Kernel.select([io],nil,nil)
       if !s then 
         s = Session.new(pkt)
         $sessions[idstr]=s
-        STDERR.print "new session for #{idstr} count:#{$sessions.size}\n"
+#        STDERR.print "new session for #{idstr} count:#{$sessions.size}\n"
       else
         s.updateStat(pkt,dev_addr)
       end
     end
   end
+  STDERR.print "."
 end
 
 
