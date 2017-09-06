@@ -1,5 +1,12 @@
 // echo server
 
+var host = process.argv[2]
+
+if(!host) {
+    console.log("need host argument");
+    process.exit(1);
+}
+
 var dgram = require("dgram")
 
 var server = dgram.createSocket("udp4");
@@ -28,6 +35,6 @@ setInterval( function() {
     last_recv_bytes =0;
 },1000 );
 
-server.bind(22222, '0.0.0.0');
+server.bind(22222, host);
 
 

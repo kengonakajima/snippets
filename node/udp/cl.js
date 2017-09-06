@@ -32,7 +32,7 @@ var last_recv_bytes=0;
 
 setInterval( function() {
     for(var i=0;i<divide_num;i++) {
-        client.send(message, port, host,  function(err, bytes) {
+        client.send( new Buffer(message,"utf-8"), 0,0, port, host,  function(err, bytes) {
             if (err) {
                 console.log("send-error, EMSGSIZE means message is larger than MTU");
                 throw err;
