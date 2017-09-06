@@ -22,8 +22,9 @@ var last_recv_bytes=0;
 
 server.on('message', function (message, remote) {
 //    console.log(remote.address + ':' + remote.port +' - ' + message);
-    server.send(message,0,message.length, remote.port, remote.host, function(err,bytes) {
-//        console.log("sent ", bytes, " bytes to client:", remote.host, remote.port );
+    server.send(message,0,message.length, remote.port, remote.address, function(err,bytes) {
+        console.log("sent ", bytes, " bytes to client:", remote.address, remote.port );
+        if(err) throw err;
         total_recv_bytes += message.length;
         last_recv_bytes += message.length;
     });
