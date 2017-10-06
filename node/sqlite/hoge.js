@@ -9,16 +9,17 @@ db.on('error', function (err) {
     process.exit(1);
 });
 
-db.run('CREATE TABLE IF NOT EXISTS sample (info TEXT)');
-for (var i = 0; i < 10; i++) {
-    db.run('INSERT INTO sample VALUES (?)', 'i = ' + i);
+for(var kk=0;kk<1000;kk++){
+    db.run('CREATE TABLE IF NOT EXISTS sample (info TEXT)');
+    for (var i = 0; i < 10; i++) {
+        db.run('INSERT INTO sample VALUES (?)', 'i = ' + i);
+    }
+
+    db.each('SELECT rowid AS id, info FROM sample', function (err, row) {
+        console.log(row.id + ': ' + row.info);
+    });
+
+
+    db.close();
 }
-
-db.each('SELECT rowid AS id, info FROM sample', function (err, row) {
-    console.log(row.id + ': ' + row.info);
-});
-
-
-db.close();
-
 
