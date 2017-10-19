@@ -24,6 +24,10 @@ app.use( session({
 }));
 
 
+
+app.use( express.static("poo"));
+
+
 var server = app.listen(3000, function(){
     console.log("Node.js is listening to PORT:" + server.address().port);
 });
@@ -46,8 +50,7 @@ var photoList = [
 
 // 写真リストを取得するAPI
 app.get("/", function(req, res, next){
-    console.log("ppppp");
-    res.json({});
+    res.sendFile(process.env.PWD+"/index.html");
 });
 
 app.get("/api/photo/list", function(req, res, next){
