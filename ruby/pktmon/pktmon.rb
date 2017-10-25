@@ -5,6 +5,9 @@ if !dev then
   exit 1
 end
 
+$uname=`uname`.strip
+  
+
 $last_sent_b=0
 $last_recv_b=0
 $last_sent_p=0
@@ -15,9 +18,26 @@ $sent_p=0
 $recv_p=0
 
 while true
-  out=`ifconfig #{dev}`
+  if $uname=="Darwin" then
+    out=""
+    nsout=`netstat -ib -I #{dev} | grep #{dev}`
+    nsout.split("\n").each do |line|
+      tks=line.split(/\s+/)
+      print tks.join("$"),"\n"
+      ipkts=tks[4].to_i
+      ibytes=tks[6].to_i
+      opkts=tks[7].to_i
+      obytes=tks[9].to_i
+      out += "RX packets #{ipkts} bytes #{ibytes}\n"
+      out += "TX packets #{opkts} bytes #{obytes}\n"
+      print "----\n",out, "\n"
+      break
+    end
+  else
+    out=`ifconfig #{dev}`
+  end
   out.split("\n").each do |line|
-    tks=line.split(" ")
+    tks=line.split(/\s+/)
     if(tks[0]=="RX" and tks[1]=="packets") then
       pn = tks[2].to_i
       bn = tks[4].to_i
