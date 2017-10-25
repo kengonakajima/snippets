@@ -23,7 +23,6 @@ while true
     nsout=`netstat -ib -I #{dev} | grep #{dev}`
     nsout.split("\n").each do |line|
       tks=line.split(/\s+/)
-      print tks.join("$"),"\n"
       ipkts=tks[4].to_i
       ibytes=tks[6].to_i
       opkts=tks[7].to_i
@@ -37,7 +36,7 @@ while true
     out=`ifconfig #{dev}`
   end
   out.split("\n").each do |line|
-    tks=line.split(/\s+/)
+    tks=line.strip.split(/\s+/)
     if(tks[0]=="RX" and tks[1]=="packets") then
       pn = tks[2].to_i
       bn = tks[4].to_i
