@@ -36,6 +36,8 @@ while true
     end
   end
   ts = Time.now.to_i
-  print "[#{ts}] pkt r:#{$recv_p} s:#{$sent_p}  bytes r:#{$recv_b/1000000.0}B s:#{$recv_b/1000000.0}M\n"
+  diff_p=$sent_p-$recv_p
+  per=sprintf("%.2f", diff_p*100.0/$sent_p)
+  print "[#{ts}] pkt: r:#{$recv_p} s:#{$sent_p} s-r:#{diff_p}(#{per}%)  Bytes: r:#{$recv_b/1000000.0}B s:#{$recv_b/1000000.0}M\n"
   sleep 1
 end
