@@ -16,5 +16,6 @@ pool.getConnection( function(err,conn) {
         console.log(err);
         console.log(res);
     });
+    conn.release();
 });
 
