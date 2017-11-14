@@ -17,7 +17,8 @@ var opts = {
     headers: {
         "Content-Type" : "application/json",
         "User-Agent" : "nodejs",
-        "Authorization" : "bearer "+key
+        "Authorization" : "bearer "+key,
+        "Accept" : "application/vnd.github.v4.idl"
     },
     json: true,
     form: {}
@@ -25,6 +26,9 @@ var opts = {
 
 request( opts, function(err,res,body) {
     console.log("err:",err);
-    console.log("res:",res);
-    console.log("body:",body);    
+//    console.log("res:",res);    
+    if(!err) {
+        fs.writeFileSync("data",res.body.data);
+    }
+//    console.log("body:",body);    
 });
