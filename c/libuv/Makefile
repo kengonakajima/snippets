@@ -1,6 +1,10 @@
+CFLAGS=-I../../../libuv/include
+LIBS=../../../libuv/.libs/libuv.a
+
 all: sv cl
 
-sv: sv.c
-	gcc -o sv -I/usr/local/include sv.c -luv
 cl: cl.c
-	gcc -o cl -I/usr/local/include cl.c -luv
+	gcc $(CFLAGS) $(LIBS) cl.c -o cl
+
+sv: sv.c
+	gcc $(CFLAGS) $(LIBS) sv.c -o sv 

@@ -1,13 +1,14 @@
-// libuv 1.8.0 example
+// libuv example
 
-#include <uv.h>
+#include "uv.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
 void alloc_buffer( uv_handle_t *handle, size_t suggested_size, uv_buf_t *outbuf ) {
-    *outbuf = uv_buf_init( (char*) malloc(suggested_size), suggested_size );
+    outbuf->base = malloc(suggested_size);
+    outbuf->len = suggested_size;
 }
 
 void on_close(uv_handle_t* handle) {
