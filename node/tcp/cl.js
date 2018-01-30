@@ -3,14 +3,14 @@
 
 // 設定
 var concurrency = 2;
-var interval_ms = 200;
+var interval_ms = 20;
 var bytes_per_write = 20 * 1024 / concurrency;
 var mbps = (bytes_per_write * concurrency * (1000.0/interval_ms) * 8 ) / 1000000;
 var g_host = process.argv[2]
 var g_sendlen=process.argv[3];
 
 if(!g_host) g_host="127.0.0.1";
-if(!g_sendlen) g_sendlen=32;
+if(!g_sendlen) g_sendlen=32; else g_sendlen=parseInt(g_sendlen);
     
 var sendbuf=new Uint8Array(1024*1024);
 for(var i=0;i<1024*1024;i++) sendbuf[i]=i&0xff;
@@ -37,6 +37,7 @@ function setupClient(host) {
         cl.on("data", function(data) {
             recv_total_bytes += data.length;
             recv_last_bytes += data.length;
+            recv_cnt++;
         });
         cl.on("close", function() {
             console.log("closed:", cl.remoteAddress, cl.remotePort );
@@ -54,6 +55,7 @@ function setupClient(host) {
     
 var recv_total_bytes=0;
 var recv_last_bytes=0;
+var recv_cnt=0;
 
 var net = require("net")
 
@@ -63,6 +65,6 @@ for(var i=0;i<concurrency;i++) {
 }
 
 setInterval( function() {
-    console.log( new Date, " ", recv_total_bytes/1000000.0, "Mbytes total,", recv_last_bytes, "bytes" );
+    console.log( new Date, " ", recv_total_bytes/1000000.0, "Mbytes total,", recv_last_bytes, "bytes", recv_cnt, "times" );
     recv_last_bytes=0;
 }, 1000 );
