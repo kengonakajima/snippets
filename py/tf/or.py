@@ -10,8 +10,8 @@ Y = [[0.], [1.], [1.], [1.]]
 
 with tf.Graph().as_default() :
     g = tflearn.input_data(shape=[None,2])
-    g = tflearn.fully_connected(g,128,activation="linear")
-    g = tflearn.fully_connected(g,128,activation="linear")
+#    g = tflearn.fully_connected(g,128,activation="linear")
+#    g = tflearn.fully_connected(g,128,activation="linear")
     g = tflearn.fully_connected(g,1,activation="sigmoid")
     g = tflearn.regression(g, optimizer="sgd", learning_rate=2., loss="mean_square")
 
