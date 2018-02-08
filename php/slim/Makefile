@@ -3,3 +3,4 @@ sv:
 
 test:
 	curl http://localhost:8888/f.php/f.php
+	curl http://localhost:8888/f.php/vendor/autoload.php
