@@ -6,9 +6,10 @@ use \Slim\App;
 $app = new \Slim\App();
 
 
-$app->get('/', function($req,$res,$args) {
+$app->get('/[{path:.*}]', function($req,$res,$args) {
     try {
-        $fn = "." . $_SERVER['REQUEST_URI'];
+        $uri=$req->getUri();
+        $fn="./" . $uri->getPath();
         $f=fopen($fn,"r");
         $content=fread($f,filesize($fn));
         return $res->withStatus(200)->write($content);
