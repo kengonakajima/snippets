@@ -11,7 +11,7 @@ $conf=[
     ]
 ];
 $app = new \Slim\App($conf);
-
+$app->config("debug",true);
 
 $app->get('/', function($req,$res,$args) {
     try {
