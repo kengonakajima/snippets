@@ -3,7 +3,7 @@
 // roomサーバにつないで部屋を作る。
 // 以下のどちらかを返す
 // "ERROR 理由の文字列"
-// "OK"
+// "OK {"room_id":699,"owner_id":0}"
 function mrs_room_create_room( $host, $port, $room_id, $owner_id ) {
     $sk=socket_create(AF_INET,SOCK_STREAM,0);
     $ret=socket_connect($sk,$host,$port);
@@ -53,10 +53,11 @@ function mrs_room_create_room( $host, $port, $room_id, $owner_id ) {
             } else if($pktype==0x0101) { // RPC_ID_CREATE_ROOM
                 // create_roomの結果を受信             
                 $out=unpack("Vlen/Vseq/vopt/vpktype/vresult/Proomid/Vowner/Vdatalen", $bytes);
-                // echo "res:",$out["result"], "room:",$out["roomid"],"owner:",$out["owner"], "datalen:",$out["datalen"], "\n";                
+                echo "res:",$out["result"], "room:",$out["roomid"],"owner:",$out["owner"], "datalen:",$out["datalen"], "\n";                
                 $res=$out["result"];
                 if($res==0) {
-                    $outval="OK";
+                    $a=array("room_id"=> $out["roomid"], "owner_id"=> $out["owner"] );
+                    $outval="OK ".json_encode($a);
                 } else {
                     $res-=0x10000;
                     $outval="ERROR room_server error:".(string)$res;
@@ -74,7 +75,7 @@ function mrs_room_create_room( $host, $port, $room_id, $owner_id ) {
     return $outval;
 }
 
-$result = mrs_room_create_room( "52.192.193.235", 33333, 66, 77 );
+$result = mrs_room_create_room( "52.192.193.235", 33333, 69, 0 ); // 0にするとじどうさくせい
 
 echo "mrs_room_create_room result:",$result,"\n";
 
