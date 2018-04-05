@@ -1,12 +1,12 @@
 <?php
 
-$memcache=new Memcached();
+$memcache=new Memcache();
 
 $memcache->addServer("localhost",11211);
 
 $data="hello";
 $t0=gettimeofday(true);
-$memcache->set("hoge", $data, 100 );
+$memcache->set("hoge", $data, 0, 100 );
 $t1=gettimeofday(true);
 $get_data = $memcache->get("hoge");
 $t2=gettimeofday(true);
