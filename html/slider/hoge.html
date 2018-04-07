@@ -1,0 +1,8 @@
+<input id="r1" type="range" min=0 max=100 onchange="showValue()">
+
+<span id="showRangeArea">0</span>
+ <script type="text/javascript">
+  function showValue () {
+     document.getElementById("showRangeArea").innerHTML = document.getElementById("r1").value;
+  }
+</script>  
