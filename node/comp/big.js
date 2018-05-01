@@ -47,6 +47,7 @@ hrnow = function() {
 var n=16*16*16;
 var simple=[];
 var bulk={bt:new Array(n), lt:new Array(n), hoge:new Array(n), fuga:new Array(n), tt:new Array(n), st:new Array(n) };
+var bytes=new Array(n*6);
 
 var t0=hrnow();
 for(var i=0;i<n;i++) {
@@ -58,6 +59,12 @@ for(var i=0;i<n;i++) {
     bulk.fuga[i]=c.fuga;
     bulk.tt[i]=c.tt;
     bulk.st[i]=c.st;
+    bytes[i*6]=c.bt;
+    bytes[i*6+1]=c.lt;
+    bytes[i*6+2]=c.hoge;
+    bytes[i*6+3]=c.fuga;
+    bytes[i*6+4]=c.tt;
+    bytes[i*6+5]=c.st;
 }
 var t1=hrnow();
 var simple_s=JSON.stringify(simple);
@@ -86,3 +93,15 @@ snappy.compress(bulk_s, function(err,compd) {
     var t8=hrnow();
     console.log("snappyed_bulk:", compd.length, t8-t7);
 });
+
+
+var t9=hrnow();
+var bytes_s=JSON.stringify(bytes);
+var t10=hrnow();
+console.log("bytes tojson:", bytes_s.length,t10-t9);
+
+snappy.compress(bytes_s, function(err,compd) {
+    var t11=hrnow();
+    console.log("snappyed_bytes:", compd.length, t11-t10);
+});
+
