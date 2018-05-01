@@ -105,3 +105,9 @@ snappy.compress(bytes_s, function(err,compd) {
     console.log("snappyed_bytes:", compd.length, t11-t10);
 });
 
+require("./lzw.js");
+
+var t11=hrnow();
+var lzwout=lzw_encode(bytes_s);
+var t12=hrnow();
+console.log("lzw:", lzwout.length, t12-t11);
