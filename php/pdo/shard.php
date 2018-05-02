@@ -7,6 +7,10 @@ ORM::configure('mysql:host=localhost;dbname=shardtest', null,"idconn");
 ORM::configure('username', 'root', "idconn");
 ORM::configure('password', 'monobit', "idconn");
 
+ORM::configure('mysql:host=localhost;dbname=test');
+ORM::configure('username', 'root');
+ORM::configure('password', 'monobit');
+
 ORM::configure('mysql:host=localhost;dbname=test', null,"conn1");
 ORM::configure('username', 'root', "conn1");
 ORM::configure('password', 'monobit', "conn1");
@@ -44,6 +48,19 @@ $db->exec("INSERT INTO id_range values ( 30, 39, 1, 1, 3 );");
 $db->exec("DROP TABLE IF EXISTS id_generator;");
 $db->exec("CREATE TABLE IF NOT EXISTS id_generator ( id bigint NOT NULL PRIMARY KEY AUTO_INCREMENT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP );");
 
+var_dump(ORM::getDb());
+var_dump(ORM::getDb("idconn"));
+var_dump(ORM::getDb("conn1"));
+var_dump(ORM::getDb("conn2"));
+
+$xx=ORM::getDb();
+
+$xx->exec("create table if not exists xxxx ( id int);");
+$xx->exec("insert into xxxx values (1111);");
+$out=$xx->exec("select * from xxxx;");
+
+var_dump($out);
+
 function generateNewID() {
     $id=ORM::forTable("id_generator","idconn")->create();
     $id->save();
@@ -55,7 +72,7 @@ function getShardId($id) {
     //    var_dump($shard);
     return $shard["shard_id"];
 }
-
+/*
 for($i=0;$i<50;$i++) {
     $new_id=generateNewID();
     $shard_id=getShardId($new_id);
@@ -63,3 +80,4 @@ for($i=0;$i<50;$i++) {
     echo $new_id, " ", $shard_id, "\n";
 }
 
+*/
