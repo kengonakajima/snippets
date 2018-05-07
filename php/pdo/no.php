@@ -18,11 +18,12 @@ var_dump( (int)$a[0]->id);
 
 $a=ORM::forTable("aho")->where("id",9191)->find_many();
 
-var_dump( $a[0]->id);
+var_dump( $a);
+var_dump( $a[0]);
 
 var_dump(NULL);
 
-var_dump(NULL==NULL);
+var_dump(NULL==null);
 
 $a=NULL;
 
