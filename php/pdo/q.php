@@ -20,16 +20,18 @@ echo ORM::getLastQuery();
 
 
 $res=ORM::forTable("zako")->distinct()->select("b")->find_many();
+echo ORM::getLastQuery();
 
 //var_dump($res);
 
 echo "\n";
-var_dump($res[0]->b);
-var_dump($res[1]->b);
-var_dump($res[2]->b);
+
+$a=array();
+
+foreach($res as $row) {
+    array_push($a,$row->b);
+}
+var_dump($a);
 
 
 
-
-
-echo ORM::getLastQuery();
