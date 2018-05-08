@@ -14,14 +14,20 @@ $val=[ "id"=>191 ];
 
 $a=ORM::forTable("zako")->find_many();
 
-var_dump($a);
+//var_dump($a);
 
 echo ORM::getLastQuery();
 
 
 $res=ORM::forTable("zako")->distinct()->select("b")->find_many();
 
-var_dump($res);
+//var_dump($res);
+
+echo "\n";
+var_dump($res[0]->b);
+var_dump($res[1]->b);
+var_dump($res[2]->b);
+
 
 
 
