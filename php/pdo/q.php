@@ -19,3 +19,11 @@ var_dump($a);
 echo ORM::getLastQuery();
 
 
+$res=ORM::forTable("zako")->distinct()->select("b")->find_many();
+
+var_dump($res);
+
+
+
+
+echo ORM::getLastQuery();
