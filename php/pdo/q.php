@@ -29,7 +29,7 @@ echo "\n";
 $a=array();
 
 foreach($res as $row) {
-    array_push($a,$row->b);
+    array_push($a,$row["b"]); // $row->bだと(int)になる
 }
 var_dump($a);
 
