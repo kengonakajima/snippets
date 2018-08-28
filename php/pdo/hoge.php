@@ -1,8 +1,12 @@
 <?php
-$user="mwf_test";
-$pass="mwf_test";
-$dbh = new PDO('mysql:host=localhost;dbname=mwf_dev_common', $user, $pass);
-foreach($dbh->query("select * from hoge") as $row) {
+$user="tempra";
+$pass="tempra";
+$dbh = new PDO('mysql:host=localhost;dbname=tempra_common', $user, $pass);
+
+$res=$dbh->query("select * from hoge");
+var_dump($res);
+
+foreach($res as $row) {    
   print_r($row);
 }
 ?>
