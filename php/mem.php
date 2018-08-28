@@ -1,14 +1,14 @@
 <?php
 
-$memcache=new Memcache();
+$mc=new Memcached();
 
-$memcache->addServer("localhost",11211);
+$mc->addServer("localhost",11211);
 
 $data="hello";
 $t0=gettimeofday(true);
-$memcache->set("hoge", $data, 0, 100 );
+$mc->set("hoge", $data, 100 );
 $t1=gettimeofday(true);
-$get_data = $memcache->get("hoge");
+$get_data = $mc->get("hoge");
 $t2=gettimeofday(true);
 
 echo $get_data, "\n";
