@@ -1,17 +1,19 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
 
-main()
+int main()
 {
 
 	struct stat sbuf;
     int r;
-	r = stat( "fud" ,  &sbuf );
+	r = stat( "aho.c" ,  &sbuf );
 
     printf("R:%d\n" , r);
-	printf( " size: %d\n" , sbuf.st_size );
+	printf( " size: %lld\n" , sbuf.st_size );
 
 	printf(" %d\n" , S_ISDIR( sbuf.st_mode));
+    printf(" mtime: %lld\n", sbuf.st_mtime );    
     
 }
