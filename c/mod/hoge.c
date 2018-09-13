@@ -1,4 +1,6 @@
 #include <stdio.h>
 int main() {
-    printf("hoge:%d %d %d\n", -5 % 16, -30%16, -16%16);
+    for(int i=-30;i<30;i++) {
+        printf("hoge:%d  %d\n",i,i%16);
+    }
 }
