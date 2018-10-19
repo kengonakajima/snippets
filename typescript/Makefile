@@ -8,3 +8,9 @@ decl.js : decl.ts
 
 poo.js : poo.ts
 	$(TSC) poo.ts
+
+cons.js : cons.ts
+	$(TSC) cons.ts
+
+z.js : z.ts
+	$(TSC) z.ts
