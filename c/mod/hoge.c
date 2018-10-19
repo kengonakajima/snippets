@@ -1,6 +1,6 @@
 #include <stdio.h>
 int main() {
-    for(int i=-30;i<30;i++) {
+    for(int i=-100;i<100;i++) {
         printf("hoge:%d  %d\n",i,i%16);
     }
 }
