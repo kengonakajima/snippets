@@ -59,8 +59,13 @@ int main() {
     int at=0;
     double st=now();
     for(int i=0;i<n;i++) {
-        at+=irange(skip/2,skip);
+        //        at+=irange(skip/2,skip);
         //at=irange(0,sz); // 1.92s
+        //        at+=1;// 0.008s
+        // at+=2; //0.029
+        //     at+=3; // 0.033
+        at+=8; //0.07
+        at+=16; // 0.20
         buf[at%sz]++;
     }
     double et=now();
