@@ -65,15 +65,17 @@ void sim(int x, int y) {
             (*dc)++;
             (*c)=0;
         } else {
-            /*            
-            char *uc=get(x,y+1);
-            if( (*uc)==AIR && (*dc)>0&&(*dc)<WATER_MAX) {
-                (*c)--;
-                (*dc)++;
+#if 0            
+            if(range(0,1)<0.01) {
+                char *uc=get(x,y+1);
+                if( ((*uc)==AIR||(*uc)==WALL) && (*dc)>0&&(*dc)<WATER_MAX) {
+                    (*c)--;
+                    (*dc)++;
+                }
             }
-            */            
+#endif            
         }
-        return;
+        return; // これ重要。これがあるので1がつみあがる
     } else if(*c>1){
         if( (*dc)!=WALL && (*dc)<WATER_MAX) {
             (*dc)++;
@@ -83,31 +85,51 @@ void sim(int x, int y) {
     // compress
     char *uc=get(x,y+1);
     char *uuc=get(x,y+2);
-    if(*c>0 && *c<WATER_MAX && *uc==1 && *uuc==AIR) {
+    if(*c>0 && *c<WATER_MAX && *uc==1 && (*uuc==AIR || *uuc==WALL) ) {
         (*c)++;
         (*uc)=0;
     }
     // horiz
-    if(range(0,1)<0.5) {
-        // R
-        char *rc=get(x+1,y);
-        if(*rc==WALL)return;
-        if(*rc==*c)return;
-        if(*rc<*c-1) {
-            (*rc)++;
-            (*c)--;
+    if(*c>0) {
+        if(range(0,1)<0.5) {
+            // R
+            char *rc=get(x+1,y);
+            if(*rc==WALL)return;
+            if(*rc==*c)return;
+            char *dc=get(x,y-1);
+            if(*dc>=0&&*dc<WATER_MAX)return;
+            if(*rc<*c-1) {
+                (*rc)++;
+                (*c)--;
+            }
+        } else {
+            // L
+            char *lc=get(x-1,y);
+            if(*lc==WALL)return;
+            if(*lc==*c)return;
+            char *dc=get(x,y-1);
+            if(*dc>=0&&*dc<WATER_MAX)return;            
+            if(*lc<*c-1) {
+                (*lc)++;
+                (*c)--;
+            }
         }
-    } else {
-        // L
-        char *lc=get(x-1,y);
-        if(*lc==WALL)return;
-        if(*lc==*c)return;
-        if(*lc<*c-1) {
-            (*lc)++;
-            (*c)--;
-        }
-        
     }
+#if 1    
+    // destroy needle
+    if(*c==1) {
+        char *rc=get(x+1,y);
+        char *lc=get(x-1,y);
+        if( (*rc==AIR) && (*lc==AIR) ) {
+            char *dc=get(x,y-1);
+            char *uc=get(x,y+1);
+            if(*dc>=0&&*dc<WATER_MAX && (*uc==AIR||*uc==WALL)) {
+                (*dc)++;
+                (*c)--;
+            }
+        }
+    }
+#endif    
 }
 void display() {
     for(int y=H-1;y>=0;y--){
@@ -136,23 +158,29 @@ h  --+
 0,0     W
  */    
     fill(0,0,W,H,AIR);
-    fill(0,0,W,5,WALL);
+    fill(0,0,W,1,WALL);
     fill(0,0,12,20,WALL);
     fill(0,0,1,H,WALL);
     fill(1,20,5,27,WATER_MAX);
     fill(W-1,0,W,H,WALL);
     fill(1,12,15,18,AIR);
-    fill(10,15,W,16,WALL);
-    int nstep=1000;
+    //    fill(8,15,W,16,WALL);
+    int nstep=40000;
     for(int i=0;i<nstep;i++) {
-        for(int j=0;j<H*W;j++) {
+        for(int j=0;j<H*W*2;j++) {
             int x=irange(0,W), y=irange(0,H);
             sim(x,y);   
         }
+        if(range(0,1)<0.5) {
+            char *spawner=get(1,W-3);
+            //            if(*spawner<WATER_MAX)(*spawner)++;
+            if(*spawner<WATER_MAX)(*spawner)=WATER_MAX;
+        }
+        
         for(int i=0;i<30;i++) fprintf(stderr,"\n");
         display();
         fprintf(stderr,"step:%d\n",i);
-        usleep(50*1000);
+        usleep(30*1000);
         
     }
 }
