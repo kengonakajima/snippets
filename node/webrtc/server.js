@@ -95,3 +95,21 @@ wss.on('connection', ws => {
     }
   })
 })
+
+/////////////////
+express=require("express");
+body_parser=require("body-parser");
+helmet=require("helmet");
+url=require("url");
+
+var app=express();
+app.use(helmet());
+app.use(body_parser.urlencoded({extended: true}));
+app.use("/client.js", express.static("client.js"));
+app.use("/index.html", express.static("index.html"));
+app.get("/", function(req,res,next) {
+    res.sendFile( process.env.PWD + "/index.html") ;
+});
+var web_server = app.listen(3000,"0.0.0.0", function() {
+    console.log("web server is listening") ;
+});
