@@ -1,4 +1,5 @@
-const ws = new WebSocket('ws://52.192.193.235:8080')
+var wsaddr = document.location.host.split(":")[0];
+const ws = new WebSocket(`ws://${wsaddr}:8080`);
 
 ws.onopen = () => {
   console.log('Connected to the signaling server')
@@ -63,63 +64,74 @@ document.querySelector('button#login').addEventListener('click', event => {
 })
 
 const handleLogin = async success => {
-  if (success === false) {
-    alert('😞 Username already taken')
-  } else {
-    document.querySelector('div#login').style.display = 'none'
-    document.querySelector('div#call').style.display = 'block'
+    if (success === false) {
+        alert('😞 Username already taken')
+    } else {
+        document.querySelector('div#login').style.display = 'none'
+        document.querySelector('div#call').style.display = 'block'
 
-/*    let localStream
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      })
-    } catch (error) {
-      alert(`${error.name}`)
-      console.error(error)
+        /*    let localStream
+              try {
+              localStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: true
+              })
+              } catch (error) {
+              alert(`${error.name}`)
+              console.error(error)
+              }
+
+              document.querySelector('video#local').srcObject = localStream
+        */
+        
+        const configuration = {
+            iceServers: [{ url: 'stun:stun2.1.google.com:19302' }]
+        }
+
+        connection = new RTCPeerConnection(configuration)
+
+
+        var dc=connection.createDataChannel("mylabel", {ordered:false, maxRetransmitTime: 3000 });
+        console.log("dc:",dc);
+        dc.onopen=function() {
+            console.log("onopen", dc.readyState);
+            setInterval( function() {
+                console.log("sending",dc);
+                dc.send("hello world");              
+            },1000);
+
+        }
+        dc.onerror = function(e) { console.log("dc error:",e); }
+        dc.onclose = function() {
+            console.log("onclose");
+        }
+        dc.onmessage=function(event) {
+            console.log("dc message:",event.data);
+        }
+        //    connection.addStream(localStream)
+
+        //    connection.onaddstream = event => {
+        //      document.querySelector('video#remote').srcObject = event.stream
+        //    }
+
+        connection.ondatachannel = function(ev) {
+            console.log("ondc",ev);
+            setInterval( function() {
+                console.log("s2ending",ev.channel);
+                ev.channel.send("hello world 2");              
+            },1000);
+            
+            
+        }
+        connection.onicecandidate = event => {
+            if (event.candidate) {
+                sendMessage({
+                    type: 'candidate',
+                    candidate: event.candidate
+                })
+            }
+        }
     }
-
-    document.querySelector('video#local').srcObject = localStream
-    */
-      
-    const configuration = {
-      iceServers: [{ url: 'stun:stun2.1.google.com:19302' }]
-    }
-
-    connection = new RTCPeerConnection(configuration)
-
-      var dc=connection.createDataChannel("mylabel", {ordered:false, maxRetransmitTime: 3000 });
-      console.log("dc:",dc);
-      dc.onopen=function() {
-          console.log("onopen", dc.readyState);
-          setInterval( function() {
-              dc.send("hello world");              
-          },1000);
-
-      }
-      dc.onerror = function(e) { console.log("dc error:",e); }
-      dc.onclose = function() {
-          console.log("onclose");
-      }
-      dc.onmessage=function(event) {
-          console.log("dc message:",event.data);
-      }
-//    connection.addStream(localStream)
-
-//    connection.onaddstream = event => {
-//      document.querySelector('video#remote').srcObject = event.stream
-//    }
-
-    connection.onicecandidate = event => {
-      if (event.candidate) {
-        sendMessage({
-          type: 'candidate',
-          candidate: event.candidate
-        })
-      }
-    }
-  }
 }
 
 document.querySelector('button#call').addEventListener('click', () => {
