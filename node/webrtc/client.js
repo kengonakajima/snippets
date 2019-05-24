@@ -1,4 +1,4 @@
-const ws = new WebSocket('ws://localhost:8080')
+const ws = new WebSocket('ws://52.192.193.235:8080')
 
 ws.onopen = () => {
   console.log('Connected to the signaling server')
@@ -9,7 +9,7 @@ ws.onerror = err => {
 }
 
 ws.onmessage = msg => {
-  console.log('Got message', msg.data)
+  console.log('Got message on ws', msg.data)
 
   const data = JSON.parse(msg.data)
 
@@ -69,7 +69,7 @@ const handleLogin = async success => {
     document.querySelector('div#login').style.display = 'none'
     document.querySelector('div#call').style.display = 'block'
 
-    let localStream
+/*    let localStream
     try {
       localStream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -81,18 +81,35 @@ const handleLogin = async success => {
     }
 
     document.querySelector('video#local').srcObject = localStream
-
+    */
+      
     const configuration = {
       iceServers: [{ url: 'stun:stun2.1.google.com:19302' }]
     }
 
     connection = new RTCPeerConnection(configuration)
 
-    connection.addStream(localStream)
+      var dc=connection.createDataChannel("mylabel", {ordered:false, maxRetransmitTime: 3000 });
+      console.log("dc:",dc);
+      dc.onopen=function() {
+          console.log("onopen", dc.readyState);
+          setInterval( function() {
+              dc.send("hello world");              
+          },1000);
 
-    connection.onaddstream = event => {
-      document.querySelector('video#remote').srcObject = event.stream
-    }
+      }
+      dc.onerror = function(e) { console.log("dc error:",e); }
+      dc.onclose = function() {
+          console.log("onclose");
+      }
+      dc.onmessage=function(event) {
+          console.log("dc message:",event.data);
+      }
+//    connection.addStream(localStream)
+
+//    connection.onaddstream = event => {
+//      document.querySelector('video#remote').srcObject = event.stream
+//    }
 
     connection.onicecandidate = event => {
       if (event.candidate) {
