@@ -67,7 +67,7 @@ const char fsh_red_glsl[] =
     "}\n";
 
 
-const int SCRW=640, SCRH=480;
+const int SCRW=1280, SCRH=720;
 
 ////////
 
@@ -203,10 +203,16 @@ GLuint loadBMP(const char *fname) {
     
 }
 
+// mbp2018
+// 2.8% for no-cap
+// 13% for 640x480
+// 27% for 1280x720
+// 5.7% for 1280x720, skip row1,pix1
 void capture() {
+    const int RETINA=2;
 	static bool init = false;
 	static GLuint pbo_id;
-	size_t pbo_size = SCRW * SCRH * 3;
+	size_t pbo_size = SCRW * SCRH * 3 * RETINA * RETINA;
 	if (!init) {
 		init = true;
 		print("initialize pbo");
@@ -216,24 +222,39 @@ void capture() {
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
 	}
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_id);
-	glReadPixels(0, 0, SCRW, SCRH, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_id);
+	glReadPixels(0, 0, SCRW*RETINA, SCRH*RETINA, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	GLubyte *ptr = (GLubyte*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, pbo_size, GL_MAP_READ_BIT);
 
     static unsigned char *g_pixels;
-	if (!g_pixels)g_pixels = (unsigned char*) malloc(SCRW*SCRH * 3); // RGB
+	if (!g_pixels)g_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA); // RGB * retina*retina
 
-#if 1
 	if (ptr) memcpy(g_pixels, ptr, pbo_size); else print("updategenvid ptr null error:%d",glGetError());
-#else
-	for (int y = 0; y < g_scrh; y++) {
-		memcpy(g_pixels + y * SCRW * 3, ptr + (SCRH - 1 - y) * SCRW * 3, SCRW * 3);
-	}
-#endif
 
 	glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+    // dump, 20pixごとに
+#if 1
+    int u=20;
+    for(int y=0;y<SCRH*RETINA;y+=u) {
+        for(int x=0;x<SCRW*RETINA;x+=u) {
+            unsigned int at = x*3 + y*SCRW*3*RETINA;
+            unsigned char r=g_pixels[at];
+            unsigned char g=g_pixels[at+1];
+            unsigned char b=g_pixels[at+2];
+            if(r>0) prt("*"); else prt(".");
+        }
+        print("");
+    }
+    print("--");
+    //    FILE *fp=fopen("dumped","wb");
+    //    fwrite(g_pixels, 1, SCRW*SCRH*3, fp);
+    //    fclose(fp);
+    
+#endif    
 }    
 
 
@@ -249,6 +270,7 @@ int main() {
     
     glfwSetErrorCallback(errorCallback);
 
+    //     glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER,1); not available in glfw 3.2
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -265,7 +287,7 @@ int main() {
     
     //    glfwSetWindowCloseCallback()
     glfwSwapInterval(1);
-    glClearColor(0.2,0.2,0.2,1);
+    glClearColor(0,0,0,1);
 
 
     GLuint program_id = LoadShaders( vsh_simple_glsl, fsh_red_glsl ); // fragment_uv_color_glsl );
