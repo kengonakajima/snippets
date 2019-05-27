@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <unistd.h>
 
 #include <OpenGL/gl3.h>
@@ -41,22 +42,27 @@ const char vsh_simple_glsl[] =
     "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
     // Notice that the "1" here equals the "1" in glVertexAttribPointer
     "layout(location = 1) in vec3 vertexColor;\n"
+    "layout(location = 2) in vec2 vertexUV;\n"    
     "uniform mat4 MVP;\n"
-    "out vec3 fragmentColor;\n"        
+    "out vec3 fragmentColor;\n"
+    "out vec2 UV;\n"            
     "void main() {\n"
     //    " gl_Position.xyz=vertexPosition_modelspace;\n"
     //    " gl_Position.w=1.0;\n"
     " gl_Position=MVP*vec4(vertexPosition_modelspace,1);\n"
-    "  fragmentColor = vertexColor;\n"        
+    "  fragmentColor = vertexColor;\n"
+    "  UV = vertexUV;\n"            
     "}\n";
 
 const char fsh_red_glsl[] = 
     "# version 330 core\n"
     "in vec3 fragmentColor;\n"
+    "in vec2 UV;\n"
     "out vec3 color;\n"
+    "uniform sampler2D myTextureSampler;\n"
     "void main(){\n"
     //    "  color = vec3(1,0,0);\n"
-    "  color = fragmentColor;\n"    
+    "  color = texture(myTextureSampler,UV).rgb;\n"    
     "}\n";
 
 void errorCallback(int code, const char* err_str) {
@@ -130,6 +136,66 @@ GLuint LoadShaders(const char * v_glsl,const char * f_glsl){
 	return ProgramID;
 }
 
+GLuint loadBMP(const char *fname) {
+
+    // Data read from the header of the BMP file
+    unsigned char header[54]; // Each BMP file begins by a 54-bytes header
+    unsigned int dataPos;     // Position in the file where the actual data begins
+    unsigned int width, height;
+    unsigned int imageSize;   // = width*height*3
+    // Actual RGB data
+    unsigned char * data;
+
+    FILE *fp=fopen(fname,"rb");
+    if(!fp) {
+        print("cant open file");
+        exit(1);
+    }
+    if(fread(header,1,54,fp)!=54) {
+        print("header erorr");
+        exit(1);
+    }
+    if ( header[0]!='B' || header[1]!='M' ){
+        printf("Not a correct BMP file\n");
+        return 0;
+    }
+
+    // Read ints from the byte array
+    dataPos    = *(int*)&(header[0x0A]);
+    imageSize  = *(int*)&(header[0x22]);
+    width      = *(int*)&(header[0x12]);
+    height     = *(int*)&(header[0x16]);
+
+    // Some BMP files are misformatted, guess missing information
+    if (imageSize==0)    imageSize=width*height*3; // 3 : one byte for each Red, Green and Blue component
+    if (dataPos==0)      dataPos=54; // The BMP header is done that way
+
+    // Create a buffer
+    data = new unsigned char [imageSize];
+
+    // Read the actual data from the file into the buffer
+    fread(data,1,imageSize,fp);
+
+    //Everything is in memory now, the file can be closed
+    fclose(fp);
+
+
+    // Create one OpenGL texture
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+
+    // "Bind" the newly created texture : all future texture functions will modify this texture
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // Give the image to OpenGL
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    return textureID;
+    
+}
 
 const int SCRW=640, SCRH=480;
 
@@ -255,6 +321,45 @@ int main() {
                                                   0.982f,  0.099f,  0.879f
     };
 
+    static const GLfloat g_uv_buffer_data[] = {
+                                               0.000059f, 1.0f-0.000004f,
+                                               0.000103f, 1.0f-0.336048f,
+                                               0.335973f, 1.0f-0.335903f,
+                                               1.000023f, 1.0f-0.000013f,
+                                               0.667979f, 1.0f-0.335851f,
+                                               0.999958f, 1.0f-0.336064f,
+                                               0.667979f, 1.0f-0.335851f,
+                                               0.336024f, 1.0f-0.671877f,
+                                               0.667969f, 1.0f-0.671889f,
+                                               1.000023f, 1.0f-0.000013f,
+                                               0.668104f, 1.0f-0.000013f,
+                                               0.667979f, 1.0f-0.335851f,
+                                               0.000059f, 1.0f-0.000004f,
+                                               0.335973f, 1.0f-0.335903f,
+                                               0.336098f, 1.0f-0.000071f,
+                                               0.667979f, 1.0f-0.335851f,
+                                               0.335973f, 1.0f-0.335903f,
+                                               0.336024f, 1.0f-0.671877f,
+                                               1.000004f, 1.0f-0.671847f,
+                                               0.999958f, 1.0f-0.336064f,
+                                               0.667979f, 1.0f-0.335851f,
+                                               0.668104f, 1.0f-0.000013f,
+                                               0.335973f, 1.0f-0.335903f,
+                                               0.667979f, 1.0f-0.335851f,
+                                               0.335973f, 1.0f-0.335903f,
+                                               0.668104f, 1.0f-0.000013f,
+                                               0.336098f, 1.0f-0.000071f,
+                                               0.000103f, 1.0f-0.336048f,
+                                               0.000004f, 1.0f-0.671870f,
+                                               0.336024f, 1.0f-0.671877f,
+                                               0.000103f, 1.0f-0.336048f,
+                                               0.336024f, 1.0f-0.671877f,
+                                               0.335973f, 1.0f-0.335903f,
+                                               0.667969f, 1.0f-0.671889f,
+                                               1.000004f, 1.0f-0.671847f,
+                                               0.667979f, 1.0f-0.335851f
+    };
+    
     // This will identify our vertex buffer
     GLuint vertexbuffer;
     // Generate 1 buffer, put the resulting identifier in vertexbuffer
@@ -268,7 +373,11 @@ int main() {
     glGenBuffers(1, &colorbuffer);
     glBindBuffer(GL_ARRAY_BUFFER,colorbuffer);
     glBufferData(GL_ARRAY_BUFFER,sizeof(g_color_buffer_data),g_color_buffer_data,GL_STATIC_DRAW);
-    
+
+    GLuint uvbuffer;
+    glGenBuffers(1, &uvbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER,uvbuffer);
+    glBufferData(GL_ARRAY_BUFFER,sizeof(g_uv_buffer_data),g_uv_buffer_data,GL_STATIC_DRAW);
 
     // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCRW/(float)SCRH, 0.1f, 100.0f);
@@ -292,6 +401,9 @@ int main() {
     // Only during the initialisation
     GLuint matrix_id = glGetUniformLocation(program_id, "MVP");
 
+    // tex
+    GLuint tex = loadBMP("uvtemplate.bmp");
+	GLuint texture_uniform_loc  = glGetUniformLocation(program_id, "myTextureSampler");
 
     //////////
 
@@ -312,7 +424,15 @@ int main() {
         // Send our transformation to the currently bound shader, in the "MVP" uniform
         // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
         glUniformMatrix4fv(matrix_id, 1, GL_FALSE, &mvp[0][0]);
-        
+
+		// Bind our texture in Texture Unit 0
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		// Set our "myTextureSampler" sampler to use Texture Unit 0
+		glUniform1i(texture_uniform_loc, 0);
+
+
+        // send buffer
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
         glVertexAttribPointer(
@@ -333,10 +453,25 @@ int main() {
                               0,                                // stride
                               (void*)0                          // array buffer offset
                               );
+
+        glEnableVertexAttribArray(2);
+        glBindBuffer(GL_ARRAY_BUFFER,uvbuffer );
+        glVertexAttribPointer(
+                              2,
+                              2,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              0,
+                              (void*)0
+                              );
+        
+
         
         // Draw the triangle !
         glDrawArrays(GL_TRIANGLES, 0, 12*3); // Starting from vertex 0; 3 vertices total -> 1 triangle
         glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);        
 
         glfwSwapBuffers(window);
 		glfwPollEvents();
