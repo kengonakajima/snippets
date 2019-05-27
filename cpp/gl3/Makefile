@@ -1,5 +1,5 @@
 GLFW=../../../ssg/moyai/glfw-3.2
-CFLAGS=-std=c++0x -I$(GLFW)/include -I. -Wno-deprecated-declarations
+CFLAGS=-std=c++0x -I$(GLFW)/include -I. -Wno-deprecated-declarations -Iglm-0.9.7.1
 
 OSX_TARGET=10.14
 OSX_TARGET_FLAG= #-mmacosx-version-min=$(OSX_TARGET)

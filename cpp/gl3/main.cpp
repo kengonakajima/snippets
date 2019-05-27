@@ -5,6 +5,8 @@
 # define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
 #include "GLFW/glfw3.h"
 
+#include "glm/gtc/matrix_transform.hpp"
+
 #include "cumino.h"
 
 const char vertex_uv_color_glsl[] =
@@ -37,9 +39,11 @@ const char vsh_simple_glsl[] =
     //    "# version 330 core\n"
     "#version 330 core\n"
     "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
+    "uniform mat4 MVP;\n"
     "void main() {\n"
-    " gl_Position.xyz=vertexPosition_modelspace;\n"
-    " gl_Position.w=1.0;\n"
+    //    " gl_Position.xyz=vertexPosition_modelspace;\n"
+    //    " gl_Position.w=1.0;\n"
+    " gl_Position=MVP*vec4(vertexPosition_modelspace,1);\n"
     "}\n";
 
 const char fsh_red_glsl[] = 
@@ -121,6 +125,7 @@ GLuint LoadShaders(const char * v_glsl,const char * f_glsl){
 }
 
 
+const int SCRW=640, SCRH=480;
 
 int main() {
     GLFWwindow *window;
@@ -138,7 +143,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    window = glfwCreateWindow( 640,480, "test", NULL, NULL );
+    window = glfwCreateWindow( SCRW,SCRH, "test", NULL, NULL );
     if(!window) {
         print("createwindow error:");
         exit(1);
@@ -174,6 +179,28 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
     
 
+    // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCRW/(float)SCRH, 0.1f, 100.0f);
+    // Or, for an ortho camera :
+    //glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
+
+    // Camera matrix
+    glm::mat4 view = glm::lookAt(
+                                 glm::vec3(4,3,3), // Camera is at (4,3,3), in World Space
+                                 glm::vec3(0,0,0), // and looks at the origin
+                                 glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+                                 );
+
+    // Model matrix : an identity matrix (model will be at the origin)
+    glm::mat4 model = glm::mat4(1.0f);
+    // Our ModelViewProjection : multiplication of our 3 matrices
+    glm::mat4 mvp = projection * view * model; // Remember, matrix multiplication is the other way around
+
+
+    // Get a handle for our "MVP" uniform
+    // Only during the initialisation
+    GLuint matrix_id = glGetUniformLocation(program_id, "MVP");
+
 
     //////////
     
@@ -185,6 +212,10 @@ int main() {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(program_id);
+
+        // Send our transformation to the currently bound shader, in the "MVP" uniform
+        // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
+        glUniformMatrix4fv(matrix_id, 1, GL_FALSE, &mvp[0][0]);
         
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
