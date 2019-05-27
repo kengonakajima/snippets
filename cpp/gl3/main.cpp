@@ -62,7 +62,8 @@ const char fsh_red_glsl[] =
     "uniform sampler2D myTextureSampler;\n"
     "void main(){\n"
     //    "  color = vec3(1,0,0);\n"
-    "  color = texture(myTextureSampler,UV).rgb;\n"    
+    "  vec3 texcol = texture(myTextureSampler,UV).rgb;\n"        
+    "  color = vec3( texcol.r * fragmentColor.r, texcol.g * fragmentColor.g, texcol.b * fragmentColor.b);\n"    
     "}\n";
 
 void errorCallback(int code, const char* err_str) {
