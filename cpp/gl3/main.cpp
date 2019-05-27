@@ -66,6 +66,11 @@ const char fsh_red_glsl[] =
     "  color = vec3( texcol.r * fragmentColor.r, texcol.g * fragmentColor.g, texcol.b * fragmentColor.b);\n"    
     "}\n";
 
+
+const int SCRW=640, SCRH=480;
+
+////////
+
 void errorCallback(int code, const char* err_str) {
     print("glfw error: code:%d str:%s",code,err_str);
 }
@@ -198,7 +203,41 @@ GLuint loadBMP(const char *fname) {
     
 }
 
-const int SCRW=640, SCRH=480;
+void capture() {
+	static bool init = false;
+	static GLuint pbo_id;
+	size_t pbo_size = SCRW * SCRH * 3;
+	if (!init) {
+		init = true;
+		print("initialize pbo");
+		glGenBuffers(1, &pbo_id);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_id);
+		glBufferData(GL_PIXEL_PACK_BUFFER, pbo_size, 0, GL_DYNAMIC_READ);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+	}
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_id);
+	glReadPixels(0, 0, SCRW, SCRH, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	GLubyte *ptr = (GLubyte*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, pbo_size, GL_MAP_READ_BIT);
+
+    static unsigned char *g_pixels;
+	if (!g_pixels)g_pixels = (unsigned char*) malloc(SCRW*SCRH * 3); // RGB
+
+#if 1
+	if (ptr) memcpy(g_pixels, ptr, pbo_size); else print("updategenvid ptr null error:%d",glGetError());
+#else
+	for (int y = 0; y < g_scrh; y++) {
+		memcpy(g_pixels + y * SCRW * 3, ptr + (SCRH - 1 - y) * SCRW * 3, SCRW * 3);
+	}
+#endif
+
+	glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+}    
+
+
+
 
 int main() {
     GLFWwindow *window;
@@ -477,6 +516,13 @@ int main() {
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(2);        
 
+
+        ////////////
+        double st=now();
+        capture();
+        double et=now();
+        //        print("captime:%f",et-st);
+        
         glfwSwapBuffers(window);
 		glfwPollEvents();
 
