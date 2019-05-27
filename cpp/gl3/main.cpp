@@ -67,7 +67,22 @@ const char fsh_red_glsl[] =
     "void main(){\n"
     //    "  color = vec3(1,0,0);\n"
     "  vec3 texcol = texture(myTextureSampler,UV).rgb;\n"        
-    "  color = vec3( texcol.r * fragmentColor.r, texcol.g * fragmentColor.g, texcol.b * fragmentColor.b);\n"    
+    "  color = vec3( texcol.r * fragmentColor.r, texcol.g * fragmentColor.g, texcol.b * fragmentColor.b);\n"
+    "}\n";
+
+const char fsh_yuv_glsl[] = 
+    "# version 330 core\n"
+    "in vec3 fragmentColor;\n"
+    "in vec2 UV;\n"
+    "out vec3 color;\n"
+    "uniform sampler2D myTextureSampler;\n"
+    "void main(){\n"
+    //    "  color = vec3(1,0,0);\n"
+    "  vec3 texcol = texture(myTextureSampler,UV).rgb;\n"        
+    "  vec3 rgb = vec3( texcol.r * fragmentColor.r, texcol.g * fragmentColor.g, texcol.b * fragmentColor.b);\n"
+    "  color.x = rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114;\n"
+    "  color.y = rgb.r * -0.169 + rgb.g * -0.331 + rgb.b * 0.5 + 0.5;\n"
+    "  color.z = rgb.r * 0.5 + rgb.g * -0.419 + rgb.b * -0.081 + 0.5;\n"
     "}\n";
 
 
@@ -260,7 +275,7 @@ void capture() {
 
 	}
 
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glReadBuffer(GL_COLOR_ATTACHMENT1);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_id);
 	glReadPixels(0, 0, SCRW*RETINA, SCRH*RETINA, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	GLubyte *ptr = (GLubyte*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, pbo_size, GL_MAP_READ_BIT);
@@ -283,10 +298,12 @@ void capture() {
             unsigned char g=g_pixels[at+1];
             unsigned char b=g_pixels[at+2];
             if(r>0) prt("*"); else prt(".");
+            //            if(x==640 && y==360) prt(" %d,%d,%d", r,g,b);
         }
         print("");
     }
     print("--");
+
     //    FILE *fp=fopen("dumped","wb");
     //    fwrite(g_pixels, 1, SCRW*SCRH*3, fp);
     //    fclose(fp);
@@ -294,9 +311,11 @@ void capture() {
 #endif
 
     // encode
+#if 0    
     static unsigned char *g_yuv420p_pixels;
 	if (!g_yuv420p_pixels) g_yuv420p_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA/2);
     RGBtoYUV420Planar(g_pixels, SCRW*RETINA,SCRH*RETINA, g_yuv420p_pixels);
+#endif    
 }    
 
 
@@ -332,7 +351,8 @@ int main() {
     glClearColor(0,0,0,1);
 
 
-    GLuint program_id = LoadShaders( vsh_simple_glsl, fsh_red_glsl ); // fragment_uv_color_glsl );
+    GLuint program_id = LoadShaders( vsh_simple_glsl, fsh_red_glsl ); 
+    GLuint program_id_yuv = LoadShaders( vsh_simple_glsl, fsh_yuv_glsl );
     
     //////////
     GLuint vert_ary_id;
@@ -511,7 +531,7 @@ int main() {
         ////////////
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(program_id);
+        glUseProgram(program_id_yuv);
 
         // Send our transformation to the currently bound shader, in the "MVP" uniform
         // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
