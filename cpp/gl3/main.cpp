@@ -8,6 +8,10 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 
+// brew provides this
+#include "libavcodec/avcodec.h"
+#include "libavutil/mathematics.h"
+
 #include "cumino.h"
 
 const char vertex_uv_color_glsl[] =
@@ -67,7 +71,7 @@ const char fsh_red_glsl[] =
     "}\n";
 
 
-const int SCRW=1280, SCRH=720;
+const int SCRW=1280/2, SCRH=720/2;
 
 ////////
 
@@ -203,6 +207,39 @@ GLuint loadBMP(const char *fname) {
     
 }
 
+// out: yuv420p (planer. not sp:semiplaner)
+// rgb: w*h*3 out: w*h*3/2
+void RGBtoYUV420Planar(unsigned char *rgb, int width, int height, unsigned char *out) {
+    int frameSize = width * height;
+    int yIndex = 0;
+    int uIndex = frameSize;
+    int vIndex = frameSize + (frameSize / 4);
+    int r, g, b, y, u, v;
+    int index = 0;  
+
+    for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+            r = rgb[index * 3] & 0xff;
+            g = rgb[index * 3 + 1] & 0xff;
+            b = rgb[index * 3 + 2] & 0xff;
+
+            y = (int)(0.257 * r + 0.504 * g + 0.098 * b) + 16;
+            u = (int)(0.439 * r - 0.368 * g - 0.071 * b) + 128;
+            v = (int)(-0.148 * r - 0.291 * g + 0.439 * b) + 128;
+
+            out[yIndex++] = (unsigned char)((y < 0) ? 0 : ((y > 255) ? 255 : y));
+
+            if (j % 2 == 0 && index % 2 == 0) { 
+                out[uIndex++] = (unsigned char)((u < 0) ? 0 : ((u > 255) ? 255 : u));
+                out[vIndex++] = (unsigned char)((v < 0) ? 0 : ((v > 255) ? 255 : v));
+            }
+
+            index++;
+        }
+    }
+}
+
+
 // mbp2018
 // 2.8% for no-cap
 // 13% for 640x480
@@ -254,7 +291,12 @@ void capture() {
     //    fwrite(g_pixels, 1, SCRW*SCRH*3, fp);
     //    fclose(fp);
     
-#endif    
+#endif
+
+    // encode
+    static unsigned char *g_yuv420p_pixels;
+	if (!g_yuv420p_pixels) g_yuv420p_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA/2);
+    RGBtoYUV420Planar(g_pixels, SCRW*RETINA,SCRH*RETINA, g_yuv420p_pixels);
 }    
 
 
