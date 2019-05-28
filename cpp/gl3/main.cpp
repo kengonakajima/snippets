@@ -265,7 +265,72 @@ void RGBtoYUV420Planar(unsigned char *rgb, int width, int height, unsigned char 
 // 13% for 640x480
 // 27% for 1280x720
 // 5.7% for 1280x720, skip row1,pix1
+
+AVCodecID g_codec_id=AV_CODEC_ID_H264; 
+//AVCodecID g_codec_id=AV_CODEC_ID_MPEG1VIDEO;
 void capture() {
+
+
+    static AVCodec *codec=NULL;
+    static AVCodecContext *c=NULL;
+    static AVFrame *frame=NULL;
+    static FILE *fp=0;    
+    if(!codec) {
+        print("init codec");
+        codec=avcodec_find_encoder(g_codec_id);
+        if(!codec) {
+            print("codec not found");
+            exit(1);
+        }
+        c=avcodec_alloc_context3(codec);
+        print("alloc codec:%p",c);
+
+        c->bit_rate=400000;
+        c->width=SCRW;
+        c->height=SCRH;
+        c->time_base=(AVRational){1,60};
+        c->gop_size=10; // emit one intra frame every 10 frames
+        c->max_b_frames=1;
+        c->pix_fmt=AV_PIX_FMT_YUV420P;
+
+        if(avcodec_open2(c,codec,0)<0) {
+            print("cant open codec");
+            exit(1);
+        }
+        char path[1000];
+        if(g_codec_id==AV_CODEC_ID_H264) {
+            sprintf(path,"out264.mp4");
+        } else {
+            sprintf(path,"outmpeg1.mpeg");
+        }
+        fp=fopen(path,"wb");
+        if(!fp) {
+            print("cant open outfile");
+            exit(1);
+        }
+        if(g_codec_id==AV_CODEC_ID_H264) {
+            unsigned char starter[4]={0,0,0,1};
+            fwrite(starter, 4,1,fp);
+        }
+        frame=av_frame_alloc();
+        if(!frame) {
+            print("frame cant alloc");
+            exit(1);
+        }
+        frame->format = c->pix_fmt;
+        frame->width=c->width;
+        frame->height=c->height;
+
+        int ret=av_image_alloc(frame->data, frame->linesize, c->width, c->height, c->pix_fmt, 1 );
+        if(ret<0){
+            print("av_image_alloc error:%d",ret);
+            exit(1);
+        }
+        print("linesize:%d,%d,%d",frame->linesize[0], frame->linesize[1], frame->linesize[2]);
+        
+    }
+
+    
     const int RETINA=2;
 	static bool init = false;
 	static GLuint pbo_id;
@@ -285,16 +350,55 @@ void capture() {
 	glReadPixels(0, 0, SCRW*RETINA, SCRH*RETINA, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	GLubyte *ptr = (GLubyte*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, pbo_size, GL_MAP_READ_BIT);
 
-    static unsigned char *g_pixels;
-	if (!g_pixels)g_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA); // RGB * retina*retina
+    //    static unsigned char *g_pixels;
+    //	if (!g_pixels)g_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA); // RGB * retina*retina
 
-	if (ptr) memcpy(g_pixels, ptr, pbo_size); else print("updategenvid ptr null error:%d",glGetError());
+    // ptr: yuvyuvyuv....
+    // data[0]: yyyyy data[1]:uuuu data[2]:vvvvv 
+	if (ptr) {
+        // memcpy(g_pixels, ptr, pbo_size); else print("updategenvid ptr null error:%d",glGetError());
+        /* Y */
+        for(int y=0;y<c->height;y++) {
+            for(int x=0;x<c->width;x++) {
+                int at=x*3*RETINA + (SCRH-1-y)*3*RETINA*SCRW*2;
+                frame->data[0][y * frame->linesize[0] + x] = ptr[at];
+            }
+        }
+        /* Cb and Cr */
+        for(int y=0;y<c->height/2;y++) {
+            for(int x=0;x<c->width/2;x++) {
+                int at=(x*2)*3*RETINA + ((SCRH/2-1-y)*2)*3*RETINA*SCRW*2;                
+                frame->data[1][y * frame->linesize[1] + x] = ptr[at+1];
+                frame->data[2][y * frame->linesize[2] + x] = ptr[at+2];
+            }
+        }
+        static int framecnt=0;
+        frame->pts=framecnt;
+
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.data=NULL;
+        pkt.size=0;
+        int got_output=0;
+        int ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
+        if(ret<0) {
+            print("encode_video2 fail:%d",ret);
+            exit(1);
+        }
+        if(got_output) {
+            print("write frame %d  size:%d",framecnt, pkt.size);
+            fwrite(pkt.data, 1, pkt.size, fp);
+            av_free_packet(&pkt);
+        }
+
+        framecnt++;
+    }
 
 	glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
     // dump, 20pixごとに
-#if 1
+#if 0
     int u=20;
     for(int y=0;y<SCRH*RETINA;y+=u) {
         for(int x=0;x<SCRW*RETINA;x+=u) {
@@ -315,61 +419,7 @@ void capture() {
     
 #endif
 
-    // encode
-#if 0    
-    static unsigned char *g_yuv420p_pixels;
-	if (!g_yuv420p_pixels) g_yuv420p_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA/2);
-    RGBtoYUV420Planar(g_pixels, SCRW*RETINA,SCRH*RETINA, g_yuv420p_pixels);
-#endif
-
-    static AVCodec *codec=NULL;
-    static AVCodecContext *c=NULL;
-
-    if(!codec) {
-        print("init codec");
-        codec=avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO);
-        if(!codec) {
-            print("codec not found");
-            exit(1);
-        }
-        c=avcodec_alloc_context3(codec);
-        print("alloc codec:%p",c);
-    }
-
-
-    c->bit_rate=400000;
-    c->width=352;
-    c->height=288;
-    c->time_base=(AVRational){1,25};
-    c->gop_size=10; // emit one intra frame every 10 frames
-    c->max_b_frames=1;
-    c->pix_fmt=AV_PIX_FMT_YUV420P;
-
-    if(avcodec_open2(c,codec,0)<0) {
-        print("cant open codec");
-        exit(1);
-    }
-
-    FILE *fp=fopen("out","wb");
-    if(!fp) {
-        print("cant open outfile");
-        exit(1);
-    }
-    AVFrame *frame=av_frame_alloc();
-    if(!frame) {
-        print("frame cant alloc");
-        exit(1);
-    }
-    frame->format = c->pix_fmt;
-    frame->width=c->width;
-    frame->height=c->height;
-    
-    int ret=av_image_alloc(frame->data, frame->linesize, c->width, c->height, c->pix_fmt, 1 );
-    if(ret<0){
-        print("av_image_alloc error:%d",ret);
-        exit(1);
-    }
-
+#if 0
     int i,got_output;
     for(i=0;i<25;i++) {
         AVPacket pkt;
@@ -432,8 +482,8 @@ void capture() {
     av_free(c);
     av_freep(&frame->data[0]);
     av_frame_free(&frame);    
- 
-    exit(0);
+#endif 
+
 
 
 }    
