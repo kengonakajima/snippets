@@ -8,9 +8,14 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 
+extern "C" {
+
 // brew provides this
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/imgutils.h"
+
+};
 
 #include "cumino.h"
 
@@ -315,7 +320,122 @@ void capture() {
     static unsigned char *g_yuv420p_pixels;
 	if (!g_yuv420p_pixels) g_yuv420p_pixels = (unsigned char*) malloc(SCRW*SCRH * 3*RETINA*RETINA/2);
     RGBtoYUV420Planar(g_pixels, SCRW*RETINA,SCRH*RETINA, g_yuv420p_pixels);
-#endif    
+#endif
+
+    static AVCodec *codec=NULL;
+    static AVCodecContext *c=NULL;
+
+    if(!codec) {
+        print("init codec");
+        codec=avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO);
+        if(!codec) {
+            print("codec not found");
+            exit(1);
+        }
+        c=avcodec_alloc_context3(codec);
+        print("alloc codec:%p",c);
+    }
+
+
+    c->bit_rate=400000;
+    c->width=352;
+    c->height=288;
+    c->time_base=(AVRational){1,25};
+    c->gop_size=10; // emit one intra frame every 10 frames
+    c->max_b_frames=1;
+    c->pix_fmt=AV_PIX_FMT_YUV420P;
+
+    if(avcodec_open2(c,codec,0)<0) {
+        print("cant open codec");
+        exit(1);
+    }
+
+    FILE *fp=fopen("out","wb");
+    if(!fp) {
+        print("cant open outfile");
+        exit(1);
+    }
+    AVFrame *frame=av_frame_alloc();
+    if(!frame) {
+        print("frame cant alloc");
+        exit(1);
+    }
+    frame->format = c->pix_fmt;
+    frame->width=c->width;
+    frame->height=c->height;
+    
+    int ret=av_image_alloc(frame->data, frame->linesize, c->width, c->height, c->pix_fmt, 1 );
+    if(ret<0){
+        print("av_image_alloc error:%d",ret);
+        exit(1);
+    }
+
+    int i,got_output;
+    for(i=0;i<25;i++) {
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.data=NULL;
+        pkt.size=0;
+        
+        /* prepare a dummy image */
+        /* Y */
+        for(int y=0;y<c->height;y++) {
+            for(int x=0;x<c->width;x++) {
+                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+            }
+        }
+        /* Cb and Cr */
+        for(int y=0;y<c->height/2;y++) {
+            for(int x=0;x<c->width/2;x++) {
+                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
+            }
+        }
+        frame->pts=i;
+
+        int ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
+        if(ret<0) {
+            print("encode_video2 fail:%d",ret);
+            exit(1);
+        }
+        if(got_output) {
+            print("write frame %d  size:%d",i, pkt.size);
+            fwrite(pkt.data, 1, pkt.size, fp);
+            av_free_packet(&pkt);
+        }
+    }
+    // delayed frames
+    for (got_output = 1; got_output; i++) {
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.data=NULL;
+        pkt.size=0;
+        int ret = avcodec_encode_video2(c, &pkt, NULL, &got_output);
+        if (ret < 0) {
+            print( "Error encoding frame\n");
+            exit(1);
+        }
+ 
+        if (got_output) {
+            print("Write frame %3d (size=%5d)\n", i, pkt.size);
+            fwrite(pkt.data, 1, pkt.size, fp);
+            av_free_packet(&pkt);
+        }
+    }
+    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+    
+    fwrite(endcode, 1, sizeof(endcode), fp);
+    fclose(fp);
+
+
+    avcodec_close(c);
+    av_free(c);
+    av_freep(&frame->data[0]);
+    av_frame_free(&frame);    
+ 
+    exit(0);
+
+
 }    
 
 
