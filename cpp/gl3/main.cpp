@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "mrs.hpp"
+
 #include <OpenGL/gl3.h>
 # define __gl_h_
 # define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
@@ -696,6 +698,13 @@ int main() {
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
 
+
+    //
+    mrs_initialize();
+
+
+    //
+    
     print("start");
     while(1) {
         if(glfwWindowShouldClose(window) )break;
