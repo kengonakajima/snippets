@@ -266,8 +266,8 @@ void RGBtoYUV420Planar(unsigned char *rgb, int width, int height, unsigned char 
 // 27% for 1280x720
 // 5.7% for 1280x720, skip row1,pix1
 
-AVCodecID g_codec_id=AV_CODEC_ID_H264; 
-//AVCodecID g_codec_id=AV_CODEC_ID_MPEG1VIDEO;
+//AVCodecID g_codec_id=AV_CODEC_ID_H264; 
+AVCodecID g_codec_id=AV_CODEC_ID_MPEG1VIDEO;
 void capture() {
 
 
@@ -358,6 +358,7 @@ void capture() {
 	if (ptr) {
         // memcpy(g_pixels, ptr, pbo_size); else print("updategenvid ptr null error:%d",glGetError());
         /* Y */
+#if 1       
         for(int y=0;y<c->height;y++) {
             for(int x=0;x<c->width;x++) {
                 int at=x*3*RETINA + (SCRH-1-y)*3*RETINA*SCRW*2;
@@ -372,9 +373,10 @@ void capture() {
                 frame->data[2][y * frame->linesize[2] + x] = ptr[at+2];
             }
         }
+#endif        
         static int framecnt=0;
         frame->pts=framecnt;
-
+#if 1
         AVPacket pkt;
         av_init_packet(&pkt);
         pkt.data=NULL;
@@ -386,11 +388,11 @@ void capture() {
             exit(1);
         }
         if(got_output) {
-            print("write frame %d  size:%d",framecnt, pkt.size);
+            //            print("write frame %d  size:%d",framecnt, pkt.size);
             fwrite(pkt.data, 1, pkt.size, fp);
             av_free_packet(&pkt);
         }
-
+#endif
         framecnt++;
     }
 
