@@ -17,7 +17,7 @@ $c=$a & 0xffffffff;
 
 var_dump($a,$b,$c);
 
-$bytes = pack( "VV", $b,$c );
+$bytes = pack( "VVa4", $b,$c, "hoge" );
 /*
                 $bytes=pack(
                             "VVvvVVVV",
