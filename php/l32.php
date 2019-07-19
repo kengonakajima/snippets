@@ -17,7 +17,7 @@ $c=$a & 0xffffffff;
 
 var_dump($a,$b,$c);
 
-$data="hoge";
+$data="hoge"; // nothing appended when ""
 $l=strlen($data);
 $bytes = pack( "VVa".$l, $b,$c, $data );
 /*
