@@ -1,14 +1,13 @@
 <?php
 
-function binary_dump($in){                                                                                 
-    $bindata        = unpack("C*", $in );                                                                  
-    $ret            = "";                                                                                  
-    foreach($bindata as $v){                                                                               
-        $ret    .= sprintf("%02x ",$v);                                                                    
-    }                                                                                                      
-    return $ret;                                                                                           
-}                                                                                                          
-
+function binary_dump($in){
+    $bindata        = unpack("C*", $in );
+    $ret            = "";
+    foreach($bindata as $v){
+        $ret    .= sprintf("%02x ",$v);
+    }
+    return $ret;
+}
 
 $a=0x1;
 
@@ -32,3 +31,7 @@ $bytes = pack( "VVa".$l, $b,$c, $data );
 */
 
 echo binary_dump($bytes), "\n";
+
+$u = unpack( "Va/Vb/a4c", $bytes);
+
+var_dump($u);
