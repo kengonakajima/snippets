@@ -1129,7 +1129,8 @@ int main() {
                            0xff, 0xff, 0xff, 0xff,
                            0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41
     };
-    int crc=crc32_4bytes(buf, sizeof(buf), 0 );
-    printf("CRC:%d\n",crc) ;
+    int crc4=crc32_4bytes(buf, sizeof(buf), 0 );
+    int crc1=crc32_1byte(buf, sizeof(buf), 0 );
+    printf("CRC:%d %d\n",crc4,crc1) ;
     return 0;
 }
