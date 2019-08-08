@@ -18,6 +18,11 @@
 
 #include <stdio.h>
 
+#ifndef __BYTE_ORDER // mac
+#define __BYTE_ORDER 1234 
+#define __BIG_ENDIAN 4321
+#endif
+
 #include "crc32.h"
 
 // define endianess and some integer data types
@@ -1129,8 +1134,14 @@ int main() {
                            0xff, 0xff, 0xff, 0xff,
                            0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41
     };
-    int crc4=crc32_4bytes(buf, sizeof(buf), 0 );
-    int crc1=crc32_1byte(buf, sizeof(buf), 0 );
-    printf("CRC:%d %d\n",crc4,crc1) ;
+    printf("CRC: len:%d 4:%d 1:%d\n", sizeof(buf), crc32_4bytes(buf,sizeof(buf),0), crc32_1byte(buf,sizeof(buf),0));
+    printf("CRC: len:%d 4:%d 1:%d\n", 2, crc32_4bytes(buf,2,0), crc32_1byte(buf,2,0));
+    printf("CRC: len:%d 4:%d 1:%d\n", 3, crc32_4bytes(buf,3,0), crc32_1byte(buf,3,0));
+    printf("CRC: len:%d 4:%d 1:%d\n", 4, crc32_4bytes(buf,4,0), crc32_1byte(buf,4,0));    
+    printf("CRC: len:%d 4:%d 1:%d\n", 5, crc32_4bytes(buf,5,0), crc32_1byte(buf,5,0));    
+
+    printf("BO: %x %x", __BYTE_ORDER, __BIG_ENDIAN );
+
+    
     return 0;
 }
