@@ -7,7 +7,7 @@ unsigned int hash(unsigned int x) {
 }
 unsigned int hash2(unsigned int i) {
     unsigned long long il=i;
-    il *=2654435761;
+    il *=11;
     il = il % 4294967296;
     return (unsigned int)il;
 }
