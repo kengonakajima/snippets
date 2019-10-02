@@ -19,6 +19,7 @@ func main() {
 //	d2 := []byte{115, 111, 109, 101, 10}
 	for i := 0; i < 1000000 ; i++ {
 		s := fmt.Sprintf("hoge:%d\n",i)
-		f.Write([]byte(s))		
+		f.Write([]byte(s))
+		f.Sync()
 	}
 }
