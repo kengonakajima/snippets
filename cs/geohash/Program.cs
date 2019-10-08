@@ -31,8 +31,8 @@ namespace geohash
         
         static public string encode(double lat, double lng, int precision ) {
             if(precision < 1 || precision > 12) precision = 6;
-            StringBuilder hash = new StringBuilder("__________________");
-
+            StringBuilder hash = new StringBuilder("");
+            for(int i=0;i<precision;i++)hash.Append("_");
 
             if(lat <= 90.0 && lat >= -90.0 && lng <= 180.0 && lng >= -180.0) {
                 precision *= 5;
@@ -78,7 +78,11 @@ namespace geohash
         
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!" + GeoHash.encode(36.62392,137.13422,7));
+            if(GeoHash.encode(36.62392,137.13422,7)=="xn982e4") {
+                Console.WriteLine("OK");
+            } else {
+                Console.WriteLine("NG");
+            }
         }
     }
 }
