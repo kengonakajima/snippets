@@ -61,13 +61,14 @@ namespace geohash
                         interval.high = mid;
                     }
                     if((i % 5)==0) {
-                        Console.WriteLine( "i:"+i+","+ char_map[hashChar]);                    
+                        //                        Console.WriteLine( "i:"+i+","+ char_map[hashChar]);
                         hash[(i - 1) / 5] = char_map[hashChar];
                         hashChar = 0;
                     }
                     is_even = !is_even;
                 }
             }
+            hash.Length=precision/5;
             return hash.ToString();
         }
     }
