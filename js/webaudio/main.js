@@ -65,30 +65,66 @@ function makeMemoryAudioBuf(frameCount,hz) {
 }
 var membuf = makeMemoryAudioBuf(context.sampleRate*2,440);
 
-//var mediaSource = new MediaSource();
-var g_tone=1;
+function shiftSamples(n) {
+    for(var i=n;i<samples_r.length;i++) {
+        samples_r[i-n]=samples_r[i];
+        samples_l[i-n]=samples_l[i];
+    }
+    samples_used-=n;
+}
 
-var sn = context.createScriptProcessor(256,1,1);
+var sn = context.createScriptProcessor(256,2,2);
 console.log("sn:",sn);
 sn.onaudioprocess = function(audioProcessingEvent) {
-    var t_incr = 2 * Math.PI * 440.0*3 / 48000.0;
     var inputBuffer = audioProcessingEvent.inputBuffer;
     var outputBuffer = audioProcessingEvent.outputBuffer;
-    for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-        var inputData = inputBuffer.getChannelData(channel);
-        var outputData = outputBuffer.getChannelData(channel);
-        for (var sample = 0; sample < inputBuffer.length; sample++) {
-            outputData[sample] = inputData[sample];
-            outputData[sample] += (Math.sin(t)*0.2);
-            t+=t_incr/2.0;
+    var out0 = outputBuffer.getChannelData(0);
+    var out1 = outputBuffer.getChannelData(1);
+    if(samples_used>=inputBuffer.length) {
+        console.log("enough samples:",samples_used, samples_r.length, samples_l.length);
+        for (var i = 0; i < inputBuffer.length; i++) {
+            out0[i] = samples_r[i];
+            out1[i] = samples_l[i];
         }
+        shiftSamples(inputBuffer.length);
+    } else {
+        console.log("need samples:",samples_used);        
+        for (var i = 0; i < inputBuffer.length; i++) {
+            out0[i] = Math.random()*0.1;
+            out1[i] = Math.random()*0.1;
+        }
+
     }
 }
 var dummysrc = context.createConstantSource();
 dummysrc.connect(sn);
 sn.connect(context.destination);
 
+var samples_r = new Float32Array(48000);
+var samples_l = new Float32Array(48000);
 
+var gentime=0;
+var intvl=50;
+var samples_used = 0;
+var hz=440;
+function genSamples() {
+    hz+=1;
+    var t_incr = 2 * Math.PI * hz/2 / 48000.0;    
+    var n = 48000 * intvl / 1000;
+    if(samples_used>40000) {
+        console.log("too much samples:",samples_used);
+        shiftSamples(n);
+    }
+    for(var i=0;i<n;i++) {
+        samples_r[samples_used+i] = Math.sin(gentime)*0.1;
+        samples_l[samples_used+i] = Math.sin(gentime)*0.1;
+        gentime += t_incr;
+    }
+    samples_used+=n;
+    console.log("used:",samples_used);
+}
+
+setInterval( genSamples, intvl );
 
 
 // main
@@ -111,12 +147,18 @@ window.onload = function() {
             if(g_last_played_source) {
                 g_last_played_source.stop(0);
             }
+            dummysrc.stop();
+            
         }
         var btnstream = document.getElementById("stream");
         btnstream.onclick = function() {
             dummysrc.start(0)   ;
         }
     });
+
+    setInterval(function() {
+        document.getElementById("stat").innerHTML="used:"+samples_used;        
+    },100)
 
     
 };
