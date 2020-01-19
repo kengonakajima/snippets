@@ -3,6 +3,15 @@
 #include <openssl/err.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/time.h>
+
+double now() {
+    struct timeval tmv;
+    gettimeofday( &tmv, NULL );
+    return tmv.tv_sec  + (double)(tmv.tv_usec) / 1000000.0f;
+}
+
+
 
 int padding = RSA_PKCS1_PADDING;
  
@@ -112,17 +121,22 @@ int main() {
     unsigned char  encrypted[4098]={};
     unsigned char decrypted[4098]={};
 
+    double t0=now();
     int encrypted_length= public_encrypt(plainText,strlen(plainText),publicKey,encrypted);
     if(encrypted_length == -1) {
         printLastError("Public Encrypt failed ");
         exit(0);
     }
+    double t1=now();
+    printf("t0-1:%f\n",t1-t0);
     printf("Encrypted length =%d\n",encrypted_length);
     int decrypted_length = private_decrypt(encrypted,encrypted_length,privateKey, decrypted);
     if(decrypted_length == -1) {
         printLastError("Private Decrypt failed ");
         exit(0);
     }
+    double t2=now();
+    printf("t1-2:%f\n",t2-t1);
     printf("Decrypted Text =%s\n",decrypted);
     printf("Decrypted Length =%d\n",decrypted_length);
 
@@ -131,6 +145,8 @@ int main() {
         printLastError("Private Encrypt failed");
         exit(0);
     }
+    double t3=now();
+    printf("t2-3:%f\n",t3-t2);    
     printf("Encrypted length =%d\n",encrypted_length);
  
     decrypted_length = public_decrypt(encrypted,encrypted_length,publicKey, decrypted);
@@ -138,6 +154,8 @@ int main() {
         printLastError("Public Decrypt failed");
         exit(0);
     }
+    double t4=now();
+    printf("t3-4:%f\n",t4-t3);    
     printf("Decrypted Text =%s\n",decrypted);
     printf("Decrypted Length =%d\n",decrypted_length);
     return 0;
