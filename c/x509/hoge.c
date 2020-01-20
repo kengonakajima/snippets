@@ -16,6 +16,48 @@ double now() {
     return tmv.tv_sec  + (double)(tmv.tv_usec) / 1000000.0f;
 }
 
+X509_STORE *setup_verify(const char *CAfile, const char *CApath, int noCAfile, int noCApath)
+{
+    X509_STORE *store = X509_STORE_new();
+    X509_LOOKUP *lookup;
+
+    if (store == NULL)
+        goto end;
+
+    if (CAfile != NULL || !noCAfile) {
+        lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
+        if (lookup == NULL)
+            goto end;
+        if (CAfile) {
+            if (!X509_LOOKUP_load_file(lookup, CAfile, X509_FILETYPE_PEM)) {
+                printf( "Error loading file %s\n", CAfile);
+                goto end;
+            }
+        } else
+            X509_LOOKUP_load_file(lookup, NULL, X509_FILETYPE_DEFAULT);
+    }
+
+    if (CApath != NULL || !noCApath) {
+        lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
+        if (lookup == NULL)
+            goto end;
+        if (CApath) {
+            if (!X509_LOOKUP_add_dir(lookup, CApath, X509_FILETYPE_PEM)) {
+                printf( "Error loading directory %s\n", CApath);
+                goto end;
+            }
+        } else
+            X509_LOOKUP_add_dir(lookup, NULL, X509_FILETYPE_DEFAULT);
+    }
+
+    ERR_clear_error();
+    return store;
+ end:
+    X509_STORE_free(store);
+    return NULL;
+}
+
+
 int main() {
     char key[4096]={};
     int keysz=0;
@@ -45,7 +87,8 @@ int main() {
     X509_STORE_CTX *ctx;
     ctx=X509_STORE_CTX_new();
     assert(ctx);
-    X509_STORE *store = X509_STORE_new();
+    //    X509_STORE *store = X509_STORE_new();
+    X509_STORE *store = setup_verify( "/usr/local/etc/openssl/cert.pem", "/usr/local/etc/openssl", 0,0);
     assert(store);
     r=X509_STORE_add_cert(store,x);
     if(r!=1) {
