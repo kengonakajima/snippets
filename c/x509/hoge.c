@@ -16,6 +16,7 @@ double now() {
     return tmv.tv_sec  + (double)(tmv.tv_usec) / 1000000.0f;
 }
 
+
 X509_STORE *setup_verify(const char *CAfile, const char *CApath, int noCAfile, int noCApath)
 {
     X509_STORE *store = X509_STORE_new();
@@ -58,17 +59,17 @@ X509_STORE *setup_verify(const char *CAfile, const char *CApath, int noCAfile, i
 }
 
 
-int main() {
+int main(int argc, char **argv) {
     char key[4096]={};
     int keysz=0;
     char cert[4096]={};
     int certsz=0;
     
     FILE *fp;
-    fp=fopen("key.pem","r");
+    fp=fopen(argv[1],"r");
     keysz=fread(key,1,sizeof(key),fp);
     fclose(fp);
-    fp=fopen("cert.pem","r");
+    fp=fopen(argv[2],"r");
     certsz=fread(cert,1,sizeof(cert),fp);
     fclose(fp);
     printf("keysz:%d certsz:%d\n",keysz,certsz);
@@ -88,7 +89,7 @@ int main() {
     ctx=X509_STORE_CTX_new();
     assert(ctx);
     //    X509_STORE *store = X509_STORE_new();
-    X509_STORE *store = setup_verify( "/usr/local/etc/openssl/cert.pem", "/usr/local/etc/openssl", 0,0);
+    X509_STORE *store = setup_verify( "/etc/ssl/certs/DST_Root_CA_X3.pem", NULL, 0,0);
     assert(store);
     r=X509_STORE_add_cert(store,x);
     if(r!=1) {
@@ -107,29 +108,3 @@ int main() {
     return 0;
 }
 
-/*
-static bool ssl_set_certificate_data( SSL* ssl, const char* data ){
-    bool result = false;
-    BIO* bio = BIO_new( BIO_s_mem() );
-    X509* x = NULL;
-    do{
-        if ( NULL == bio ) break;
-        
-        BIO_write( bio, data, (int)strlen( data ) );
-        (void)BIO_flush( bio );
-#if ( OPENSSL_VERSION_NUMBER == 0x10101040L ) // UE 4.22.3 default in windows
-		x = PEM_read_bio_X509(bio, NULL, SSL_CTX_get_default_passwd_cb(SSL_get_SSL_CTX(ssl)), SSL_CTX_get_default_passwd_cb_userdata(SSL_get_SSL_CTX(ssl)));
-#else
-        x = PEM_read_bio_X509( bio, NULL, ssl->ctx->default_passwd_callback, ssl->ctx->default_passwd_callback_userdata );
-#endif
-		if ( NULL == x ) break;
-        
-        result = ( 1 == SSL_use_certificate( ssl, x ) );
-    }while ( false );
-    if ( NULL != x ) X509_free( x );
-    if ( NULL != bio ) BIO_free( bio );
-    return result;
-}
-
-
-*/
