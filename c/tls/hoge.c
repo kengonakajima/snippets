@@ -9,13 +9,10 @@
 #include <string.h>
 
 
-void print_cn_name(const char* label, X509_NAME* const name)
-{
+void print_cn_name(const char* label, X509_NAME* const name) {
     int idx = -1, success = 0;
     unsigned char *utf8 = NULL;
-    
-    do
-    {
+    do {
         if(!name) break; /* failed */
         
         idx = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
@@ -34,22 +31,16 @@ void print_cn_name(const char* label, X509_NAME* const name)
         success = 1;
         
     } while (0);
-    
-    if(utf8)
-        OPENSSL_free(utf8);
-    
-    if(!success)
-        fprintf(stdout, "  %s: <not available>\n", label);
+    if(utf8) OPENSSL_free(utf8);
+    if(!success) fprintf(stdout, "  %s: <not available>\n", label);
 }
 
-void print_san_name(const char* label, X509* const cert)
-{
+void print_san_name(const char* label, X509* const cert) {
     int success = 0;
     GENERAL_NAMES* names = NULL;
     unsigned char* utf8 = NULL;
     
-    do
-    {
+    do {
         if(!cert) break; /* failed */
         
         names = X509_get_ext_d2i(cert, NID_subject_alt_name, 0, 0 );
@@ -58,13 +49,11 @@ void print_san_name(const char* label, X509* const cert)
         int i = 0, count = sk_GENERAL_NAME_num(names);
         if(!count) break; /* failed */
         
-        for( i = 0; i < count; ++i )
-        {
+        for( i = 0; i < count; ++i ) {
             GENERAL_NAME* entry = sk_GENERAL_NAME_value(names, i);
             if(!entry) continue;
             
-            if(GEN_DNS == entry->type)
-            {
+            if(GEN_DNS == entry->type) {
                 int len1 = 0, len2 = -1;
                 
                 len1 = ASN1_STRING_to_UTF8(&utf8, entry->d.dNSName);
@@ -88,29 +77,19 @@ void print_san_name(const char* label, X509* const cert)
                 if(utf8) {
                     OPENSSL_free(utf8), utf8 = NULL;
                 }
-            }
-            else
-            {
+            } else {
                 fprintf(stderr, "  Unknown GENERAL_NAME type: %d\n", entry->type);
             }
         }
-
     } while (0);
     
-    if(names)
-        GENERAL_NAMES_free(names);
-    
-    if(utf8)
-        OPENSSL_free(utf8);
-    
-    if(!success)
-        fprintf(stdout, "  %s: <not available>\n", label);
-    
+    if(names) GENERAL_NAMES_free(names);
+    if(utf8) OPENSSL_free(utf8);
+    if(!success) fprintf(stdout, "  %s: <not available>\n", label);
 }
 
 
-int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
-{
+int verify_callback(int preverify, X509_STORE_CTX* x509_ctx) {
 
     printf("verify_callback called, preverify_ok:%d x:%p\n",preverify,x509_ctx);    
     /* For error codes, see http://www.openssl.org/docs/apps/verify.html  */
@@ -135,8 +114,7 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
         print_san_name("Subject (san)", cert);
     }
     
-    if(preverify == 0)
-    {
+    if(preverify == 0) {
         if(err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
             fprintf(stdout, "  Error = X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY\n");
         else if(err == X509_V_ERR_CERT_UNTRUSTED)
