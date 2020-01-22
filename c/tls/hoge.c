@@ -153,20 +153,7 @@ void dumpbin(const char*s, size_t l) {
 }
 
 
-int main(int argc, char **argv ) {
-    char *svcertfile = argv[1];
-    char *svkeyfile = argv[2];
-    char *rootca = argv[3];
-    assert(svcertfile);
-    assert(svkeyfile);
-    assert(rootca);
-    
-    // server
-    SSL_library_init();
-    OpenSSL_add_all_algorithms();
-    SSL_load_error_strings();
-    ERR_load_BIO_strings();
-    
+int test_tls(char*svcertfile,char*svkeyfile,char*rootca) {
     const SSL_METHOD *svmethod = TLS_server_method(); 
     SSL_CTX *svctx = SSL_CTX_new(svmethod);
     assert(svctx);
@@ -217,7 +204,6 @@ int main(int argc, char **argv ) {
         printf("client must want read here\n");
         return 1;
     }
-
     char clhello[8192];
     int clhello_len = BIO_read(cl_wbio,clhello,sizeof(clhello));
     assert(clhello_len>0);
@@ -263,7 +249,28 @@ int main(int argc, char **argv ) {
         printf("bio_read(cl_wbio) ret:%d\n",ret);
     }    
     printf("TLS test done\n");
+
+    // DTLS test
+    
     return 0;
 }
 
 
+
+
+int main(int argc, char **argv ) {
+    char *svcertfile = argv[1];
+    char *svkeyfile = argv[2];
+    char *rootca = argv[3];
+    assert(svcertfile);
+    assert(svkeyfile);
+    assert(rootca);
+    
+    // server
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    ERR_load_BIO_strings();
+
+    test_tls(svcertfile,svkeyfile,rootca);
+}
