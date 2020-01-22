@@ -149,6 +149,8 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
             fprintf(stdout, "  Error = X509_V_ERR_CERT_HAS_EXPIRED\n");
         else if(err == X509_V_OK)
             fprintf(stdout, "  Error = X509_V_OK\n");
+        else if(err == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
+            fprintf(stdout, "  Error = X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE\n");
         else
             fprintf(stdout, "  Error = %d\n", err);
     }
@@ -191,7 +193,7 @@ int main(int argc, char **argv ) {
     SSL_CTX *svctx = SSL_CTX_new(svmethod);
     assert(svctx);
     int ret;
-    ret = SSL_CTX_use_certificate_file(svctx,svcertfile,SSL_FILETYPE_PEM);
+    ret = SSL_CTX_use_certificate_chain_file(svctx,svcertfile);
     assert(ret>0);
     ret = SSL_CTX_use_PrivateKey_file(svctx,svkeyfile,SSL_FILETYPE_PEM);
     assert(ret>0);
@@ -237,7 +239,7 @@ int main(int argc, char **argv ) {
         printf("client must want read here\n");
         return 1;
     }
-    char clhello[2048];
+    char clhello[8192];
     int clhello_len = BIO_read(cl_wbio,clhello,sizeof(clhello));
     assert(clhello_len>0);
     printf("BIO_read(cl_wbio) clhello_len:%d\n",clhello_len);
@@ -254,7 +256,7 @@ int main(int argc, char **argv ) {
         return 1;
     }
 
-    char svhello[4096]; // hello+cert+key
+    char svhello[16384]; // hello+cert+key
     int svhello_len = BIO_read(sv_wbio,svhello,sizeof(svhello));
     assert(svhello_len>0);
     printf("BIO_read(sv_wbio) svhello_len:%d\n",svhello_len);
@@ -276,3 +278,5 @@ int main(int argc, char **argv ) {
     printf("done\n");
     return 0;
 }
+
+
