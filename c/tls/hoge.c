@@ -217,6 +217,7 @@ int main(int argc, char **argv ) {
         printf("client must want read here\n");
         return 1;
     }
+
     char clhello[8192];
     int clhello_len = BIO_read(cl_wbio,clhello,sizeof(clhello));
     assert(clhello_len>0);
@@ -239,8 +240,7 @@ int main(int argc, char **argv ) {
     assert(svhello_len>0);
     printf("BIO_read(sv_wbio) svhello_len:%d\n",svhello_len);
     //    dumpbin(svhello,svhello_len);
-    ret=SSL_read(clssl,svhello,svhello_len);
-    printf("ssl_read(cl) ret:%d\n",ret);
+
     
     ret = BIO_write(cl_rbio,svhello,svhello_len);
     assert(ret==svhello_len);
@@ -253,7 +253,16 @@ int main(int argc, char **argv ) {
         return 1;
     }
     printf("ssl_connect succeeded!\n");
-    printf("done\n");
+
+    // read/write test
+    for(int i=0;i<10;i++) {
+        ret=SSL_write(clssl,"hellohellohello",5*3);
+        printf("ssl_write(cl) ret:%d\n",ret);
+        char helloenc[1024];
+        ret=BIO_read(cl_wbio,helloenc,sizeof(helloenc));
+        printf("bio_read(cl_wbio) ret:%d\n",ret);
+    }    
+    printf("TLS test done\n");
     return 0;
 }
 
