@@ -5,8 +5,12 @@
 #include <openssl/bio.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/rand.h> // RAND_bytes
+
 #include <assert.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 
 void print_cn_name(const char* label, X509_NAME* const name) {
@@ -192,8 +196,8 @@ int test_tls(char*svcertfile,char*svkeyfile,char*rootca) {
     ret = SSL_set_cipher_list(clssl, PREFERRED_CIPHERS);
     assert(ret==1);
 
-    ret = SSL_set_tlsext_host_name(clssl, "oneframe.io");
-    assert(ret==1);
+    //    ret = SSL_set_tlsext_host_name(clssl, "oneframe.io");
+    //    assert(ret==1);
 
     //    ret = SSL_do_handshake(clssl);
     ret = SSL_connect(clssl);
@@ -255,7 +259,238 @@ int test_tls(char*svcertfile,char*svkeyfile,char*rootca) {
     return 0;
 }
 
+int cookie_initialized=0;
+#define COOKIE_SECRET_LENGTH 16
+unsigned char cookie_secret[COOKIE_SECRET_LENGTH];
 
+int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len) {
+	unsigned char *buffer, result[EVP_MAX_MD_SIZE];
+	unsigned int length = 0, resultlength;
+	union {
+		struct sockaddr_storage ss;
+		struct sockaddr_in6 s6;
+		struct sockaddr_in s4;
+	} peer;
+
+	/* Initialize a random secret */
+	if (!cookie_initialized) {
+		if (!RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH)) {
+			printf("error setting random cookie secret\n");
+			return 0;
+        }
+		cookie_initialized = 1;
+    }
+
+	/* Read peer information */
+	(void) BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
+
+	/* Create buffer with peer's address and port */
+	length = 0;
+	switch (peer.ss.ss_family) {
+		case AF_INET:
+			length += sizeof(struct in_addr);
+			break;
+		case AF_INET6:
+			length += sizeof(struct in6_addr);
+			break;
+		default:
+			OPENSSL_assert(0);
+			break;
+	}
+	length += sizeof(in_port_t);
+	buffer = (unsigned char*) OPENSSL_malloc(length);
+
+	if (buffer == NULL) {
+		printf("out of memory\n");
+		return 0;
+    }
+
+	switch (peer.ss.ss_family) {
+		case AF_INET:
+			memcpy(buffer,
+				   &peer.s4.sin_port,
+				   sizeof(in_port_t));
+			memcpy(buffer + sizeof(peer.s4.sin_port),
+				   &peer.s4.sin_addr,
+				   sizeof(struct in_addr));
+			break;
+		case AF_INET6:
+			memcpy(buffer,
+				   &peer.s6.sin6_port,
+				   sizeof(in_port_t));
+			memcpy(buffer + sizeof(in_port_t),
+				   &peer.s6.sin6_addr,
+				   sizeof(struct in6_addr));
+			break;
+		default:
+			OPENSSL_assert(0);
+			break;
+	}
+
+	/* Calculate HMAC of buffer using the secret */
+	HMAC(EVP_sha1(), (const void*) cookie_secret, COOKIE_SECRET_LENGTH,
+		 (const unsigned char*) buffer, length, result, &resultlength);
+	OPENSSL_free(buffer);
+
+	memcpy(cookie, result, resultlength);
+	*cookie_len = resultlength;
+
+	return 1;
+}
+
+
+int verify_cookie(SSL *ssl, const unsigned char *cookie, unsigned int cookie_len) {
+	unsigned char *buffer, result[EVP_MAX_MD_SIZE];
+	unsigned int length = 0, resultlength;
+	union {
+		struct sockaddr_storage ss;
+		struct sockaddr_in6 s6;
+		struct sockaddr_in s4;
+	} peer;
+
+	/* If secret isn't initialized yet, the cookie can't be valid */
+	if (!cookie_initialized)
+		return 0;
+
+	/* Read peer information */
+	(void) BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
+
+	/* Create buffer with peer's address and port */
+	length = 0;
+	switch (peer.ss.ss_family) {
+    case AF_INET:
+        length += sizeof(struct in_addr);
+        break;
+    case AF_INET6:
+        length += sizeof(struct in6_addr);
+        break;
+    default:
+        OPENSSL_assert(0);
+        break;
+	}
+	length += sizeof(in_port_t);
+	buffer = (unsigned char*) OPENSSL_malloc(length);
+
+	if (buffer == NULL) {
+        printf("out of memory\n");
+        return 0;
+    }
+
+	switch (peer.ss.ss_family) {
+    case AF_INET:
+        memcpy(buffer,
+               &peer.s4.sin_port,
+               sizeof(in_port_t));
+        memcpy(buffer + sizeof(in_port_t),
+               &peer.s4.sin_addr,
+               sizeof(struct in_addr));
+        break;
+    case AF_INET6:
+        memcpy(buffer,
+               &peer.s6.sin6_port,
+               sizeof(in_port_t));
+        memcpy(buffer + sizeof(in_port_t),
+               &peer.s6.sin6_addr,
+               sizeof(struct in6_addr));
+        break;
+    default:
+        OPENSSL_assert(0);
+        break;
+	}
+
+	/* Calculate HMAC of buffer using the secret */
+	HMAC(EVP_sha1(), (const void*) cookie_secret, COOKIE_SECRET_LENGTH,
+		 (const unsigned char*) buffer, length, result, &resultlength);
+	OPENSSL_free(buffer);
+
+	if (cookie_len == resultlength && memcmp(result, cookie, resultlength) == 0) return 1;
+
+	return 0;
+}
+
+
+const BIO_METHOD *BIO_s_hoge() {
+    return BIO_s_mem();
+}
+int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
+    const SSL_METHOD *svmethod = DTLS_server_method(); 
+    SSL_CTX *svctx = SSL_CTX_new(svmethod);
+    assert(svctx);
+    int ret;
+    ret = SSL_CTX_use_certificate_chain_file(svctx,svcertfile);
+    assert(ret>0);
+    ret = SSL_CTX_use_PrivateKey_file(svctx,svkeyfile,SSL_FILETYPE_PEM);
+    assert(ret>0);
+
+	SSL_CTX_set_session_cache_mode(svctx, SSL_SESS_CACHE_OFF);
+    ret = SSL_CTX_check_private_key(svctx);
+    assert(ret);
+
+    // omit client auth
+	// SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, dtls_verify_callback);
+    
+	SSL_CTX_set_read_ahead(svctx, 1);
+	SSL_CTX_set_cookie_generate_cb(svctx, generate_cookie);
+	SSL_CTX_set_cookie_verify_cb(svctx, &verify_cookie);
+    
+    
+
+    SSL *svssl = SSL_new(svctx);
+    assert(svssl);
+    BIO *sv_wbio = BIO_new(BIO_s_hoge());
+    BIO *sv_rbio = BIO_new(BIO_s_hoge());
+
+    SSL_set_bio(svssl, sv_rbio, sv_wbio);
+
+    SSL_set_options(svssl, SSL_OP_COOKIE_EXCHANGE);
+
+    printf("d svinit done\n");
+
+    // client https://wiki.openssl.org/index.php/SSL/TLS_Client
+    const SSL_METHOD *clmethod = DTLS_client_method();
+    SSL_CTX *clctx = SSL_CTX_new(clmethod);
+    assert(clctx);
+    SSL_CTX_set_verify(clctx,SSL_VERIFY_PEER,verify_callback);
+    SSL_CTX_set_verify_depth(clctx, 4);
+    const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
+    SSL_CTX_set_options(clctx, flags);
+    ret = SSL_CTX_load_verify_locations(clctx, rootca, NULL);
+    assert(ret==1);
+	SSL_CTX_set_read_ahead(clctx, 1);
+
+    SSL *clssl = SSL_new(clctx);
+    assert(clssl);
+    BIO *cl_wbio = BIO_new(BIO_s_hoge());
+    BIO *cl_rbio = BIO_new(BIO_s_hoge());
+    SSL_set_bio(clssl,cl_rbio,cl_wbio);
+
+    const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
+    ret = SSL_set_cipher_list(clssl, PREFERRED_CIPHERS);
+    assert(ret==1);
+
+    //    ret = SSL_set_tlsext_host_name(clssl, "oneframe.io");
+    //    assert(ret==1);
+
+    ret = SSL_connect(clssl);
+    printf("ssl_connect ret:%d\n",ret);
+    int e;
+    if((e=SSL_get_error(svssl,ret))==SSL_ERROR_WANT_READ) {
+        printf("client want read (OK)\n");
+        
+    } else {
+        if(e==SSL_ERROR_SYSCALL) {
+            printf("SSL_ERROR_SYSCALL errno:%d\n",errno);
+        }
+        printf("client must want read ecode:%d \n",e);
+        ERR_print_errors_fp(stderr);
+        return 1;
+    }
+    
+    ERR_print_errors_fp(stderr);
+    printf("DTLS test done\n");
+    
+    return 0;
+}
 
 
 int main(int argc, char **argv ) {
@@ -272,5 +507,6 @@ int main(int argc, char **argv ) {
     SSL_load_error_strings();
     ERR_load_BIO_strings();
 
-    test_tls(svcertfile,svkeyfile,rootca);
+    //   test_tls(svcertfile,svkeyfile,rootca);
+    test_dtls(svcertfile,svkeyfile,rootca);
 }
