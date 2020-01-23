@@ -13,6 +13,8 @@
 #include <netinet/in.h>
 
 
+
+
 void print_cn_name(const char* label, X509_NAME* const name) {
     int idx = -1, success = 0;
     unsigned char *utf8 = NULL;
@@ -237,7 +239,6 @@ int test_tls(char*svcertfile,char*svkeyfile,char*rootca) {
     ret = SSL_connect(clssl);
     printf("ssl_connect second call, ret:%d\n",ret);
     if(ret<0) {
-        char s[1000];
         ret=SSL_get_error(clssl,ret);    
         ERR_print_errors_fp(stderr);
         return 1;
@@ -294,6 +295,7 @@ int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len) {
 			length += sizeof(struct in6_addr);
 			break;
 		default:
+            fprintf(stderr, "generate_cookie: invalid ss_family\n");
 			OPENSSL_assert(0);
 			break;
 	}
@@ -408,6 +410,9 @@ int verify_cookie(SSL *ssl, const unsigned char *cookie, unsigned int cookie_len
 	return 0;
 }
 
+/////////////////////////
+
+
 typedef struct custom_bio_data_st {
     BIO *membio;
     int peekmode;
@@ -427,8 +432,16 @@ long BIO_s_hoge_ctrl(BIO *b, int cmd, long larg, void *pargs) {
             break;
         case BIO_CTRL_DGRAM_SET_CONNECTED: // 32
         case BIO_CTRL_DGRAM_SET_PEER: // 44
-        case BIO_CTRL_DGRAM_GET_PEER: // 46
             ret = 1;
+        case BIO_CTRL_DGRAM_GET_PEER: // 46
+            printf( "BIO_CTRL_DGRAM_GET_PEER called\n");
+            {
+                struct sockaddr_in dummy_saddr;
+                ret=sizeof(dummy_saddr);
+                memset(&dummy_saddr,0,sizeof(dummy_saddr));
+                dummy_saddr.sin_family=AF_INET;
+                memcpy(pargs,&dummy_saddr,sizeof(dummy_saddr));
+            }
             break;
         case BIO_CTRL_WPENDING: // 13
             ret = 0;
@@ -458,7 +471,7 @@ long BIO_s_hoge_ctrl(BIO *b, int cmd, long larg, void *pargs) {
             //            raise(SIGTRAP);
             break;
     }
-
+    printf("BIO_s_hoge_ctrl ret:%d\n",(int)ret);
     return ret;
 }
 int BIO_s_hoge_create(BIO *b) {
@@ -479,7 +492,9 @@ int BIO_s_hoge_destroy(BIO *b) {
 int BIO_s_hoge_write(BIO *b, const char *data, int dlen) {
     printf( "BIO_s_hoge_write(BIO[%p], data[%p], dlen[%d])\n", b, data, dlen);        
     custom_bio_data_t *d = (custom_bio_data_t*)BIO_get_data(b);
-    return BIO_write(d->membio,data,dlen);
+    int ret=BIO_write(d->membio,data,dlen);
+    printf("BIO_s_hoge_write ret: %d\n",ret);
+    return ret;
 }
 
 
@@ -488,7 +503,12 @@ int BIO_s_hoge_read(BIO *b, char *data, int dlen) {
     custom_bio_data_t *ptr= (custom_bio_data_t*)BIO_get_data(b);    
     assert(ptr);
     int ret = BIO_read(ptr->membio,data,dlen);
-    printf("bio_read ret:%d\n",ret);
+    printf("bio_s_hoge_read: bio_read ret:%d\n",ret);
+    if(ret<=0) {
+        printf("setting retry read\n");
+        BIO_set_retry_read(b);         // need this
+        return 0;
+    }
     if(ret<0) ERR_print_errors_fp(stderr);
     if(ret<0) ERR_print_errors(ptr->membio);
     if(ret<0) ERR_print_errors(b);
@@ -539,6 +559,7 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
 
     SSL *svssl = SSL_new(svctx);
     assert(svssl);
+    printf("svssl:%p\n",svssl);
     BIO *sv_wbio = BIO_new(BIO_s_hoge());
     BIO *sv_rbio = BIO_new(BIO_s_hoge());
 
@@ -564,6 +585,7 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
 
     SSL *clssl = SSL_new(clctx);
     assert(clssl);
+    printf("clssl:%p\n",clssl);
     BIO *cl_wbio = BIO_new(BIO_s_hoge());
     BIO *cl_rbio = BIO_new(BIO_s_hoge());
     SSL_set_bio(clssl,cl_rbio,cl_wbio);
@@ -577,12 +599,17 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
     //    ret = SSL_set_tlsext_host_name(clssl, "oneframe.io");
     //    assert(ret==1);
 
-    ret = SSL_connect(clssl);
-    printf("ssl_connect ret:%d\n",ret);
+    //    printf("calling ssl_connect\n");
+    //    ret = SSL_connect(clssl);
+    //    printf("ssl_connect ret:%d\n",ret);
+    SSL_set_connect_state(clssl);
+
+    ret = SSL_do_handshake(clssl);
+    printf("ssl_do_handshake: ret:%d\n",ret);
+    
     int e;
-    if((e=SSL_get_error(svssl,ret))==SSL_ERROR_WANT_READ) {
+    if((e=SSL_get_error(clssl,ret))==SSL_ERROR_WANT_READ) {
         printf("client want read (OK)\n");
-        
     } else {
         if(e==SSL_ERROR_SYSCALL) {
             printf("SSL_ERROR_SYSCALL errno:%d\n",errno);
@@ -591,8 +618,101 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
         ERR_print_errors_fp(stderr);
         return 1;
     }
+    custom_bio_data_t *cl_wptr = BIO_get_data(cl_wbio);
+    char clhello[2048];
+    int clhello_len = BIO_read(cl_wptr->membio,clhello,sizeof(clhello));
+    printf("BIO_read(cl_wptr->membio) clhello_len:%d\n",clhello_len);
+
+    custom_bio_data_t *sv_rptr = BIO_get_data(sv_rbio);
+    ret = BIO_write(sv_rptr->membio,clhello,clhello_len);
+    assert(ret==clhello_len);
+
+    ret = SSL_accept(svssl);
+    printf("ssl_accept ret:%d\n", ret);
+    if(SSL_get_error(svssl,ret)==SSL_ERROR_WANT_READ) {
+        printf("server want read (OK)\n");
+    } else {
+        printf("server must want read here\n");
+        return 1;
+    }
+
+    custom_bio_data_t *sv_wptr = BIO_get_data(sv_wbio);
+    char svhello[2048];
+    int svhello_len = BIO_read(sv_wptr->membio,svhello,sizeof(svhello));
+    assert(svhello_len>0);
+    printf("BIO_read(sv_wptr->membio) svhello_len:%d\n",svhello_len);
+    dumpbin(svhello,svhello_len);
+
+    custom_bio_data_t *cl_rptr = BIO_get_data(cl_rbio);
+    ret = BIO_write(cl_rptr->membio,svhello,svhello_len);
+    assert(ret==svhello_len);
+    ret = SSL_connect(clssl);
+    printf("ssl_connect second call, ret:%d\n",ret);
+    if(SSL_get_error(clssl,ret)==SSL_ERROR_WANT_READ) {
+        printf("client want read (OK)\n");
+    } else {
+        printf("client must want read\n");
+        ret=SSL_get_error(clssl,ret);    
+        ERR_print_errors_fp(stderr);
+        return 1;        
+    }
+
+    char cl_hello2[2048]; 
+    int cl_hello2_len = BIO_read(cl_wptr->membio,cl_hello2,sizeof(cl_hello2));
+    assert(cl_hello2_len>0);
+    ret=BIO_write(sv_rptr->membio,cl_hello2,cl_hello2_len);
+    assert(ret==cl_hello2_len);
+
+    ret = SSL_accept(svssl);
+    printf("ssl_accept second ret:%d\n", ret);
+    if(SSL_get_error(svssl,ret)==SSL_ERROR_WANT_READ) {
+        printf("server want read (OK)\n");        
+    } else {
+        printf("server must want read\n");
+        return 1;
+    }
+
+    char sv_hello2[2048];
+    int sv_hello2_len = BIO_read(sv_wptr->membio,sv_hello2,sizeof(sv_hello2));
+    assert(sv_hello2_len>0);
+    ret=BIO_write(cl_rptr->membio,sv_hello2,sv_hello2_len);
+    assert(ret==sv_hello2_len);
+
+    ret = SSL_connect(clssl);
+    printf("ssl_connect third ret:%d\n",ret);
+    if(SSL_get_error(clssl,ret)==SSL_ERROR_WANT_READ) {
+        printf("client want read (OK)\n");
+    } else {
+        printf("client must want read\n");
+        return 1;
+    }
+
+    char cl_hello3[2048];
+    int cl_hello3_len = BIO_read(cl_wptr->membio,cl_hello3,sizeof(cl_hello3));
+    assert(cl_hello3_len>0);
+    ret=BIO_write(sv_rptr->membio,cl_hello3,cl_hello3_len);
+    assert(ret==cl_hello3_len);
+
+    ret = SSL_accept(svssl);
+    printf("SSL_accept fourth ret:%d\n",ret);
+    if(ret>0) {
+        printf("SSL_connect DONE!\n");
+    } else {
+        printf("SSL_connect failed!\n");
+    }
     
-    ERR_print_errors_fp(stderr);
+    
+    // read write test
+    for(int i=0;i<10;i++) {
+        printf("calling ssl_write from client %p\n",clssl);
+        ret=SSL_write(clssl,"hellohellohello",5*3);
+        printf("ssl_write(cl) ret:%d e:%d %d %d\n",ret, SSL_get_error(clssl,ret), SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE );
+        char helloenc[1024];
+        ret=BIO_read(cl_wbio,helloenc,sizeof(helloenc));
+        printf("bio_read(cl_wbio) ret:%d\n",ret);
+    }    
+    
+
     printf("DTLS test done\n");
     
     return 0;
