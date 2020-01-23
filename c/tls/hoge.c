@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 
 
@@ -703,15 +704,45 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
     
     
     // read write test
-    for(int i=0;i<10;i++) {
+    int cnt=0;
+    while(1) {
+        cnt++;
+        if(cnt>10)break;
+                      
         printf("calling ssl_write from client %p\n",clssl);
         ret=SSL_write(clssl,"hellohellohello",5*3);
-        printf("ssl_write(cl) ret:%d e:%d %d %d\n",ret, SSL_get_error(clssl,ret), SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE );
-        char helloenc[1024];
-        ret=BIO_read(cl_wbio,helloenc,sizeof(helloenc));
-        printf("bio_read(cl_wbio) ret:%d\n",ret);
-    }    
-    
+        int e;
+        if((e=SSL_get_error(clssl,ret))==SSL_ERROR_WANT_READ) {
+            printf("client want read\n");
+        } else {
+            printf("client error: %d\n",e);
+            ERR_print_errors_fp(stderr);
+        }
+
+        char svreadbuf[2048];
+        ret=SSL_read(svssl,svreadbuf,sizeof(svreadbuf));
+        if(ret>0) {
+            svreadbuf[ret]='\0';
+            printf("server read len:%d data:%s\n",ret, svreadbuf);
+        }
+
+        // manual polling
+        char buf[2048];
+        int svwsz=BIO_read(sv_wptr->membio,buf,sizeof(buf));
+        if(svwsz>0) {
+            printf("server wrote something: %d\n",svwsz);
+            ret=BIO_write(cl_rptr->membio,buf,svwsz);
+            assert(ret==svwsz);
+        }
+        int clwsz=BIO_read(cl_wptr->membio,buf,sizeof(buf));
+        if(clwsz>0) {
+            printf("client wrote something: %d\n",clwsz);
+            ret=BIO_write(sv_rptr->membio,buf,clwsz);
+            assert(ret==clwsz);
+        }
+
+        sleep(1);        
+    }
 
     printf("DTLS test done\n");
     
