@@ -31,12 +31,12 @@ void print_cn_name(const char* label, X509_NAME* const name) {
         int length = ASN1_STRING_to_UTF8(&utf8, data);
         if(!utf8 || !(length > 0))  break; /* failed */
         
-        fprintf(stdout, "  %s: %s\n", label, utf8);
+        printf( "  %s: %s\n", label, utf8);
         success = 1;
         
     } while (0);
     if(utf8) OPENSSL_free(utf8);
-    if(!success) fprintf(stdout, "  %s: <not available>\n", label);
+    if(!success) printf( "  %s: <not available>\n", label);
 }
 
 void print_san_name(const char* label, X509* const cert) {
@@ -66,7 +66,7 @@ void print_san_name(const char* label, X509* const cert) {
                 }
                 
                 if(len1 != len2) {
-                    fprintf(stderr, "  Strlen and ASN1_STRING size do not match (embedded null?): %d vs %d\n", len2, len1);
+                    printf( "  Strlen and ASN1_STRING size do not match (embedded null?): %d vs %d\n", len2, len1);
                 }
                 
                 /* If there's a problem with string lengths, then     */
@@ -74,7 +74,7 @@ void print_san_name(const char* label, X509* const cert) {
                 /* Another policy would be to fails since it probably */
                 /* indicates the client is under attack.              */
                 if(utf8 && len1 && len2 && (len1 == len2)) {
-                    fprintf(stdout, "  %s: %s\n", label, utf8);
+                    printf( "  %s: %s\n", label, utf8);
                     success = 1;
                 }
                 
@@ -82,14 +82,14 @@ void print_san_name(const char* label, X509* const cert) {
                     OPENSSL_free(utf8), utf8 = NULL;
                 }
             } else {
-                fprintf(stderr, "  Unknown GENERAL_NAME type: %d\n", entry->type);
+                printf( "  Unknown GENERAL_NAME type: %d\n", entry->type);
             }
         }
     } while (0);
     
     if(names) GENERAL_NAMES_free(names);
     if(utf8) OPENSSL_free(utf8);
-    if(!success) fprintf(stdout, "  %s: <not available>\n", label);
+    if(!success) printf( "  %s: <not available>\n", label);
 }
 
 
@@ -105,7 +105,7 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx) {
     X509_NAME* iname = cert ? X509_get_issuer_name(cert) : NULL;
     X509_NAME* sname = cert ? X509_get_subject_name(cert) : NULL;
     
-    fprintf(stdout, "verify_callback (depth=%d)(preverify=%d)\n", depth, preverify);
+    printf( "verify_callback (depth=%d)(preverify=%d)\n", depth, preverify);
     
     /* Issuer is the authority we trust that warrants nothing useful */
     print_cn_name("Issuer (cn)", iname);
@@ -120,21 +120,21 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx) {
     
     if(preverify == 0) {
         if(err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
-            fprintf(stdout, "  Error = X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY\n");
+            printf( "  Error = X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY\n");
         else if(err == X509_V_ERR_CERT_UNTRUSTED)
-            fprintf(stdout, "  Error = X509_V_ERR_CERT_UNTRUSTED\n");
+            printf( "  Error = X509_V_ERR_CERT_UNTRUSTED\n");
         else if(err == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
-            fprintf(stdout, "  Error = X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN\n");
+            printf( "  Error = X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN\n");
         else if(err == X509_V_ERR_CERT_NOT_YET_VALID)
-            fprintf(stdout, "  Error = X509_V_ERR_CERT_NOT_YET_VALID\n");
+            printf( "  Error = X509_V_ERR_CERT_NOT_YET_VALID\n");
         else if(err == X509_V_ERR_CERT_HAS_EXPIRED)
-            fprintf(stdout, "  Error = X509_V_ERR_CERT_HAS_EXPIRED\n");
+            printf( "  Error = X509_V_ERR_CERT_HAS_EXPIRED\n");
         else if(err == X509_V_OK)
-            fprintf(stdout, "  Error = X509_V_OK\n");
+            printf( "  Error = X509_V_OK\n");
         else if(err == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
-            fprintf(stdout, "  Error = X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE\n");
+            printf( "  Error = X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE\n");
         else
-            fprintf(stdout, "  Error = %d\n", err);
+            printf( "  Error = %d\n", err);
     }
 
 #if !defined(NDEBUG)
@@ -149,11 +149,11 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx) {
 
 void dumpbin(const char*s, size_t l) {
     for(size_t i=0;i<l;i++){
-        fprintf(stderr, "%02x ", s[i] & 0xff );
-        if((i%8)==7) fprintf(stderr,"  ");
-        if((i%16)==15) fprintf(stderr,"\n");
+        printf( "%02x ", s[i] & 0xff );
+        if((i%8)==7) printf("  ");
+        if((i%16)==15) printf("\n");
     }
-    fprintf(stderr,"\n");
+    printf("\n");
 }
 
 
@@ -408,9 +408,107 @@ int verify_cookie(SSL *ssl, const unsigned char *cookie, unsigned int cookie_len
 	return 0;
 }
 
+typedef struct custom_bio_data_st {
+    BIO *membio;
+    int peekmode;
+} custom_bio_data_t;
+
+
+long BIO_s_hoge_ctrl(BIO *b, int cmd, long larg, void *pargs) {
+    custom_bio_data_t *ptr = (custom_bio_data_t*)BIO_get_data(b);
+    assert(ptr);
+    long ret = 0;
+    printf( "BIO_s_hoge_ctrl(BIO[%p], cmd[%d], larg[%ld], pargs[%p])\n", b, cmd, larg, pargs);
+
+    switch(cmd)
+    {
+        case BIO_CTRL_FLUSH: // 11
+            ret=BIO_ctrl(ptr->membio,BIO_CTRL_FLUSH,0,0);
+            break;
+        case BIO_CTRL_DGRAM_SET_CONNECTED: // 32
+        case BIO_CTRL_DGRAM_SET_PEER: // 44
+        case BIO_CTRL_DGRAM_GET_PEER: // 46
+            ret = 1;
+            break;
+        case BIO_CTRL_WPENDING: // 13
+            ret = 0;
+            break;
+        case BIO_CTRL_DGRAM_QUERY_MTU: // 40
+        case BIO_CTRL_DGRAM_GET_FALLBACK_MTU: // 47
+            ret = 1400;
+            break;
+        case BIO_CTRL_DGRAM_GET_MTU_OVERHEAD: // 49
+            ret = 48; // random guess
+            // bss_dgram.cでは af_inetだと28　inet6だと48 デフォルトで28　になっている
+            break;
+        case BIO_CTRL_DGRAM_SET_PEEK_MODE: // 71
+            ptr->peekmode = !!larg;
+            ret = 1;
+            break;
+        case BIO_CTRL_PUSH: // 6
+        case BIO_CTRL_POP: // 7
+        case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT: // 45
+            ret = 0;
+            break;
+        default:
+            printf( "BIO_s_hoge_ctrl(BIO[%p], cmd[%d], larg[%ld], pargs[%p])\n", b, cmd, larg, pargs);
+            printf( "  unknown cmd: %d\n", cmd);
+            ret = 0;
+            assert(0);
+            //            raise(SIGTRAP);
+            break;
+    }
+
+    return ret;
+}
+int BIO_s_hoge_create(BIO *b) {
+    printf( "BIO_s_hoge_create(BIO[%p])\n", b);
+    custom_bio_data_t *data= (custom_bio_data_t*)malloc(sizeof(custom_bio_data_t));
+    data->peekmode=0;
+    data->membio= BIO_new(BIO_s_mem());
+    BIO_set_data(b,data);
+    BIO_set_init(b, 1);
+    return 1;
+}
+int BIO_s_hoge_destroy(BIO *b) {
+    printf( "BIO_s_hoge_destroy(BIO[%p])\n", b);
+    custom_bio_data_t *data=BIO_get_data(b);
+    BIO_free(data->membio);
+    return 1;
+}
+int BIO_s_hoge_write(BIO *b, const char *data, int dlen) {
+    printf( "BIO_s_hoge_write(BIO[%p], data[%p], dlen[%d])\n", b, data, dlen);        
+    custom_bio_data_t *d = (custom_bio_data_t*)BIO_get_data(b);
+    return BIO_write(d->membio,data,dlen);
+}
+
+
+int BIO_s_hoge_read(BIO *b, char *data, int dlen) {
+    printf( "BIO_s_hoge_read(BIO[%p], data[%p], dlen[%d])\n", b, data, dlen);    
+    custom_bio_data_t *ptr= (custom_bio_data_t*)BIO_get_data(b);    
+    assert(ptr);
+    int ret = BIO_read(ptr->membio,data,dlen);
+    printf("bio_read ret:%d\n",ret);
+    if(ret<0) ERR_print_errors_fp(stderr);
+    if(ret<0) ERR_print_errors(ptr->membio);
+    if(ret<0) ERR_print_errors(b);
+    return ret;
+}
+
+BIO_METHOD *bio_hoge=NULL;
 
 const BIO_METHOD *BIO_s_hoge() {
-    return BIO_s_mem();
+    if(bio_hoge) return bio_hoge;
+    bio_hoge = BIO_meth_new(BIO_get_new_index()| BIO_TYPE_SOURCE_SINK,"BIO_s_hoge");
+    assert(bio_hoge);
+    BIO_meth_set_write(bio_hoge,BIO_s_hoge_write);
+    BIO_meth_set_read(bio_hoge,BIO_s_hoge_read);    
+    BIO_meth_set_ctrl(bio_hoge,BIO_s_hoge_ctrl);
+    BIO_meth_set_create(bio_hoge,BIO_s_hoge_create);
+    BIO_meth_set_destroy(bio_hoge,BIO_s_hoge_destroy);        
+    
+                            
+    return bio_hoge; //BIO_s_mem();
 }
 int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
     const SSL_METHOD *svmethod = DTLS_server_method(); 
@@ -433,7 +531,11 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
 	SSL_CTX_set_cookie_generate_cb(svctx, generate_cookie);
 	SSL_CTX_set_cookie_verify_cb(svctx, &verify_cookie);
     
-    
+    union {
+		struct sockaddr_storage ss;
+		struct sockaddr_in s4;
+		struct sockaddr_in6 s6;
+	} sv_remote_addr, sv_local_addr, cl_remote_addr, cl_local_addr;    
 
     SSL *svssl = SSL_new(svctx);
     assert(svssl);
@@ -441,6 +543,8 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
     BIO *sv_rbio = BIO_new(BIO_s_hoge());
 
     SSL_set_bio(svssl, sv_rbio, sv_wbio);
+	BIO_ctrl(sv_rbio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &sv_remote_addr.ss);
+	BIO_ctrl(sv_wbio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &sv_remote_addr.ss);    
 
     SSL_set_options(svssl, SSL_OP_COOKIE_EXCHANGE);
 
@@ -463,7 +567,9 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
     BIO *cl_wbio = BIO_new(BIO_s_hoge());
     BIO *cl_rbio = BIO_new(BIO_s_hoge());
     SSL_set_bio(clssl,cl_rbio,cl_wbio);
-
+	BIO_ctrl(cl_rbio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &cl_remote_addr.ss);
+	BIO_ctrl(cl_wbio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &cl_remote_addr.ss);
+    
     const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
     ret = SSL_set_cipher_list(clssl, PREFERRED_CIPHERS);
     assert(ret==1);
