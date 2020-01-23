@@ -701,7 +701,11 @@ int test_dtls(char*svcertfile,char*svkeyfile,char*rootca) {
     } else {
         printf("SSL_connect failed!\n");
     }
-    
+
+    const char *cl_protov = SSL_get_version(clssl);
+    const char *sv_protov = SSL_get_version(svssl);
+    printf("VER: cl:%s sv:%s\n",cl_protov,sv_protov);
+
     
     // read write test
     int cnt=0;
