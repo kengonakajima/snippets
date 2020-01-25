@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
  
     memset((char *) &si_sv, 0, sizeof(si_sv));
     si_sv.sin_family = AF_INET;
-    si_sv.sin_port = htons(9999);
+    si_sv.sin_port = htons(10000);
     int r=inet_aton(argv[1], &si_sv.sin_addr);
     assert(r==1);
 
