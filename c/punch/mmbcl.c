@@ -52,13 +52,17 @@ int main(int argc, char* argv[]) {
         assert(r>=0);
     }
 
+    int recvn=0;
     while(1) {
         for(int i=0;i<N;i++) {
             char buf[512];
             struct sockaddr_in peeraddr;
             socklen_t slen=sizeof(peeraddr);
             int r=recvfrom(fds[i], buf, sizeof(buf), 0, (struct sockaddr*)(&peeraddr), &slen);
-            if(r>0) printf("Received packet from %s:%d\n", inet_ntoa(peeraddr.sin_addr), ntohs(peeraddr.sin_port));
+            if(r>0) {
+                recvn++;
+                printf("Received packet from %s:%d (%d)\n", inet_ntoa(peeraddr.sin_addr), ntohs(peeraddr.sin_port), recvn );
+            }
         }        
     }
     
