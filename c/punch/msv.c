@@ -47,7 +47,9 @@ int main(void) {
             }
         }
         usleep(1000);
-        fprintf(stderr,".");
+        static int cnt=0;
+        cnt++;
+        if((cnt%100)==0) fprintf(stderr,".");
     }
     return 0;
 }

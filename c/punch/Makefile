@@ -1,4 +1,4 @@
-all: sv cl msv mcl mmcl mmbcl
+all: sv cl msv mcl mmcl mmbcl ucl
 sv: sv.c
 	gcc -std=c11 sv.c -o sv
 cl: cl.c
@@ -11,3 +11,5 @@ mmcl: mmcl.c
 	gcc -std=c11 mmcl.c -o mmcl
 mmbcl: mmbcl.c
 	gcc -std=c11 mmbcl.c -o mmbcl
+ucl: ucl.c
+	gcc -std=c11 ucl.c -o ucl
