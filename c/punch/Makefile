@@ -1,5 +1,7 @@
-all: sv cl
+all: sv cl msv
 sv: sv.c
-	gcc sv.c -o sv
+	gcc -std=c11 sv.c -o sv
 cl: cl.c
-	gcc cl.c -o cl
+	gcc -std=c11 cl.c -o cl
+msv: msv.c
+	gcc -std=c11 msv.c -o msv
