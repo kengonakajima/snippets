@@ -9,6 +9,12 @@
 #include <assert.h> 
 #include <fcntl.h>
 
+
+int32_t set_socket_nonblock(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    assert(flags >= 0);
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
  
 int main(int argc, char* argv[]) {
     if(argc!=2) {
@@ -22,12 +28,14 @@ int main(int argc, char* argv[]) {
     for(int i=0;i<N;i++) {
         fds[i]=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         assert(fds[i]>0);
+        set_socket_nonblock(fds[i]);
+        
         struct sockaddr_in myaddr;
         memset((char *) &myaddr, 0, sizeof(myaddr));
         myaddr.sin_family = AF_INET;
         myaddr.sin_port = htons(sp+i);
         myaddr.sin_addr.s_addr =INADDR_ANY;
-
+        
         int r;
         r=bind(fds[i], (struct sockaddr*)(&myaddr), sizeof(myaddr));
         assert(r==0);
@@ -43,5 +51,16 @@ int main(int argc, char* argv[]) {
         r=sendto(fds[i], "hi", 2, 0, (struct sockaddr*)(&saddr), slen);
         assert(r>=0);
     }
+
+    while(1) {
+        for(int i=0;i<N;i++) {
+            char buf[512];
+            struct sockaddr_in peeraddr;
+            socklen_t slen=sizeof(peeraddr);
+            int r=recvfrom(fds[i], buf, sizeof(buf), 0, (struct sockaddr*)(&peeraddr), &slen);
+            if(r>0) printf("Received packet from %s:%d\n", inet_ntoa(peeraddr.sin_addr), ntohs(peeraddr.sin_port));
+        }        
+    }
+    
     return 0;
 }

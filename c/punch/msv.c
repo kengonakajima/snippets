@@ -42,6 +42,8 @@ int main(void) {
             r=recvfrom(fds[i],buf,sizeof(buf),0, (struct sockaddr*)&peeraddr,&slen);
             if(r>0) {
                 printf("Received packet from %s:%d\n", inet_ntoa(peeraddr.sin_addr), ntohs(peeraddr.sin_port));
+                r=sendto(fds[i],buf,sizeof(buf),0,(struct sockaddr*)&peeraddr,slen);
+                if(r<0) printf("send error\n");                
             }
         }
         usleep(1000);
