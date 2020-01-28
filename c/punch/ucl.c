@@ -18,15 +18,24 @@ int32_t set_socket_nonblock(int fd) {
 
 
 int main(int argc, char* argv[]) {
-    if(argc!=4) {
-        printf("args: localPort destIP destPort\n");
+    if(argc<4) {
+        printf("args: localPort destIP destPort [destIP2 destPort2]\n");
         return 1;
     }
     int localPort=atoi(argv[1]);
     char *destIP=argv[2];
     int destPort=atoi(argv[3]);
+    char *destIP2 = 0;
+    int destPort2 = 0;
+    int use_sv2=0;
+    if(argc==6) {
+        use_sv2=1;
+        destIP2 = argv[4];
+        destPort2 = atoi(argv[5]);
+    }
+
     
-    struct sockaddr_in si_me, si_sv;
+    struct sockaddr_in si_me, si_sv, si_sv2;
     int s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     assert(s>0);
     set_socket_nonblock(s);
@@ -45,6 +54,15 @@ int main(int argc, char* argv[]) {
     r=inet_aton(destIP, &si_sv.sin_addr);
     assert(r==1);
 
+    if(use_sv2) {
+        memset((char *) &si_sv2, 0, sizeof(si_sv2));
+        si_sv2.sin_family = AF_INET;
+        si_sv2.sin_port = htons(destPort2);
+        r=inet_aton(destIP2, &si_sv2.sin_addr);
+        assert(r==1);        
+    }
+
+    
     int cnt=0;
     while(1) {
         cnt++;
@@ -53,6 +71,11 @@ int main(int argc, char* argv[]) {
             socklen_t slen=sizeof(si_sv);
             r=sendto(s, "hi", 2, 0, (struct sockaddr*)(&si_sv), slen);
             assert(r>=0);
+            if(use_sv2) {
+                socklen_t slen=sizeof(si_sv2);
+                r=sendto(s, "hi", 2, 0, (struct sockaddr*)(&si_sv2), slen);
+                assert(r>=0);
+            }
         }
 
         char buf[100];
