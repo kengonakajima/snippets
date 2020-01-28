@@ -18,10 +18,14 @@ int32_t set_socket_nonblock(int fd) {
 
 
 int main(int argc, char* argv[]) {
-    if(argc!=3) {
-        printf("need server ip port\n");
+    if(argc!=4) {
+        printf("args: localPort destIP destPort\n");
         return 1;
     }
+    int localPort=atoi(argv[1]);
+    char *destIP=argv[2];
+    int destPort=atoi(argv[3]);
+    
     struct sockaddr_in si_me, si_sv;
     int s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     assert(s>0);
@@ -29,13 +33,16 @@ int main(int argc, char* argv[]) {
 
     memset((char *) &si_me, 0, sizeof(si_me));
     si_me.sin_family = AF_INET;
-    si_me.sin_port = htons(10000); // any port
+    si_me.sin_port = htons(localPort); // any port
     si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+    int r=bind(s, (struct sockaddr*)(&si_me), sizeof(si_me));
+    assert(r==0);
+    
  
     memset((char *) &si_sv, 0, sizeof(si_sv));
     si_sv.sin_family = AF_INET;
-    si_sv.sin_port = htons(atoi(argv[2]));
-    int r=inet_aton(argv[1], &si_sv.sin_addr);
+    si_sv.sin_port = htons(destPort);
+    r=inet_aton(destIP, &si_sv.sin_addr);
     assert(r==1);
 
     int cnt=0;
