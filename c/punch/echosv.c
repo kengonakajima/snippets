@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@ int main(int argc, char **argv) {
         socklen_t slen=sizeof(si_other);
         r=recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr*)(&si_other), &slen);
         assert(r>=0);
-        printf("Echoing packet from %s:%d\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
+        printf("[%u] Echoing packet from %s:%d\n", (unsigned int)time(NULL), inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
         r=sendto(s, buf, r, 0, (struct sockaddr*)(&si_other), slen);
         assert(r>=0);
     }
