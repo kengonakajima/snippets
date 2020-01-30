@@ -56,7 +56,6 @@ int main(int argc, char* argv[]) {
     
     int cnt=0;
     while(1) {
-        cnt++;
         if((cnt%1000)==0) {
             printf("[%u] sending packet to %s:%d\n", (unsigned int)time(NULL), inet_ntoa(si_sv.sin_addr),
                    ntohs(si_sv.sin_port));
@@ -79,7 +78,8 @@ int main(int argc, char* argv[]) {
             assert(r>0);
             assert(r>0);
         }
-        usleep(1000);
+        usleep(10000);
+        cnt++;
     }        
     return 0;
 }
