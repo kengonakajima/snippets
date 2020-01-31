@@ -768,6 +768,8 @@ int main(int argc, char **argv ) {
     SSL_load_error_strings();
     ERR_load_BIO_strings();
 
-    //   test_tls(svcertfile,svkeyfile,rootca);
+
+    test_tls(svcertfile,svkeyfile,rootca);
+    printf("==========================\n");
     test_dtls(svcertfile,svkeyfile,rootca);
 }
