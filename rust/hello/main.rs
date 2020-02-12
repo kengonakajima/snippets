@@ -6,7 +6,7 @@ fn main() -> std::io::Result<()> {
   for i in 0..1000000 {
     let s = format!("hoge:{}\n",i);  
     file.write( & s.into_bytes() )?;
-    file.flush()?;
+//    file.flush()?;
   }
   Ok(())
 }
