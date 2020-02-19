@@ -1,4 +1,6 @@
-all: sv cl msv mcl mmcl mmbcl ucl echosv concl
+all: sv cl msv mcl mmcl mmbcl ucl echosv concl mincl
+mincl: mincl.c
+	gcc -std=c11 mincl.c -o mincl
 sv: sv.c
 	gcc -std=c11 sv.c -o sv
 cl: cl.c
