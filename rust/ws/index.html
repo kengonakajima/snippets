@@ -1,0 +1,14 @@
+
+<script type="text/javascript">  
+  var ws = new WebSocket('ws://localhost:3012/');
+  console.log(ws);
+  ws.onopen = function() {
+      ws.send('hello');
+  };
+  ws.onerror = function (error) {
+      console.log('WebSocket Error ' + error);
+  };
+  ws.onmessage = function (e) {
+      console.log('Server: ' + e.data);
+  };
+</script>
