@@ -7,8 +7,11 @@
 
 #include <stdio.h>
 
+#define OPENSSL_1_1_0  (OPENSSL_VERSION_NUMBER & 0x10101000) == 0x10101000 )
+#define OPENSSL_1_0_2  (OPENSSL_VERSION_NUMBER & 0x10000200) == 0x10002000 )
+
 int main() {
     printf("%lx\n",OPENSSL_VERSION_NUMBER);
-    printf("%d\n",(OPENSSL_VERSION_NUMBER & 0x10101000) == 0x10101000 );
-    printf("%d\n",(OPENSSL_VERSION_NUMBER & 0x10002000) == 0x10002000 );
+    printf("%d\n", OPENSSL_1_1_0 );
+    printf("%d\n", OPENSSL_1_0_2 );
 }
