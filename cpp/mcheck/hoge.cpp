@@ -11,11 +11,12 @@ public:
 };
 
 int main(){
-    mtrace();
+    mtrace();  // start tracing
     K *k=new K();
     K *k2=new K();
     delete k2;
     char *p=(char*)malloc(100);
-    muntrace();
+    muntrace(); // stop tracing
+    // here, k and p is not freed
     return 0;
 }
