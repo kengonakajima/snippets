@@ -130,6 +130,38 @@ int step(int n) {
     }
     return moved;
 }
+
+int step3(int n) {
+    int cur_ind=0;
+    int moved=0;
+    for(int i=0;i<n;i++) {
+        cur_ind += 2+(RND % 5);
+        int x = cur_ind % N;
+        int y = (cur_ind/N)%N;
+        if(x<=0 || x>=(N-1))continue;
+        if(y<=0 || y>=(N-1))continue;        
+
+        //            printf("%d %d %d %d %d %d\n",cx,cy,dx,dy,x,y);
+
+        float w=get(x,y);
+        float lw=get(x-1,y);
+        float rw=get(x+1,y);
+        float tw=get(x,y+1);
+        float bw=get(x,y-1);
+
+        if(w>0) {
+            float avgw;
+            switch(RND%4) {
+            case 0: avgw=(w+lw)/2.0f; if(lw<avgw) { add(x-1,y,avgw-lw); add(x,y,lw-avgw); } moved++; break;
+            case 1: avgw=(w+rw)/2.0f; if(rw<avgw) { add(x+1,y,avgw-rw); add(x,y,rw-avgw); } moved++; break;
+            case 2: avgw=(w+tw)/2.0f; if(tw<avgw) { add(x,y+1,avgw-tw); add(x,y,tw-avgw); } moved++; break;
+            case 3: avgw=(w+bw)/2.0f; if(bw<avgw) { add(x,y-1,avgw-bw); add(x,y,bw-avgw); } moved++; break;
+            }
+        }
+    }
+    return moved;    
+}
+
 int main() {
     clear();
     add(N/2,N/2,1000);
@@ -137,7 +169,7 @@ int main() {
         usleep(1*1000);
         double st=now();
         const int n=10000000;
-        int moved=step2(n);
+        int moved=step3(n);
         double et=now();
         check(cnt,n,moved,et-st);
         if(cnt%10==0) dump(cnt/10);
