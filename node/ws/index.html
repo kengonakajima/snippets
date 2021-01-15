@@ -13,17 +13,20 @@ ws.onopen = function() {//WS接続確立
 
 // Log errors
 ws.onerror = function (error) {
-  console.log('WebSocket Error ' + error);
+    console.log('WebSocket Error ' + error);
+    document.getElementById("result").innerHTML = "websocket error!";
 };
 
 // Log messages from the server
 ws.onmessage = function (e) {
-  console.log('Server: ' + e.data);
+    console.log('Server: ' + e.data);
+    document.getElementById("result").innerHTML = "test done, hello ok";
 };
 </script>
 
 <body>
-hoge
+  hoge
+  <div id="result">result not ready</div>
 </body>
 
 </html>
