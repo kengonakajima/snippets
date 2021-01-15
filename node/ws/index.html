@@ -5,7 +5,7 @@
   
 
 <script type="text/javascript">  
-var ws = new WebSocket('ws://localhost:8080/',['echo-protocol','soap', 'xmpp']);
+var ws = new WebSocket('ws://13.113.205.223:8080/',['echo-protocol','soap', 'xmpp']);
 
 ws.onopen = function() {//WS接続確立
    ws.send('hello');
