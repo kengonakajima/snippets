@@ -5,7 +5,7 @@
   
 
 <script type="text/javascript">  
-var ws = new WebSocket('ws://localhost:8080/',['echo-protocol','soap', 'xmpp']);
+var ws = new WebSocket('ws://13.113.205.223:8080/',['echo-protocol','soap', 'xmpp']);
 
 ws.onopen = function() {//WS接続確立
    ws.send('hello');
@@ -13,17 +13,20 @@ ws.onopen = function() {//WS接続確立
 
 // Log errors
 ws.onerror = function (error) {
-  console.log('WebSocket Error ' + error);
+    console.log('WebSocket Error ' + error);
+    document.getElementById("result").innerHTML = "websocket error!";
 };
 
 // Log messages from the server
 ws.onmessage = function (e) {
-  console.log('Server: ' + e.data);
+    console.log('Server: ' + e.data);
+    document.getElementById("result").innerHTML = "test done, hello ok";
 };
 </script>
 
 <body>
-hoge
+  hoge
+  <div id="result">result not ready</div>
 </body>
 
 </html>

@@ -1,7 +1,7 @@
 require "socket"
 require "thread"
 
-gs = TCPserver.open( 80 )
+gs = TCPServer.open( "0.0.0.0", 80 )
 
 while TRUE
 	ns = gs.accept
