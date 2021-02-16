@@ -1,0 +1,77 @@
+<html>
+  <head>
+  </head>
+  <body>
+  </body>
+<script src="three.js"></script>
+<script src="GLTFLoader.js"></script>
+<script src="three-vrm.js"></script>
+<script>
+  const w = window.innerWidth, h = window.innerHeight/2;
+  const scene = new THREE.Scene();
+  scene.add(new THREE.AmbientLight(0xffffff, 1));
+//  const hemilight = new THREE.HemisphereLight(0xffffff, 0x0000FF, 1.0);
+//  scene.add(hemilight);
+  const dirlight = new THREE.DirectionalLight(0xFFFFFF, 1);
+  scene.add(dirlight);
+  
+
+  const camera = new THREE.PerspectiveCamera( 75, w/h, 0.1, 1000 );
+  const renderer = new THREE.WebGLRenderer({  });
+  renderer.setSize(w,h);
+  document.body.appendChild( renderer.domElement );  
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+  const cube = new THREE.Mesh( geometry, material );
+  scene.add( cube );
+
+  camera.position.z = -2;
+  camera.position.y = 2;  
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  var mat = new THREE.MeshLambertMaterial();
+  
+  
+  const loader = new THREE.GLTFLoader();
+  loader.load(
+
+	  // URL of the VRM you want to load
+	  '/models/three-vrm-girl.vrm',
+
+	  // called when the resource is loaded
+	  ( gltf ) => {
+
+		  // generate a VRM instance from gltf
+		  THREE.VRM.from( gltf ).then( ( vrm ) => {
+
+			  // add the loaded vrm to the scene
+			  scene.add( vrm.scene );
+
+			  // deal with vrm features
+			  console.log( vrm );
+
+		  } );
+
+	  },
+
+	  // called while loading is progressing
+	  ( progress ) => console.log( 'Loading model...', 100.0 * ( progress.loaded / progress.total ), '%' ),
+
+	  // called when loading has errors
+	  ( error ) => console.error( error )
+
+  );
+
+  function animate() {
+	  requestAnimationFrame( animate );
+      cube.rotation.x += 0.01;
+      cube.rotation.y += 0.01;
+      //cube.position.x = Math.random();
+	  renderer.render( scene, camera );              
+
+
+  }
+  animate();
+
+  
+</script>
