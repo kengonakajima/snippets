@@ -30,7 +30,9 @@
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   var mat = new THREE.MeshLambertMaterial();
-  
+
+  var g_vrm;
+  var g_mixer;
   
   const loader = new THREE.GLTFLoader();
   loader.load(
@@ -49,6 +51,7 @@
 
 			  // deal with vrm features
 			  console.log( vrm );
+              g_vrm = vrm;
 
 		  } );
 
@@ -62,8 +65,19 @@
 
   );
 
+  var clock = new THREE.Clock();
+  
   function animate() {
 	  requestAnimationFrame( animate );
+
+      const dt=clock.getDelta();
+      if(g_vrm) {
+          g_vrm.update(dt);
+      }
+      if(g_mixer) {
+          g_mixer.update(dt);
+      }
+      
       cube.rotation.x += 0.01;
       cube.rotation.y += 0.01;
       //cube.position.x = Math.random();
@@ -73,5 +87,79 @@
   }
   animate();
 
+  document.addEventListener("keydown", (event) => {
+      console.log("key:",event.key,g_vrm);
+      if(event.key=="k") {
+          g_vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Blink, 1.0);
+      } else if( event.key=="l") {
+          g_vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Joy, 1.0);
+      } else if( event.key=="m") {
+          // 足の角度を変える
+          var pose={
+              leftUpperLeg : {
+                  rotation: [  0.000,  0.000, -0.454,  0.891 ],
+                  position: [  0.000,  0.000,  0.000 ]
+              },
+              leftLowerLeg : {
+                  rotation: [ -0.454,  0.000,  0.000,  0.891 ]
+              },
+          };
+          g_vrm.humanoid.setPose(pose);
+      }  else if(event.key=="n") {
+          // https://github.com/pixiv/three-vrm/blob/dev/packages/three-vrm/examples/animations.html
+          // bone animation
+//          g_vrm.humanoid.getBoneNode( THREE.VRMSchema.HumanoidBoneName.Hips ).rotation.y = Math.PI; // これだけで後ろ反転
+
+          g_mixer = new THREE.AnimationMixer(g_vrm.scene);
+          const quatA = new THREE.Quaternion( 0.0, 0.0, 0.0, 1.0 );
+		  const quatB = new THREE.Quaternion( 0.0, 0.0, 0.0, 1.0 );
+		  quatB.setFromEuler( new THREE.Euler( 0.0, 0.0, 0.25 * Math.PI ) );
+
+		  const armTrack = new THREE.QuaternionKeyframeTrack(
+			  g_vrm.humanoid.getBoneNode( THREE.VRMSchema.HumanoidBoneName.LeftUpperArm ).name + '.quaternion', // name
+			  [ 0.0, 0.5, 1.0 ], // times
+			  [ ...quatA.toArray(), ...quatB.toArray(), ...quatA.toArray() ] // values
+		  );
+
+		  const blinkTrack = new THREE.NumberKeyframeTrack(
+			  g_vrm.blendShapeProxy.getBlendShapeTrackName( THREE.VRMSchema.BlendShapePresetName.Blink ), // name
+			  [ 0.0, 0.5, 1.0 ], // times
+			  [ 0.0, 1.0, 0.0 ] // values
+		  );
+
+		  const clip = new THREE.AnimationClip( 'blink', 1.0, [ armTrack, blinkTrack ] );
+		  const action = g_mixer.clipAction( clip );
+		  action.play();
+      }
+      g_vrm.blendShapeProxy.update();          
+      /*
+        A: "a"
+Angry: "angry"
+Blink: "blink"
+BlinkL: "blink_l"
+BlinkR: "blink_r"
+E: "e"
+Fun: "fun"
+I: "i"
+Joy: "joy"
+Lookdown: "lookdown"
+Lookleft: "lookleft"
+Lookright: "lookright"
+Lookup: "lookup"
+Neutral: "neutral"
+O: "o"
+Sorrow: "sorrow"
+U: "u"
+Unknown: "unknown"
+*/
+
+
+      // https://note.com/upfrontier/n/n597ea0966fa4
+      // vrm.blendShapeProxy.setValue(VRMSchema.BlendShapePresetName.Joy, 1.0)
+      // vrm.blendShapeProxy.setValue(VRMSchema.BlendShapePresetName.A, 0.95)
+      // vrm.blendShapeProxy.setValue(VRMSchema.BlendShapePresetName.I, 0.85)
+      // vrm.blendShapeProxy.update()
+  }, false);
+  
   
 </script>
