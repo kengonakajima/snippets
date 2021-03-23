@@ -5,6 +5,11 @@ File.open("dic.txt").read.split("\n").each do|line|
   dic.push(pair)
 end
 
+dic.each do |pair|
+  print pair,"\n"
+end
+
+
 def need_convert?(t)
   return -10 if /[[:upper:]]/.match(t)
   boin=["a","i","u","e","o"]
