@@ -104,6 +104,12 @@ url=require("url");
 
 var app=express();
 app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+    connectSrc: [
+        "'self'",
+        "ws://localhost:8080"
+    ]
+}));
 app.use(body_parser.urlencoded({extended: true}));
 app.use("/client.js", express.static("client.js"));
 app.use("/index.html", express.static("index.html"));
