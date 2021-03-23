@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define NAME(a,b) a ## b
+#define NAME(b) fuga ## b
 
 void fuga_hoge() {
     printf("fuga\n");
@@ -10,7 +10,7 @@ void piyo_hoge() {
 }
 
 int main() {
-    NAME( fuga, _hoge )();
-    NAME( piyo, _hoge )();    
+    NAME( _hoge )();
+    NAME( _hoge )();    
     return 0;
 }
