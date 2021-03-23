@@ -7,7 +7,236 @@
 <script src="GLTFLoader.js"></script>
 <script src="three-vrm.js"></script>
 <script>
-  const w = window.innerWidth, h = window.innerHeight/2;
+
+  const bone_names = [
+      "hips",
+      "leftUpperLeg",
+      "rightUpperLeg",
+      "leftLowerLeg",
+      "rightLowerLeg",
+      
+      "leftFoot",
+      "rightFoot",
+      "spine",
+      "chest",
+      "neck",
+      
+      "head",
+      "leftShoulder",
+      "rightShoulder",
+      "leftUpperArm",
+      "rightUpperArm",
+      
+      "leftLowerArm",
+      "rightLowerArm",
+      "leftHand",
+      "rightHand",
+      "leftToes",
+      
+      "rightToes",
+      "leftEye",
+      "rightEye",
+      "jaw",
+      
+      "leftThumbProximal",
+      "leftThumbIntermediate",
+      "leftThumbDistal",
+      "leftIndexProximal",
+      "leftIndexIntermediate",
+      "leftIndexDistal",
+      "leftMiddleProximal",
+      "leftMiddleIntermediate",
+      "leftMiddleDistal",
+      "leftRingProximal",
+      "leftRingIntermediate",
+      "leftRingDistal",
+      "leftLittleProximal",
+      "leftLittleIntermediate",
+      "leftLittleDistal",
+      "rightThumbProximal",
+      "rightThumbIntermediate",
+      "rightThumbDistal",
+      "rightIndexProximal",
+      "rightIndexIntermediate",
+      "rightIndexDistal",
+      "rightMiddleProximal",
+      "rightMiddleIntermediate",
+      "rightMiddleDistal",
+      "rightRingProximal",
+      "rightRingIntermediate",
+      "rightRingDistal",
+      "rightLittleProximal",
+      "rightLittleIntermediate",
+      "rightLittleDistal",
+      "upperChest"
+  ];
+
+  const animdata = [
+      /*
+      0,0,0,1, 0,0,0,1, 0,0,0,0,  0,0,0,0,  0,0,0,0,    0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,     0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,
+
+      0,0,0,0, 0,0,0,0, 0,0,0,0,  0,0,0,0,  0,0,0,0,    0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,     0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0,
+      */
+
+      0.070,0.002,-0.013,0.997, // 0 hips
+      -0.369,-0.049,0.059,0.926, // 1 l-up-leg
+      -0.216,0.017,0.007,0.976, // 2 r
+      0.763,0.050,0.015,0.644, // 3 l-low-leg
+      0.323,0.012,-0.013,0.946, // 4 r-low-leg
+      0.123,-0.027,-0.021,0.992, // 5 l-foot
+      -0.092,-0.033,-0.024,0.995, // 6 r-foot
+      0.061,-0.001,-0.005,0.998, // 7 spine
+      0.084,-0.004,0.022,0.996, // 8 chest
+      -0.028,0.004,0.006,1.000, // 9 neck
+      -0.091,0.005,0.002,0.996, // 10 head
+
+      0,0,0,0,//0.006,-0.777,-0.104,0.621, // 11 l-shoulder
+      0,0,0,0,//-0.629,-0.052,0.775,0.045, // 12 r-sh
+      0,0,0,0,//0.010,-0.447,-0.087,0.890, // 13 l-up-arm
+      0,0,0,0,//-0.026,-0.510,-0.067,0.857, // 14 r-up-arm
+      0,0,0,0,//0.730,0.054,-0.013,0.681, // 15 l-low-arm
+      0,0,0,0,//0.780,0.071,0.032,0.620, // 16 r-low-arm
+      0.132,-0.042,-0.024,0.990, // 17 l-hand
+      0.050,0.026,0.003,0.998, // 18 r-hand
+      0.000,0.000,0.000,1.000, // 19 l-toes
+      0.000,0.000,0.000,1.000, // 20 r-toes
+      0.013,-0.003,-0.142,0.990, // 21 l-eye
+      0.013,0.003,0.142,0.990, // 22 r-eye
+      0.000,0.000,0.000,0.000, // 23 jaw 
+      0.180,-0.191,0.372,0.890, // 24 以降は指
+      -0.131,0.102,-0.029,0.986,
+      -0.159,0.135,0.018,0.978,
+      -0.182,-0.110,-0.079,0.974,
+      -0.002,-0.406,-0.016,0.914,
+      -0.005,-0.589,-0.015,0.808,
+      -0.042,-0.161,0.002,0.986,
+      -0.027,-0.535,-0.001,0.845,
+      -0.037,-0.735,-0.001,0.677,
+      0.038,-0.384,0.126,0.914,
+      -0.053,-0.274,0.017,0.960,
+      -0.149,-0.840,0.013,0.522,
+      0.089,-0.121,0.159,0.976,
+      -0.063,-0.296,0.022,0.953,
+      -0.150,-0.766,0.019,0.625,
+      -0.185,0.126,-0.403,-0.888,
+      0.163,-0.130,0.029,-0.978,
+      0.208,-0.176,-0.018,-0.962,
+      0.094,0.138,0.052,-0.985,
+      0.003,0.455,0.016,-0.890,
+      0.005,0.608,0.015,-0.794,
+      -0.066,0.244,-0.034,-0.967,
+      0.025,0.503,0.001,-0.864,
+      0.034,0.674,0.001,-0.738,
+      -0.120,0.365,-0.151,-0.911,
+      0.048,0.245,-0.017,-0.968,
+      0.133,0.743,-0.014,-0.656,
+      -0.106,0.046,-0.159,-0.981,
+      0.064,0.301,-0.022,-0.951,
+      0.151,0.770,-0.019,-0.620,
+      0.000,0.000,0.000,0.000, // 54 upperChest
+/*
+      0.070,0.002,-0.013,0.997,
+      -0.369,-0.049,0.059,0.926,
+      -0.216,0.017,0.007,0.976,
+      0.763,0.050,0.015,0.644,
+      0.323,0.012,-0.013,0.946,
+      0.123,-0.027,-0.021,0.992,
+      -0.092,-0.033,-0.024,0.995,
+      0.061,-0.001,-0.005,0.998,
+      0.084,-0.004,0.022,0.996,
+      -0.028,0.004,0.006,1.000,
+      -0.091,0.005,0.002,0.996,
+      0.006,-0.777,-0.104,0.621,
+      -0.629,-0.052,0.775,0.045,
+      0.010,-0.447,-0.087,0.890,
+      -0.026,-0.510,-0.067,0.857,
+      0.730,0.054,-0.013,0.681,
+      0.780,0.071,0.032,0.620,
+      0.132,-0.042,-0.024,0.990,
+      0.050,0.026,0.003,0.998,
+      0.000,0.000,0.000,1.000,
+      0.000,0.000,0.000,1.000,
+      0.013,-0.003,-0.142,0.990,
+      0.013,0.003,0.142,0.990,
+      0.000,0.000,0.000,0.000,
+      0.180,-0.191,0.372,0.890,
+      -0.131,0.102,-0.029,0.986,
+      -0.159,0.135,0.018,0.978,
+      -0.182,-0.110,-0.079,0.974,
+      -0.002,-0.406,-0.016,0.914,
+      -0.005,-0.589,-0.015,0.808,
+      -0.042,-0.161,0.002,0.986,
+      -0.027,-0.535,-0.001,0.845,
+      -0.037,-0.735,-0.001,0.677,
+      0.038,-0.384,0.126,0.914,
+      -0.053,-0.274,0.017,0.960,
+      -0.149,-0.840,0.013,0.522,
+      0.089,-0.121,0.159,0.976,
+      -0.063,-0.296,0.022,0.953,
+      -0.150,-0.766,0.019,0.625,
+      -0.185,0.126,-0.403,-0.888,
+      0.163,-0.130,0.029,-0.978,
+      0.208,-0.176,-0.018,-0.962,
+      0.094,0.138,0.052,-0.985,
+      0.003,0.455,0.016,-0.890,
+      0.005,0.608,0.015,-0.794,
+      -0.066,0.244,-0.034,-0.967,
+      0.025,0.503,0.001,-0.864,
+      0.034,0.674,0.001,-0.738,
+      -0.120,0.365,-0.151,-0.911,
+      0.048,0.245,-0.017,-0.968,
+      0.133,0.743,-0.014,-0.656,
+      -0.106,0.046,-0.159,-0.981,
+      0.064,0.301,-0.022,-0.951,
+      0.151,0.770,-0.019,-0.620,
+      0.000,0.000,0.000,0.000,
+*/      
+
+
+
+  ];
+  
+
+  const array2hierarchy = (array, fps) => {
+      let data = [];
+      for (let j=0; j<parseInt(array.length/55/4); j++) {
+          data[j] = [];
+          for (let i=0; i<55; i++) {
+              var fin_i=i;
+              if(fin_i==23)continue;
+              if(fin_i>=23) fin_i=i-1;
+              data[j][fin_i*4+0] = array[j*55*4+i*4];
+              data[j][fin_i*4+1] = array[j*55*4+i*4+1];
+              data[j][fin_i*4+2] = array[j*55*4+i*4+2];
+              data[j][fin_i*4+3] = array[j*55*4+i*4+3];              
+          }
+      }
+      console.log("data:",data);
+
+      var qq = new THREE.Quaternion(0.707,0.707,0,0);
+      
+      // 配列 → hierarchy
+      let hierarchy = [];
+      for (let i=0; i<54; i++) { // -1 for skipping jaw
+          let keys = [];
+          for (let j=0; j<data.length; j++) {
+              var q = new THREE.Quaternion(-data[j][i*4],-data[j][i*4+1],data[j][i*4+2],data[j][i*4+3]);
+              var finq=q;
+              keys[j] = {
+                  rot: finq.toArray(),
+                  time: fps*j                       
+              }                  
+          }
+          console.log("KKK i:",i,keys);
+          hierarchy[i] = {'keys': keys};
+      } 
+  return hierarchy;
+  }
+     
+  
+  /////////////////////////////////////////////
+  
+  const w = window.innerWidth, h = window.innerHeight;
   const scene = new THREE.Scene();
   scene.add(new THREE.AmbientLight(0xffffff, 1));
 //  const hemilight = new THREE.HemisphereLight(0xffffff, 0x0000FF, 1.0);
@@ -23,11 +252,12 @@
   const geometry = new THREE.BoxGeometry();
   const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
   const cube = new THREE.Mesh( geometry, material );
+  cube.scale.set(0.2,0.2,0.2);
   scene.add( cube );
 
-  camera.position.z = -2;
+  camera.position.z = -1.5;
   camera.position.y = 2;  
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
+  camera.lookAt(new THREE.Vector3(0, 0.5, 0));
 
   var mat = new THREE.MeshLambertMaterial();
 
@@ -38,13 +268,14 @@
   loader.load(
 
 	  // URL of the VRM you want to load
-	  '/models/three-vrm-girl.vrm',
+//	  '/models/three-vrm-girl.vrm',
+	  '/models/AliciaSolid.vrm',      
 
 	  // called when the resource is loaded
 	  ( gltf ) => {
 
 		  // generate a VRM instance from gltf
-		  THREE.VRM.from( gltf ).then( ( vrm ) => {
+		  THREE.VRMDebug.from( gltf ).then( ( vrm ) => {
 
 			  // add the loaded vrm to the scene
 			  scene.add( vrm.scene );
@@ -52,6 +283,27 @@
 			  // deal with vrm features
 			  console.log( vrm );
               g_vrm = vrm;
+
+
+              // jawがないのでスキップする
+              var bones=[];
+              for(var i=0;i<bone_names.length;i++) {
+                  const boneName = bone_names[i];
+                  var bn = g_vrm.humanoid.getBoneNode(boneName);
+                  if(bn==null) console.log("bn not found:",boneName);
+                  else bones.push(bn);
+              }
+              console.log("bones",bones, g_vrm.humanoid);
+              const hier = array2hierarchy(animdata, 0.2);
+              const clip = THREE.AnimationClip.parseAnimation({ hierarchy: hier }, bones);
+              clip.tracks.some((track) => {
+                  track.name = track.name.replace(/^\.bones\[([^\]]+)\].(position|quaternion|scale)$/, '$1.$2')
+              });
+              g_mixer = new THREE.AnimationMixer(g_vrm.scene)
+              var action = g_mixer.clipAction(clip)
+              action.play();
+
+              
 
 		  } );
 
@@ -80,6 +332,7 @@
       
       cube.rotation.x += 0.01;
       cube.rotation.y += 0.01;
+
       //cube.position.x = Math.random();
 	  renderer.render( scene, camera );              
 
@@ -88,7 +341,6 @@
   animate();
 
   document.addEventListener("keydown", (event) => {
-      console.log("key:",event.key,g_vrm);
       if(event.key=="k") {
           g_vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Blink, 1.0);
       } else if( event.key=="l") {
@@ -113,7 +365,7 @@
           g_mixer = new THREE.AnimationMixer(g_vrm.scene);
           const quatA = new THREE.Quaternion( 0.0, 0.0, 0.0, 1.0 );
 		  const quatB = new THREE.Quaternion( 0.0, 0.0, 0.0, 1.0 );
-		  quatB.setFromEuler( new THREE.Euler( 0.0, 0.0, 0.25 * Math.PI ) );
+		  quatB.setFromEuler( new THREE.Euler( 0.0, 0.0, 0.5 * Math.PI ) );
 
 		  const armTrack = new THREE.QuaternionKeyframeTrack(
 			  g_vrm.humanoid.getBoneNode( THREE.VRMSchema.HumanoidBoneName.LeftUpperArm ).name + '.quaternion', // name

@@ -40,6 +40,10 @@ plt.ylabel("hz")
 plt.savefig("./spectrogram.png")
 plt.show()
 
+
+# stft_data[50:,:]=0
+stft_data[:50,:]=0
+
 t,data_post=sp.istft(stft_data,fs=wav.getframerate(), window="hann",nperseg=512,noverlap=256)
 data_post=data_post*np.iinfo(np.int16).max
 data_post=data_post.astype(np.int16)
