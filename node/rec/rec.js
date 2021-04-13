@@ -1,17 +1,17 @@
-const recorder = require('node-record-lpcm16');
+const recorder = require('node-record-lpcm16'); // nodeモジュールを読み込む
+
 recorder
     .record({
-        sampleRate: 48000,
-        threshold: 0.5, //silence threshold
+        sampleRate: 48000, // マイクデバイスのサンプリングレートを指定
         recordProgram: 'rec', // Try also "arecord" or "sox"
-        silence: '0.2', //seconds of silence before ending
     })
     .stream()
-    .on('error', console.error)
-    .on('data', function(data) {
-        var ntimes=Math.abs(data.readInt16LE()) / 512;
-        var bar="*".repeat(ntimes);
-        console.log("mic data length:",data.length, " vol:", bar);
+    .on('error', console.error) // エラーが起きたときにログを出力する
+    .on('data', function(data) { // マイクからデータを受信する無名コールバック関数
+        var vol = Math.abs(data.readInt16LE());  // 配列の先頭のサンプリングデータをひとつ読み込み、音量を得る
+        var ntimes = vol / 512; // 音量が0~32767の値で得られるので512で割る(0~63)
+        var bar = "*".repeat(ntimes); // アスタリスク文字を、音量に応じて0~63回繰り返す
+        console.log("mic volume:", bar);
     });
 console.log('Listening, press Ctrl+C to stop.');
 
