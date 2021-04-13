@@ -3,6 +3,7 @@ const recorder = require('node-record-lpcm16'); // nodeモジュールを読み�
 recorder
     .record({
         sampleRate: 48000, // マイクデバイスのサンプリングレートを指定
+        channels: 1,  // チャンネル数を指定(モノラル)              
         recordProgram: 'rec', // 録音用のバックエンドプログラム名を指定
     })
     .stream()
