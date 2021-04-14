@@ -1,25 +1,24 @@
-const Readable=require("stream").Readable;
+const Readable=require("stream").Readable; 
 const Speaker=require("speaker");
 
-const sine=new Readable();
-sine.t=0;
-sine._read = function(n) {
-    var sampleNum = n/2;
-    var u8ary = new Uint8Array(n);
-    var dv=new DataView(u8ary.buffer);
-    for(var i=0;i<sampleNum;i++) {
-        this.t += 0.01;
-        dv.setInt16(i*2,Math.sin(this.t)*20000,true);
+const sine=new Readable(); // 
+sine.t=0;    // 音波を生成する際の時刻カウンター
+sine._read = function(n) { // Speakerモジュールで新しいサンプルデータが必要になったら呼び出されるコールバック関数 n:バイト数
+    var sampleNum = n/2; // サンプルデータの数を計算する。16ビットPCMなのでnを2バイトで割る
+    var u8ary = new Uint8Array(n); // 出力用データの配列
+    var dv=new DataView(u8ary.buffer); // 16ビットリトルエンディアン整数の出力用
+    for(var i=0;i<sampleNum;i++) { // 必要なサンプリングデータの数だけループさせる
+        this.t += 0.01; // 1サンプルごとに0.01だけ進める(628サンプルで1周期)
+        dv.setInt16(i*2,Math.sin(this.t)*20000,true); // 振幅を-20000から20000の間で出力
     }
-    this.push(u8ary);
+    this.push(u8ary); // 最終的な値を出力
 }
 
-const spk=new Speaker({
-    channels: 1,
-    bitDepth: 16,
-    sampleRate: 48000,
-    samplesPerFrame: 512    
+const spk=new Speaker({ 
+    channels: 1, // チャンネル数は1(モノラル)
+    bitDepth: 16, // サンプリングデータのビット数は16 (デフォルトはリトルエンディアン)
+    sampleRate: 48000, // サンプリングレート(Hz)
 });
 
-sine.pipe(spk);
+sine.pipe(spk); 
 
