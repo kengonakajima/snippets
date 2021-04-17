@@ -12,9 +12,7 @@ receiver._read = function(n) {
         for(var i=n;i<recvbuf_used;i++) recvbuf[i-n]=recvbuf[i]; // 受信用バッファをシフト(コピーし終わった分を捨てる)
         recvbuf_used-=n; // 捨てた分のバイト数だけ減算
     } else {
-        for(var i=0;i<n;i++) { // データが足りないときは無音を再生する
-            outary[i]=0;
-        }
+        for(var i=0;i<n;i++) outary[i]=0; // データが足りないときは無音を再生する
     }
     this.push(outary);
 }
