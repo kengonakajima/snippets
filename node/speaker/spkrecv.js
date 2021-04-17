@@ -2,7 +2,6 @@ const Readable=require("stream").Readable;
 const Speaker=require("speaker");
 const dgram = require("dgram"); // データグラム通信用のモジュールを読み込む
 
-
 const receiver=new Readable();
 var recvbuf = new Uint8Array(48000*2); // 受信用のバッファを1秒分確保する(48KHzで1サンプルあたり2バイト)
 var recvbuf_used=0; // 受信用のバッファに、有効なデータが何バイト入っているかを保持する変数
@@ -41,9 +40,7 @@ socket.on("message", (message,remote) => { // UDPのデータグラムを受信�
     }
     recvbuf_used+=message.length; // 受信用バッファの使用量を増やす
 });
-
 socket.bind(23456,"0.0.0.0"); // UDPポート番号23456、任意アドレスからのデータグラムを受け入れる
-
 
 const spk=new Speaker({ 
     channels: 1, // チャンネル数は1(モノラル)
