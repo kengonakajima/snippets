@@ -119,8 +119,8 @@ srv.on('login', function (client) {
         //
         //
         if(meta.name=="map_chunk") {
-            if(data.x==1216 && data.z==711) {
-                console.log("mapchunk",data.x,data.z,JSON.stringify(data));
+            if(data.chunkData[2]>5) {
+                console.log("mapchunk", data.x,data.z,data.chunkData[2],JSON.stringify(data));
             }
         }
 
