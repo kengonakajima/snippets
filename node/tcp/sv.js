@@ -11,8 +11,6 @@ var server = net.createServer(function(socket) {
     });
     socket.on("data",function(data) {
         socket.write(data);
-        console.log("datalen:",data.length);
-//        if(data.length<50) console.log("data:",data);
     })
 })
 
