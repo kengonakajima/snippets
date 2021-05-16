@@ -4,6 +4,8 @@ var host = process.argv[2];
 
 var cl = new net.Socket();
 cl.connect( 22222, host, function() {
+    cl.tot=0;
+    cl.cnt=0;
     console.log("connected:",cl.remoteAddress, cl.remotePort );
     setInterval( function() {
         var b=new Uint8Array(8);
@@ -18,7 +20,9 @@ cl.connect( 22222, host, function() {
         var nowt=new Date().getTime();
         var datat=dv.getFloat64(0,true);
         var dt=nowt-datat;
-        console.log("rtt:",dt,"ms");
+        cl.tot+=dt;
+        cl.cnt++;
+        console.log("RTT:",dt,"ms", "avg:",cl.tot/cl.cnt);
         
     });
     cl.on("close", function() {
