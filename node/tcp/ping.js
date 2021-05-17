@@ -14,16 +14,19 @@ cl.connect( 22222, host, function() {
         dv.setFloat64(0,t,true);
         cl.write(b);
         cl.sent_at=t;
-    }, 1000 );
+    }, 100 );
     cl.on("data", function(data) {
-        var dv=new DataView(data.buffer);
-        var nowt=new Date().getTime();
-        var datat=dv.getFloat64(0,true);
-        var dt=nowt-datat;
-        cl.tot+=dt;
-        cl.cnt++;
-        console.log("RTT:",dt,"ms", "avg:",cl.tot/cl.cnt);
-        
+        var ofs=0;
+        while(ofs<data.length) {
+            var dv=new DataView(data.buffer);
+            var nowt=new Date().getTime();
+            var datat=dv.getFloat64(ofs,true);
+            var dt=nowt-datat;
+            cl.tot+=dt;
+            cl.cnt++;
+            console.log("Time:",nowt, "Cnt:",cl.cnt, " RTT:",dt,"ms", "avg:",cl.tot/cl.cnt);
+            ofs+=8;
+        }        
     });
     cl.on("close", function() {
         console.log("closed:", cl.remoteAddress, cl.remotePort );
