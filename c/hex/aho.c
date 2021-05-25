@@ -1,4 +1,7 @@
+#include <stdio.h>
+
 main()
 {
-	printf("%x\n" , 1197829225 );
+	printf("%d\n" , 0xfffffbee);
+    
 }
