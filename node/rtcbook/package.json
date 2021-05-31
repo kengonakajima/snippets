@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "fft-js": "^0.0.12",
+    "ooura": "^2.1.6"
+  }
+}
