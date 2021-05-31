@@ -37,6 +37,6 @@ for(var i=0;i<re.length;i++) {
     console.log(i,s);
 }
 
-// 出力と入力がどれぐらい違っているか表示
+// step 6. 出力と入力がどれぐらい違っているか表示
 //for(var i=0;i<len;i++) console.log("diff:",output[i]-samples[i]);
 
