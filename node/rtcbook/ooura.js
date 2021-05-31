@@ -1,29 +1,26 @@
 var ooura = require("ooura");
 var fs = require("fs");
 
-var data = fs.readFileSync("a.LPCM16.raw");
-console.log("data:",data,data.readInt16LE(0));
-var maxlen=2048;//8192;
-var len=data.length/2;  
-if(len>maxlen) len=maxlen;
-var samples = new Float64Array(len);
-for(var i=0;i<len;i++) samples[i] = data.readInt16LE(i*2)/32767;
+var data = fs.readFileSync("a.LPCM16.raw"); // 「あ」の部分だけを取り出したPCM16LE音声ファイル
+var len=data.length/2;  // 1サンプルあたり2バイト
+var maxlen=2048; //8192;   高速フーリエ変換を使うために、入力のサイズを2の累乗に制限する
+if(len>maxlen) len=maxlen; // 
+var samples = new Float64Array(len); // ooura関数に入れるには float64に変換が必要
+for(var i=0;i<len;i++) samples[i] = data.readInt16LE(i*2)/32767; // PCM16を浮動小数に変換
 console.log("samples:",samples);
-let oo = new ooura(len, {"type":"real", "radix":4});
-let output = oo.scalarArrayFactory();
-let re = oo.vectorArrayFactory();
-let im = oo.vectorArrayFactory();
+let oo = new ooura(len, {"type":"real"}); // oouraの設定. 実数を用いる
+let output = oo.scalarArrayFactory(); // 出力用の空の配列を作成する
+let re = oo.vectorArrayFactory(); // 解析結果の実数部が出力される配列を作成
+let im = oo.vectorArrayFactory(); // 解析結果の虚数部が出力される配列を作成
 
-oo.fft(samples.buffer, re.buffer, im.buffer);   //populates re and im from input
-console.log("real:",re,"img:",im);
-oo.ifft(output.buffer, re.buffer, im.buffer); //populates output from re and im
-
+oo.fft(samples.buffer, re.buffer, im.buffer);   // 高速フーリエ変換を実行。 re, imに出力される
+oo.ifft(output.buffer, re.buffer, im.buffer); // 高速逆フーリエ変換を実行。 re, imからサンプルを生成する
 console.log("output:",output);
 
-var outpcmbuf=Buffer.alloc(len*2);
+var outpcmbuf=Buffer.alloc(len*2); // outputのfloat64配列を 16LEに変換する
 for(var i=0;i<len;i++) outpcmbuf.writeInt16LE(output[i]*32767,i*2) ;
 console.log("outpcmbuf",outpcmbuf);
-fs.writeFileSync("a_ifft_out.LPCM16.raw",outpcmbuf);
+fs.writeFileSync("a_ifft_out.LPCM16.raw",outpcmbuf); // ファイルに書き出す
 
 // 出力と入力がどれぐらい違っているか表示
 //for(var i=0;i<len;i++) console.log("diff:",output[i]-samples[i]);
