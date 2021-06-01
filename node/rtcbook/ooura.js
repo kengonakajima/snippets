@@ -1,5 +1,6 @@
 var ooura = require("ooura");
 var fs = require("fs");
+var fixrange16=function(v) { if(v<-32768) return -32768; else if(v>32767) return 32767; return v; }
 
 // step 1. FFTに入力するサンプルデータを取り込む
 var data = fs.readFileSync("a.LPCM16.raw"); // 「あ」の部分だけを取り出したPCM16LE音声ファイル
@@ -23,18 +24,19 @@ console.log("re:",re,im);
 
 // step 4. 再構成した音をファイルに書き出す
 var outpcmbuf=Buffer.alloc(len*2); // outputのfloat64配列を 16LEに変換する
-for(var i=0;i<len;i++) outpcmbuf.writeInt16LE(output[i]*32767,i*2) ;
+for(var i=0;i<len;i++) outpcmbuf.writeInt16LE(fixrange16(output[i]*32767),i*2) ;
 console.log("outpcmbuf",outpcmbuf);
 fs.writeFileSync("a_ifft_out.LPCM16.raw",outpcmbuf); // ファイルに書き出す
 
 
 // step 5. 周波数ごとの成分を文字のグラフで表示する
 var magnitude=new Float64Array(len);
-for(var i=0;i<re.length;i++) {
-    magnitude[i] = 20*Math.log(Math.sqrt(re[i]*re[i]+im[i]*im[i]),10);
+for(var i=0;i<re.length/4;i++) {
+    magnitude[i] = 20*Math.log10(Math.sqrt(re[i]*re[i]+im[i]*im[i]));
     var s="";
     for(var j=0;j<magnitude[i]*4+20;j++) s+="*";
     console.log(i,s);
+    //console.log("dB:",i,magnitude[i]);
 }
 
 // step 6. 出力と入力がどれぐらい違っているか表示
