@@ -18,6 +18,7 @@ HME.createH264MP4Encoder().then(encoder => {
     // Must be a multiple of 2.
     encoder.width = w;
     encoder.height = h;
+    encoder.speed=10;
     console.log("enc:",encoder.outputFilename);
     encoder.initialize();
     // Add a single gray frame, the alpha is ignored.
