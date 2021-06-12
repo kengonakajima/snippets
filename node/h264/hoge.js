@@ -2,7 +2,7 @@ const fs=require("fs");
 const HME = require("h264-mp4-encoder");
 
 var n=200;
-var w=256, h=192;
+var w=256*2, h=192*2;
 
 var t0=new Date().getTime();
 
