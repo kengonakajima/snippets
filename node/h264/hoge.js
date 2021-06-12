@@ -9,7 +9,11 @@ var t0=new Date().getTime();
 var raw=[];
 for(var i=0;i<n;i++) {
     var v= (i*7)%256;
-    raw.push(new Uint8Array(w * h * 4).fill(v));;
+    var ary = new Uint8Array(w * h * 4);
+    for(var k=0;k<w*h*4;k++) {
+        ary[k]=(k*(7+i))+i;
+    }
+    raw.push(ary);
 }
 var t1=new Date().getTime();
 console.log("gen done:",(t1-t0));
