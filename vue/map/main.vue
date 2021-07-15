@@ -2,7 +2,7 @@
   <div>
     <h1>Vue.jsで地図アプリ</h1>
     <vmap ref="cmap"></vmap>
-    <vcontroller v-on:move-event="move"></vcontroller>
+    <vcontroller v-on:move-event="move" v-on:addmarker-event="addmarker"></vcontroller>
   </div>
 </template>
 
@@ -18,7 +18,9 @@ export default{
     move(direction){
 //      alert(direction);
       this.$refs.cmap.move(direction);
-
+    },
+    addmarker() {
+      this.$refs.cmap.addmarker();
     }
   }
 }

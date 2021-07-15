@@ -10,5 +10,6 @@ vue serve main.vue
 
 # Usage
 
-click on left/up/right/down div element then the map moves 
+- click on left/up/right/down div element then the map moves
+- click on addmarker to randomly add leaflet markers
 

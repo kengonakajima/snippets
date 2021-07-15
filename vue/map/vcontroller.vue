@@ -5,7 +5,8 @@
         <div class="pad" v-on:click="move('left')">LEFT</div>
         <div class="pad" v-on:click="move('up')">UP</div>
         <div class="pad" v-on:click="move('right')">RIGHT</div>
-        <div class="pad" v-on:click="move('down')">DOWN</div>        
+        <div class="pad" v-on:click="move('down')">DOWN</div>
+        <div class="pad" v-on:click="addmarker()">addmarker</div>        
       </div>
     </div>
   </div>
@@ -21,6 +22,9 @@ export default{
     move(direction){
       // 親コンポーネントであるmain.vueのmoveメソッドを呼び出す      
       this.$emit("move-event", direction)
+    },
+    addmarker() {
+      this.$emit("addmarker-event");
     }
   }
   

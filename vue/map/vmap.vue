@@ -46,6 +46,16 @@ export default{
         this.map.panTo(this.latlng)
         break;
       }
+    },
+    addmarker() {
+      var twpicicon = L.icon( {                                                      
+        iconUrl: "https://pbs.twimg.com/profile_images/1240779409948151808/HNBXZptk_normal.png",
+        iconSize: [30,30],                                                         
+        iconAnchor: [0,0]                                                          
+      });                                                                            
+      var latlng = [ this.latlng[0] + Math.random()*0.002, this.latlng[1]+Math.random()*0.002 ];
+      L.marker(latlng,{icon:twpicicon}).addTo(this.map);
+      
     }
   }
 
