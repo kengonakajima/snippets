@@ -1,6 +1,8 @@
-# vue map(leaflet) sample based on https://mukai-lab.info/pages/tech/vue/vue3/
+# vue map(leaflet) sample
 
-To start server:
+Based on https://mukai-lab.info/pages/tech/vue/vue3/
+
+# start server
 
 ```
 vue serve main.vue
