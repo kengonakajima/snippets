@@ -2,7 +2,7 @@ const fs=require("fs");
 const HME = require("h264-mp4-encoder");
 
 var n=200;
-var w=256*2, h=192*2;
+var w=256, h=192;
 
 var t0=new Date().getTime();
 
@@ -22,7 +22,7 @@ HME.createH264MP4Encoder().then(encoder => {
     // Must be a multiple of 2.
     encoder.width = w;
     encoder.height = h;
-    encoder.speed=10;
+    encoder.speed=1;
     console.log("enc:",encoder.outputFilename);
     encoder.initialize();
     // Add a single gray frame, the alpha is ignored.

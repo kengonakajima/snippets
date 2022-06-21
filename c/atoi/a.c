@@ -1,5 +1,7 @@
 #include <stdio.h>
-main()
+#include <stdlib.h>
+
+int main()
 {
 	int ia;
 
@@ -9,6 +11,8 @@ main()
 
 	ia = atoi( "978%" );
 
-	printf( "%d\n"  , ia );    
+	printf( "%d\n"  , ia );
+
+    printf("%d\n", atoi("-58"));
 	
 }
