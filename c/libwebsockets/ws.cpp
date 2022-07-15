@@ -11,14 +11,28 @@
 #include <assert.h>
 
 #include "ws.h"
+#include "cumino.h"
+
+
+static uint32_t g_max_ccu=0;
+
+WebsocketSession **g_wses_list;
+static uint32_t g_wses_list_used=0;
 
 uint64_t WebsocketSession::id_gen=1;
 
+static WebsocketEstablishCallback g_on_establish=0;
+static WebsocketCloseCallback g_on_close=0;
+static WebsocketReceiveCallback g_on_receive=0;
+
 void ws_set_establish_callback( WebsocketEstablishCallback cb ) {
-    
+    g_on_establish=cb;
+}
+void ws_set_close_callback( WebsocketCloseCallback cb ) {
+    g_on_close=cb;    
 }
 void ws_set_receive_callback( WebsocketReceiveCallback cb ) {
-    
+    g_on_receive=cb;
 }
 void ws_set_app_data_ptr(uint64_t ws_id, void *ptr) {
     
@@ -40,12 +54,13 @@ struct msg {
 };
 
 struct per_session_data__minimal_server_echo {
+    uint64_t ws_id;
 	struct lws_ring *ring;
 	uint32_t msglen;
 	uint32_t tail;
 	uint8_t completed:1;
 	uint8_t flow_controlled:1;
-	uint8_t write_consume_pending:1;
+	uint8_t write_consume_pending:1;    
 };
 
 struct vhd_minimal_server_echo {
@@ -63,6 +78,88 @@ static void __minimal_destroy_message(void *_msg) {
 	msg->payload = NULL;
 	msg->len = 0;
 }
+
+
+
+static int interrupted, options;
+
+static const struct lws_protocol_vhost_options pvo_options = {
+	NULL,
+	NULL,
+	"options",		/* pvo name */
+	(const char *)&options	/* pvo value */
+};
+
+static const struct lws_protocol_vhost_options pvo_interrupted = {
+	&pvo_options,
+	NULL,
+	"interrupted",		/* pvo name */
+	(const char *)&interrupted	/* pvo value */
+};
+
+static const struct lws_protocol_vhost_options pvo = {
+	NULL,				/* "next" pvo linked-list */
+	&pvo_interrupted,		/* "child" pvo linked-list */
+	"lws-minimal-server-echo",	/* protocol name we belong to on this vhost */
+	""				/* ignored */
+};
+static const struct lws_extension extensions[] = {
+	{
+		"permessage-deflate",
+		lws_extension_callback_pm_deflate,
+		"permessage-deflate"
+		 "; client_no_context_takeover"
+		 "; client_max_window_bits"
+	},
+	{ NULL, NULL, NULL /* terminator */ }
+};
+
+
+
+
+
+static WebsocketSession *ws_find(uint64_t id) {
+    for(int i=0;i<g_wses_list_used;i++) {
+        WebsocketSession *ws=g_wses_list[i];
+        if(ws->id==id)return ws;
+    }
+    return 0;
+}
+static WebsocketSession *ws_allocate(void *per_session_data) {
+    assert(g_wses_list_used<=g_max_ccu);
+    print("ws allocating new session");    
+    for(int i=0;i<g_wses_list_used;i++) {
+        WebsocketSession *ws=g_wses_list[i];
+        if(!ws) {
+            g_wses_list[i]=new WebsocketSession(per_session_data);
+            return g_wses_list[i];
+        }
+    }
+
+    if(g_wses_list_used==g_max_ccu) {
+        print("ws full. maxccu:%d",g_max_ccu);
+        return 0;   
+    }
+    WebsocketSession* ws=new WebsocketSession(per_session_data);
+    g_wses_list[g_wses_list_used++]=ws;
+    return ws;
+}
+static void ws_clean(WebsocketSession *ws) {
+    for(int i=0;i<g_wses_list_used;i++) {
+        if(g_wses_list[i]==ws) {
+            print("ws cleaning at %d id:%lld",i,ws->id);
+            delete ws;
+            g_wses_list[i]=0;
+            break;
+        }
+    }
+}
+   
+
+
+
+
+
 
 static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
 	struct per_session_data__minimal_server_echo *pss =
@@ -105,6 +202,12 @@ static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reaso
 		if (!pss->ring)
 			return 1;
 		pss->tail = 0;
+        // 
+        {
+            WebsocketSession *wses = ws_allocate(pss);
+            if(g_on_establish) g_on_establish(wses->id);
+            pss->ws_id=wses->id;            
+        }
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
@@ -218,6 +321,13 @@ static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reaso
 				*vhd->interrupted = 1 + pss->completed;
 			lws_cancel_service(lws_get_context(wsi));
 		}
+        {
+            WebsocketSession *ws = ws_find(pss->ws_id);
+            if(ws) {
+                if(g_on_close) g_on_close(ws->id);
+                ws_clean(ws);
+            }
+        }
 		break;
 
 	default:
@@ -226,40 +336,6 @@ static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reaso
 
 	return 0;
 }
-
-
-static int interrupted, options;
-
-static const struct lws_protocol_vhost_options pvo_options = {
-	NULL,
-	NULL,
-	"options",		/* pvo name */
-	(const char *)&options	/* pvo value */
-};
-
-static const struct lws_protocol_vhost_options pvo_interrupted = {
-	&pvo_options,
-	NULL,
-	"interrupted",		/* pvo name */
-	(const char *)&interrupted	/* pvo value */
-};
-
-static const struct lws_protocol_vhost_options pvo = {
-	NULL,				/* "next" pvo linked-list */
-	&pvo_interrupted,		/* "child" pvo linked-list */
-	"lws-minimal-server-echo",	/* protocol name we belong to on this vhost */
-	""				/* ignored */
-};
-static const struct lws_extension extensions[] = {
-	{
-		"permessage-deflate",
-		lws_extension_callback_pm_deflate,
-		"permessage-deflate"
-		 "; client_no_context_takeover"
-		 "; client_max_window_bits"
-	},
-	{ NULL, NULL, NULL /* terminator */ }
-};
 
 
 #define LWS_PLUGIN_PROTOCOL_MINIMAL_SERVER_ECHO \
@@ -281,6 +357,15 @@ static struct lws_protocols protocols[] = {
 };
 
 
+static lws_sorted_usec_list_t sul_stagger;
+
+static void stagger_cb(lws_sorted_usec_list_t *sul) {
+    static uint64_t cnt=0;
+    cnt++;
+    if(cnt%1000==0) print("stagger_cb %f",now());
+    lws_sul_schedule(g_context,0,&sul_stagger, stagger_cb, 1 * LWS_US_PER_MS );    
+}
+
 void ws_start(uint16_t port) {
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	lws_set_log_level(logs, NULL);
@@ -298,12 +383,24 @@ void ws_start(uint16_t port) {
 
 	g_context = lws_create_context(&info);
     assert(g_context);
+    lws_sul_schedule(g_context,0,&sul_stagger, stagger_cb, 10 * LWS_US_PER_MS );
 }
 
 bool ws_service() {
-    int n=lws_service(g_context,0);
+    int n=lws_service(g_context,1);
     return n>=0;
 }
 void ws_end() {
 	lws_context_destroy(g_context);        
 }
+void ws_init(uint32_t max_ccu) {
+    g_max_ccu=max_ccu;
+    size_t sz=sizeof(WebsocketSession*)*max_ccu;
+    g_wses_list=(WebsocketSession**)malloc(sz);
+    memset(g_wses_list,0,sz);
+    g_wses_list_used=0;
+}
+
+
+
+
