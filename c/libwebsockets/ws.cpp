@@ -156,7 +156,16 @@ static void ws_clean(WebsocketSession *ws) {
 }
    
 
-
+void WebsocketSession::receiveData(const char *in, uint32_t l, bool first, bool fin) {
+    print("first:%d fin:%d l:%d",first,fin,l);        
+    if(first) receiving->clear();
+    receiving->append(in,l);
+    if(fin) {
+        print("receiveData: fin!");
+        if(g_on_receive) g_on_receive(id,receiving->data,receiving->used);
+        receiving->clear();
+    }
+}
 
 
 
@@ -271,9 +280,17 @@ static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reaso
 			  (int)pss->msglen + (int)len);
 
 		if (len) {
-			;
+			print("receive len:%d",len);
 			//puts((const char *)in);
 			//lwsl_hexdump_notice(in, len);
+            bool is_first = lws_is_first_fragment(wsi);
+            bool is_final = lws_is_final_fragment(wsi);
+            WebsocketSession *ws=ws_find(pss->ws_id);
+            if(ws) {
+                ws->receiveData((const char*)in,len,is_first,is_final);
+            } else {
+                print("ws not found for pss->ws_id:%llx",pss->ws_id);
+            }
 		}
 
 		amsg.first = (char)lws_is_first_fragment(wsi);
