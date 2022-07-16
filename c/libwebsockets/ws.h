@@ -17,6 +17,9 @@ public:
         data=(char*)malloc(l);
         max=l;
     }
+    ~Buffer() {
+        free(data);
+    }
     Buffer(const char *from, uint32_t l) {
         data=(char*)malloc(l);
         max=used=l;
@@ -37,6 +40,7 @@ public:
         used+=l;
     }
 };
+/*
 class Queue
 {
 public:
@@ -52,24 +56,27 @@ public:
         if(used==capacity) return false;
         payloads[used++]=b;
         return true;
-    }   
+    }
+    bool hasRoom() {
+        return used<capacity;
+    }
 };
+*/
 class WebsocketSession
 {
 public:
     void *app_data_ptr;
     void *per_session_data;
+    void *wsi;
     uint64_t id;
     static uint64_t id_gen;
 
     Buffer *receiving; 
-    Queue *sendq;    
-    WebsocketSession(void *per_session_data) :app_data_ptr(0), per_session_data(per_session_data), receiving(0) {
+    WebsocketSession(void *wsi, void *per_session_data) :app_data_ptr(0), per_session_data(per_session_data), wsi(wsi), receiving(0) {
         id=id_gen++;
-        sendq=new Queue(512);
         receiving=new Buffer(128*1024);
     }
-    void receiveData(const char *in, uint32_t l, bool first, bool fin);    
+    void receiveData(const char *in, uint32_t l, bool first, bool fin);
 };
 
 typedef void (*WebsocketEstablishCallback)( uint64_t ws_id);
@@ -82,6 +89,7 @@ void ws_set_close_callback( WebsocketCloseCallback cb );
 void ws_set_receive_callback( WebsocketReceiveCallback cb );
 void ws_set_app_data_ptr(uint64_t ws_id, void *ptr);
 
+bool ws_send(uint64_t ws_id,const char *data,uint32_t l,bool binary);
 void ws_init(uint32_t max_ccu);
 void ws_start(uint16_t port);
 bool ws_service();

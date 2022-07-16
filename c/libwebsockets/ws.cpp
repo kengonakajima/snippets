@@ -125,13 +125,13 @@ static WebsocketSession *ws_find(uint64_t id) {
     }
     return 0;
 }
-static WebsocketSession *ws_allocate(void *per_session_data) {
+static WebsocketSession *ws_allocate(void*wsi,void *per_session_data) {
     assert(g_wses_list_used<=g_max_ccu);
     print("ws allocating new session");    
     for(int i=0;i<g_wses_list_used;i++) {
         WebsocketSession *ws=g_wses_list[i];
         if(!ws) {
-            g_wses_list[i]=new WebsocketSession(per_session_data);
+            g_wses_list[i]=new WebsocketSession(wsi,per_session_data);
             return g_wses_list[i];
         }
     }
@@ -140,7 +140,7 @@ static WebsocketSession *ws_allocate(void *per_session_data) {
         print("ws full. maxccu:%d",g_max_ccu);
         return 0;   
     }
-    WebsocketSession* ws=new WebsocketSession(per_session_data);
+    WebsocketSession* ws=new WebsocketSession(wsi,per_session_data);
     g_wses_list[g_wses_list_used++]=ws;
     return ws;
 }
@@ -167,7 +167,25 @@ void WebsocketSession::receiveData(const char *in, uint32_t l, bool first, bool 
     }
 }
 
-
+bool ws_send(uint64_t ws_id,const char *data,uint32_t l, bool binary) {
+    WebsocketSession *ws=ws_find(ws_id);
+    if(!ws) {
+        print("ws not found:%llx",ws_id);
+        return false;
+    }
+    int flags = lws_write_ws_flags(binary ? LWS_WRITE_BINARY : LWS_WRITE_TEXT,1,1);
+    char *buf=(char*)malloc(LWS_PRE+l); // TODO: avoid allocation
+    memcpy(buf+LWS_PRE,data,l);
+    
+    int m = lws_write((struct lws*)ws->wsi, (unsigned char*)(buf+LWS_PRE),l,(enum lws_write_protocol)flags);
+    free(buf);
+    if (m < l) {
+        print("ERROR %d writing to ws socket\n", m);
+        return false;
+    }
+    return true;
+}
+    
 
 
 static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
@@ -213,7 +231,7 @@ static int callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reaso
 		pss->tail = 0;
         // 
         {
-            WebsocketSession *wses = ws_allocate(pss);
+            WebsocketSession *wses = ws_allocate(wsi,pss);
             if(g_on_establish) g_on_establish(wses->id);
             pss->ws_id=wses->id;            
         }
@@ -376,10 +394,8 @@ static struct lws_protocols protocols[] = {
 
 static lws_sorted_usec_list_t sul_stagger;
 
+// to unblock ws_service()
 static void stagger_cb(lws_sorted_usec_list_t *sul) {
-    static uint64_t cnt=0;
-    cnt++;
-    if(cnt%1000==0) print("stagger_cb %f",now());
     lws_sul_schedule(g_context,0,&sul_stagger, stagger_cb, 1 * LWS_US_PER_MS );    
 }
 
