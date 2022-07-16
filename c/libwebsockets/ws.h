@@ -89,7 +89,7 @@ void ws_set_close_callback( WebsocketCloseCallback cb );
 void ws_set_receive_callback( WebsocketReceiveCallback cb );
 void ws_set_app_data_ptr(uint64_t ws_id, void *ptr);
 
-bool ws_send(uint64_t ws_id,const char *data,uint32_t l,bool binary);
+bool ws_send(uint64_t ws_id,const char *data,uint32_t l);
 void ws_init(uint32_t max_ccu);
 void ws_start(uint16_t port);
 bool ws_service();

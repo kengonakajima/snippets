@@ -6,7 +6,7 @@ all: test
 
 
 test: main.cpp ws.cpp ws.h
-	g++ $(INCFLAGS) main.cpp ws.cpp cumino.cpp ~/libwebsockets/lib/libwebsockets.a $(LINKFLAGS) -o test  
+	g++ $(INCFLAGS) -g main.cpp ws.cpp cumino.cpp ~/libwebsockets/lib/libwebsockets.a $(LINKFLAGS) -o test  
 
 clean:
 	rm -f test

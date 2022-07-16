@@ -26,6 +26,7 @@ void on_close(uint64_t ws_id) {
 void on_receive(uint64_t ws_id, const char *data, uint32_t data_len ) {
     //    bool ret=ws_send(ws_id,data,data_len);
     print("on_receive len:%u",data_len);
+    ws_send(ws_id,data,data_len);
 }
 int main(int argc, char **argv) {
     ws_init(100);
@@ -38,7 +39,7 @@ int main(int argc, char **argv) {
         cnt++;
         if(cnt%10000==0) {
             print("loop %f g_last_ws_id:%llx",now(),g_last_ws_id);
-            ws_send(g_last_ws_id,"hello",5,true);
+            ws_send(g_last_ws_id,"hello",5);
 #if 0            
             const int N=3000000;
             char msg[N];
