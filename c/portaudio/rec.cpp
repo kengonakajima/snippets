@@ -2,10 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #define SAMPLE_RATE (44100)
 
-
+double now() {
+    struct timeval tmv;
+    gettimeofday( &tmv, NULL );
+    return tmv.tv_sec  + (double)(tmv.tv_usec) / 1000000.0f;
+}
+static int g_frames_accum=0;
+double g_last_print_at=0;
 static int callback( const void *inputBuffer, void *outputBuffer,
                            unsigned long framesPerBuffer,
                            const PaStreamCallbackTimeInfo* timeInfo,
@@ -19,6 +26,13 @@ static int callback( const void *inputBuffer, void *outputBuffer,
     for(int i=0;i<n;i++) bar[i]='*';
     bar[n]=0;
     printf("volume: %s\n",bar);
+    g_frames_accum+=framesPerBuffer;
+    double nt=now();
+    if(nt>g_last_print_at+1) {
+        printf("SAMPLE:%d\n",g_frames_accum);
+        g_frames_accum=0;
+        g_last_print_at=nt;
+    }
     return 0;
 }
 void printErrorExit(PaError e) {
