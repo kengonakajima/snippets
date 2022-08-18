@@ -48,12 +48,12 @@ int main()
 
     PaStream *stream;
     err = Pa_OpenStream( &stream, &inputParameters,
-                         nullptr,
+                         0,
                          Pa_GetDeviceInfo(inputParameters.device)->defaultSampleRate,
                          480,
                          paClipOff,
                          callback,
-                         nullptr
+                         0
                          );
     if(err!=paNoError) printErrorExit(err);
 

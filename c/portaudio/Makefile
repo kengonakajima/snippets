@@ -1,9 +1,13 @@
-
+PA=/opt/homebrew/Cellar/portaudio/19.7.0
+PALIB=$(PA)/lib/libportaudio.a
+PAINC=-I $(PA)/include
+#ARCH=arch -x86_64
 rec: rec.cpp
-	g++ rec.cpp -o rec ../../../portaudio/lib/.libs/libportaudio.a -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework CoreFoundation
+	$(ARCH) g++ rec.cpp -o rec $(PALIB) $(PAINC) -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework CoreFoundation -framework Carbon
 
 devs: pa_devs.c
-	gcc pa_devs.c -o devs ../../../portaudio/lib/.libs/libportaudio.a -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework CoreFoundation
+	$(ARCH) gcc pa_devs.c -o devs $(PALIB) $(PAINC) -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework CoreFoundation -framework Carbon
 
 a.out: hoge.cpp
-	g++ hoge.cpp -o a.out ../../../portaudio/lib/.libs/libportaudio.a -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework CoreFoundation
+	$(ARCH) g++ hoge.cpp -o a.out $(PALIB) $(PAINC) -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework CoreFoundation -framework Carbon
+
