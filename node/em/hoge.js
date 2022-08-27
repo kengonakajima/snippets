@@ -1858,7 +1858,7 @@ var ___wasm_call_ctors = Module["___wasm_call_ctors"] = createExportWrapper("__w
 var _sayHi = Module["_sayHi"] = createExportWrapper("sayHi");
 
 /** @type {function(...*):?} */
-var _daysInWeek = Module["_daysInWeek"] = createExportWrapper("daysInWeek");
+var __Z10daysInWeekv = Module["__Z10daysInWeekv"] = createExportWrapper("_Z10daysInWeekv");
 
 /** @type {function(...*):?} */
 var _add = Module["_add"] = createExportWrapper("add");
