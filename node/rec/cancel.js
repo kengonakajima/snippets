@@ -116,8 +116,7 @@ player._read = function(n) { // Speakerモジュールで新しいサンプル�
   console.log("available:",available,"canPlay:",canPlay,"ref.len:",this.ref.length);
   if(canPlay>=FREQ/10) {
     let loopNum=Math.floor(available/AEC3_SAMPLES_PER_FRAME);
-    if(loopNum>20) loopNum=20;
-    console.log("loopNum:",loopNum);
+    if(loopNum>10) loopNum=10;
     const toplay = new Uint8Array(AEC3_SAMPLES_PER_FRAME*2*loopNum);
     const dv=new DataView(toplay.buffer);
     const rec=new Int16Array(AEC3_SAMPLES_PER_FRAME);
@@ -137,7 +136,6 @@ player._read = function(n) { // Speakerモジュールで新しいサンプル�
         const processed=new Int16Array(AEC3_SAMPLES_PER_FRAME);
         for(let i=0;i<AEC3_SAMPLES_PER_FRAME;i++) processed[i]=123;
         aec3Wrapper.process_wrapped(80,processed,1);
-        if(j==0) console.log("processed out[0]:",processed[0],"rec[0]:",rec[0],"ref[0]:",ref[0]);
         for(let i=0;i<AEC3_SAMPLES_PER_FRAME;i++) {
           const sample=processed[i];
           dv.setInt16((j*AEC3_SAMPLES_PER_FRAME+i)*2,sample,true);
@@ -148,10 +146,8 @@ player._read = function(n) { // Speakerモジュールで新しいサンプル�
       }
     }
     const et=new Date().getTime();
-    console.log("et-st:",et-st);        
-
     const enh=aec3Wrapper.get_metrics_echo_return_loss_enhancement();
-    console.log("ENH:",enh, "toplay:",toplay.length,"sample:",toplay[0]);
+    console.log("ENH:",enh, "toplay:",toplay.length,"sample:",toplay[0],"aectime:",et-st);
     this.push(toplay);
   } else {
     console.log("need more samples!");
