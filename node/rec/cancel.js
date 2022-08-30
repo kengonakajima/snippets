@@ -4,11 +4,6 @@ const fs=require("fs");
 const FREQ=48000;
 const AEC3_SAMPLES_PER_FRAME=FREQ/100;
 
-const g_mic_buf=[];
-
-const RINGBUF_LEN=FREQ*2;
-const g_samples_ring=new Int16Array(RINGBUF_LEN); // lpcm16
-
 const aec3 = require('./aec3.js');
 
 let aec3Wrapper={ initialized: false};
@@ -44,29 +39,26 @@ aec3.onRuntimeInitialized = () => {
     for(let i=0;i<num;i++)i16ary[i]=data[i];
   }
   
-/*
-      AEC3_API void AEC3_API_CC aec3_enable_debug_recording();    
-    AEC3_API void AEC3_API_CC aec3_update_ref_frame(int16_t *samples, int32_t num);
-    AEC3_API void AEC3_API_CC aec3_update_rec_frame(int16_t *samples, int32_t num);
-    AEC3_API void AEC3_API_CC aec3_process(int32_t delay_ms, int16_t *outsamples, int32_t num, int32_t use_ns);
-    AEC3_API void AEC3_API_CC aec3_get_metrics(double *echo_return_loss, double *echo_return_loss_enhancement, int32_t *delay_ms );
-    AEC3_API double AEC3_API_CC aec3_get_metrics_echo_return_loss();
-    AEC3_API double AEC3_API_CC aec3_get_metrics_echo_return_loss_enhancement();
-    AEC3_API int32_t AEC3_API_CC aec3_get_metrics_delay_ms();
-    AEC3_API int32_t AEC3_API_CC aec3_get_noise_suppressor_diff();
-    AEC3_API float AEC3_API_CC aec3_get_loopback_device_level();
-    AEC3_API int32_t AEC3_API_CC aec3_get_loopback_buffer_used();
-*/
-  
   aec3Wrapper.debug_print();
   aec3Wrapper.init(4,0);
   aec3Wrapper.initialized=true;  
 }
 
 
+// "******      " のような文字列を返す
+function getVolumeBar(l16sample) {
+  const vol=Math.abs(l16sample);
+  const bar = vol / 1024;
+  const space = 32-bar;
+  return "*".repeat(bar)+" ".repeat(space); 
+}
+
 ///////////
 // recording
-let g_rec_cnt=0;
+const g_samples=[]; // lpcm16
+let g_rec_max_sample=0, g_play_max_sample=0;
+let g_enh=0;
+
 recorder
   .record({
     sampleRate: FREQ, // マイクデバイスのサンプリングレートを指定
@@ -76,26 +68,15 @@ recorder
   .stream()
   .on('error', console.error) // エラーが起きたときにログを出力する
   .on('data', function(data) { // マイクからデータを受信する無名コールバック関数
-    const vol = Math.abs(data.readInt16LE());  // 配列の先頭のサンプリングデータをひとつ読み込み、音量を得る
-    const ntimes = vol / 512; // 音量が0~32767の値で得られるので512で割る(0~63)
-    const bar = "*".repeat(ntimes); // アスタリスク文字を、音量に応じて0~63回繰り返す
     const sampleNum=data.length/2;
+    g_rec_max_sample=0;
     for(let i=0;i<sampleNum;i++) {
       const sample=data.readInt16LE(i*2);
-      g_mic_buf.push(sample);
+      g_samples.push(sample);
+      if(sample>g_rec_max_sample)g_rec_max_sample=sample;
     }
-    for(;;) {
-      if(g_mic_buf.length<AEC3_SAMPLES_PER_FRAME) break;
-      for(let i=0;i<AEC3_SAMPLES_PER_FRAME;i++) {
-        const sample=g_mic_buf.shift();
-        g_samples_ring[g_rec_cnt%RINGBUF_LEN]=sample;
-        g_rec_cnt++;      
-      }
-    }
-    console.log("rec: volume:", bar, "total:",g_rec_cnt,"len:",data.length);//,g_samples.slice(0,8).join(","));
+//    console.log("rec:",g_samples.length,"[0]:",g_samples[0]);
   });
-console.log('Listening, press Ctrl+C to stop.');
-
 
 /////////////////////
 // playing
@@ -103,19 +84,11 @@ console.log('Listening, press Ctrl+C to stop.');
 const Readable=require("stream").Readable; 
 const Speaker=require("speaker");
 
-let g_play_cnt=0;
-
-const player=new Readable(); // 
-player.t=0;    // 音波を生成する際の時刻カウンター
+const player=new Readable();
 player.ref=[];
 player._read = function(n) { // Speakerモジュールで新しいサンプルデータが必要になったら呼び出されるコールバック関数 n:バイト数
-//  console.log("play:",g_play_cnt,"diff:",(g_rec_cnt-g_play_cnt),"n:",n);
-  const available=g_rec_cnt-g_play_cnt;
-  const keep=FREQ/5;
-  const canPlay=available-keep;
-  console.log("available:",available,"canPlay:",canPlay,"ref.len:",this.ref.length);
-  if(canPlay>=FREQ/10) {
-    let loopNum=Math.floor(available/AEC3_SAMPLES_PER_FRAME);
+  if(g_samples.length>=9600) {
+    let loopNum=Math.floor(g_samples.length/AEC3_SAMPLES_PER_FRAME);
     if(loopNum>10) loopNum=10;
     const toplay = new Uint8Array(AEC3_SAMPLES_PER_FRAME*2*loopNum);
     const dv=new DataView(toplay.buffer);
@@ -123,8 +96,7 @@ player._read = function(n) { // Speakerモジュールで新しいサンプル�
     const st=new Date().getTime();
     for(let j=0;j<loopNum;j++) {      
       for(let i=0;i<AEC3_SAMPLES_PER_FRAME;i++) {
-        rec[i]=g_samples_ring[g_play_cnt%RINGBUF_LEN];
-        g_play_cnt++;      
+        rec[i]=g_samples.shift();
       }
       if(aec3Wrapper.initialized) {
         aec3Wrapper.update_rec_frame_wrapped(rec);
@@ -136,53 +108,32 @@ player._read = function(n) { // Speakerモジュールで新しいサンプル�
         const processed=new Int16Array(AEC3_SAMPLES_PER_FRAME);
         for(let i=0;i<AEC3_SAMPLES_PER_FRAME;i++) processed[i]=123;
         aec3Wrapper.process_wrapped(80,processed,1);
+        g_play_max_sample=0;
         for(let i=0;i<AEC3_SAMPLES_PER_FRAME;i++) {
           const sample=processed[i];
           dv.setInt16((j*AEC3_SAMPLES_PER_FRAME+i)*2,sample,true);
           this.ref.push(sample);
+          if(sample>g_play_max_sample)g_play_max_sample=sample;
         }
       } else {
         console.log("aec3 is not initialized yet");
       }
     }
     const et=new Date().getTime();
-    const enh=aec3Wrapper.get_metrics_echo_return_loss_enhancement();
-    console.log("ENH:",enh, "toplay:",toplay.length,"sample:",toplay[0],"aectime:",et-st);
+    g_enh=aec3Wrapper.get_metrics_echo_return_loss_enhancement();
     this.push(toplay);
   } else {
     console.log("need more samples!");
-    // 音が足りないのでピー音
-    const toGen=FREQ/10;
-    const toplay = new Uint8Array(toGen*2);
-    const dv=new DataView(toplay.buffer);         
-    for(let i=0;i<toGen;i++) {
-      const sampleNoise=-50+Math.random()*100;
-      dv.setInt16(i*2,sampleNoise,true);
-      this.ref.push(sampleNoise);
+    const sampleNum=n/2;
+    const toplay = new Uint8Array(n);
+    const dv=new DataView(toplay.buffer);
+    for(let i=0;i<sampleNum;i++) {
+      const sample=0;
+      dv.setInt16(i*2,sample,true);
+      this.ref.push(sample);
     }
     this.push(toplay);
   }
-    
-/*    
-    if(aec3Wrapper.initialized) {
-      const frameNum=Math.floor(sampleNum/AEC3_SAMPLES_PER_FRAME);
-      for(let fi=0;fi<frameNum;fi++) {
-        const toplay16=new Int16Array(sampleNum);
-        for(let i=0;i<sampleNum;i++) toplay16[i]=dv.getInt16(i,true);
-
-        
-      }
-
-      //     aec3_update_ref_frame(reinterpret_cast<int16_t*>(ref_tmp),AEC3_SAMPLES_PER_FRAME);
-      //  aec3_update_rec_frame(reinterpret_cast<int16_t*>(aec_tmp),AEC3_SAMPLES_PER_FRAME);
-      //aec3_process(80,reinterpret_cast<int16_t*>(aec_tmp),AEC3_SAMPLES_PER_FRAME,0);
-    }
-*/
-/*  
-  } else {
-    console.log("need more samples in ring buffer, play sine wave.",sampleNum);
-
-  */
 }
 
 const spk=new Speaker({ 
@@ -193,3 +144,9 @@ const spk=new Speaker({
 
 player.pipe(spk); 
 
+setInterval(function() {
+  console.log("rec:",getVolumeBar(g_rec_max_sample),
+              "play:",getVolumeBar(g_play_max_sample),
+              "buffer:",g_samples.length,
+              "Enhance:",getVolumeBar(g_enh*2000));
+},50);

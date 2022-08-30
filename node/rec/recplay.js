@@ -50,9 +50,7 @@ sine._read = function(n) { // Speakerモジュールで新しいサンプルデ�
   } else {
     console.log("need more samples!");
     // 音が足りないので無音を再生
-    for(var i=0;i<sampleNum;i++) { // 必要なサンプリングデータの数だけループさせる
-      dv.setInt16(i*2,0,true); 
-    }
+    for(var i=0;i<sampleNum;i++) dv.setInt16(i*2,0,true); // 必要なサンプリングデータの数だけループさせる
   }
   this.push(u8ary); // 最終的な値を出力
 }
@@ -66,5 +64,7 @@ const spk=new Speaker({
 sine.pipe(spk); 
 
 setInterval(function() {
-  console.log("rec:",getVolumeBar(g_rec_max_sample),"play:",getVolumeBar(g_play_max_sample),"buffer:",g_samples.length);
+  console.log("rec:",getVolumeBar(g_rec_max_sample),
+              "play:",getVolumeBar(g_play_max_sample),
+              "buffer:",g_samples.length);
 },50);
