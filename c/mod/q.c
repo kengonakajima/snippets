@@ -1,4 +1,6 @@
 #include <stdio.h>
 int main(int argc, char **argv)  {
-    printf("%s\n",argv[-8]);
+
+    int a[3]={1,2,3};
+    printf("%d\n",-2[a]);
 }
