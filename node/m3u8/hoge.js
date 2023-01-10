@@ -30,6 +30,11 @@ var parser = new m3u8.Parser();
 parser.push(manifest2);
 parser.end();
 
+//console.log("PPP2:",parser);
 var parsedManifest = parser.manifest;
 
-console.log("PPPP",parsedManifest);
+console.log("mani",parsedManifest);
+
+console.log("pl",parsedManifest.playlists);
+const t=parsedManifest.playlists[0];
+console.log("t",t);
