@@ -27,7 +27,7 @@ http.createServer(function (req, res) {
     interval = setInterval(function() {
       res.write("data: " + (new Date()) +" "+cnt+ "\n\n")
       cnt++;
-    }, 2000)
+    }, 500)
     req.connection.addListener("close", function () {
       clearInterval(interval)
     }, false)
