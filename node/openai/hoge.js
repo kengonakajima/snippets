@@ -21,10 +21,10 @@ const openai = new OpenAIApi(configuration);
 wrap( async () => {
   const res = await openai.createCompletion({
     model: "text-davinci-003",
-    prompt: "犬の名前を三つあげてください。",
-    //prompt: "単純なローパスフィルタのコードの重要な部分だけを、C#で書いて下さい",
-    max_tokens: 300,
-    temperature: 0,
+    //prompt: "犬の名前を三つあげてください。",
+    prompt: "銀行員の受付担当者が、利用者の「こんばんは」という呼びかけに対して答えるサンプルを書いて下さい。ただし、サンプルの冒頭には [START]という記号を、おわりには [END]という記号をつける。ちなみに顧客の名前は山田さんです。山田さんはおしゃべりが好きなので、たくさん話しかけてください。200文字以上",
+    max_tokens: 2000,
+    temperature: 1,
     stream: true
   },{
     timeout: 5000    ,
