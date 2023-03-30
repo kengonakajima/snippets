@@ -16,6 +16,7 @@ const creds=JSON.parse(fs.readFileSync("/Users/ringo/.openai_cred","utf8"));
 const configuration = new Configuration({
   apiKey: creds.secretKey
 });
+
 const openai = new OpenAIApi(configuration);
 
 const p0 = `
@@ -35,33 +36,52 @@ const p0 = `
 
 
 const prompt=p0+"\n 以上の文を100文字以下に要約して下さい。";
+const concurrency=16;
+let done=0;
+function hoge() {
+  wrap( async () => {
+    
+    const res = await openai.createCompletion({
+      model: "text-davinci-003",
+      //model: "text-curie-001",
+      //prompt: "犬の名前を三つあげてください。",
+      prompt,
+      max_tokens: 2000,
+      temperature: 1,
+      stream: true
+    },{
+      timeout: 5000    ,
+      responseType: "stream"
+    });
+    res.data.on("data",(data)=> {
+      const text=data.toString();
+      if(text.includes("[DONE]")) {
+        console.log("DONE!",done);
+        done++;
+        if(done==concurrency) {
+          console.log("all done!");
+          process.exit(0);
+        }
+      } else {
+        const tks=text.split("\n");
+        for(const tk of tks) {
+          if(tk.length<2)continue;
+          const json=tk.replace(/^data: /,"");
+          try {
+            const obj=JSON.parse(json);
+            process.stdout.write(obj.choices[0].text);      
+          } catch(e) {
+            console.log("error:",e,"on json:",json);
+            process.exit(1);
+          }                  
+        }
+      }
+    });
+  })();  
+}
 
-wrap( async () => {
-  const res = await openai.createCompletion({
-    model: "text-davinci-003",
-    //model: "text-curie-001",
-    //prompt: "犬の名前を三つあげてください。",
-    prompt,
-    max_tokens: 2000,
-    temperature: 1,
-    stream: true
-  },{
-    timeout: 5000    ,
-    responseType: "stream"
-  });
-  res.data.on("data",(data)=> {
-    const text=data.toString();
-    if(text.includes("[DONE]")) {
-      console.log("DONE!");
-      process.exit(0);
-    }
-    const json=text.replace(/^data: /,"");
-    try {
-      const obj=JSON.parse(json);
-      process.stdout.write(obj.choices[0].text);      
-    } catch(e) {
-      console.log("error:",e,"on json:",json);
-      process.exit(1);
-    }
-  });
-})();
+
+for(let i=0;i<concurrency;i++) {
+  console.log("start:",i);
+  hoge();
+}
