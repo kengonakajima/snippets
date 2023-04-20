@@ -94,19 +94,21 @@ const handleLogin = async success => {
         var dc=connection.createDataChannel("mylabel", {ordered:false, maxRetransmitTime: 3000 });
         console.log("dc:",dc);
         dc.onopen=function() {
-            console.log("onopen", dc.readyState);
-            setInterval( function() {
-                console.log("sending",dc);
-                dc.send("hello world");              
-            },1000);
-
+          console.log("onopen", dc.readyState);
+          var cnt=0;
+          setInterval( function() {
+            console.log("sending",dc);
+            cnt++;
+            dc.send("hello world "+cnt);              
+          },1000);
         }
         dc.onerror = function(e) { console.log("dc error:",e); }
         dc.onclose = function() {
             console.log("onclose");
         }
         dc.onmessage=function(event) {
-            console.log("dc message:",event.data);
+          console.log("dc message:",event.data);
+          document.querySelector('div#message').innerHTML=event.data;
         }
         //    connection.addStream(localStream)
 
