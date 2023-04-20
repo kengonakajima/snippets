@@ -88,8 +88,19 @@ const handleLogin = async success => {
         */
         
         const configuration = {
-            iceServers: [{ url: 'stun:stun2.1.google.com:19302' }]
+            iceServers: [
+                {
+                    url: 'stun:stun2.1.google.com:19302', // work in chrome
+                    urls: 'stun:stun2.1.google.com:19302', // work in safari
+                },
+                {
+                    urls: [
+                        'stun:stun2.1.google.com:19302' 
+                    ]
+                }
+            ]
         }
+        console.log("configuration:",configuration);
 
         connection = new RTCPeerConnection(configuration)
 
@@ -121,9 +132,11 @@ const handleLogin = async success => {
 
         connection.ondatachannel = function(ev) {
             console.log("ondc",ev);
+            var cnt=0;
             setInterval( function() {
-                console.log("s2ending",ev.channel);
-                ev.channel.send("hello world 2");              
+                console.log("sending",ev.channel);
+                cnt++;
+                ev.channel.send("hello world "+cnt);              
             },1000);
             
             

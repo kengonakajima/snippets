@@ -61,7 +61,7 @@ wsv.on('connection', ws => {
         }
         break
       case 'offer':
-        console.log('Sending offer to: ', data.otherUsername)
+        console.log('Sending offer to: ', data.otherUsername,"offer:",data.offer)
         if (users[data.otherUsername] != null) {
           ws.otherUsername = data.otherUsername
           sendTo(users[data.otherUsername], {
@@ -72,7 +72,7 @@ wsv.on('connection', ws => {
         }
         break
       case 'answer':
-        console.log('Sending answer to: ', data.otherUsername)
+        console.log('Sending answer to: ', data.otherUsername,"answer:",data.answer)
         if (users[data.otherUsername] != null) {
           ws.otherUsername = data.otherUsername
           sendTo(users[data.otherUsername], {
@@ -82,7 +82,7 @@ wsv.on('connection', ws => {
         }
         break
       case 'candidate':
-        console.log('Sending candidate to:', data.otherUsername)
+        console.log('Sending candidate to:', data.otherUsername,"candidate:",data.candidate)
         if (users[data.otherUsername] != null) {
           sendTo(users[data.otherUsername], {
             type: 'candidate',
