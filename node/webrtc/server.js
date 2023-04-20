@@ -1,19 +1,18 @@
-express=require("express");
-body_parser=require("body-parser");
-helmet=require("helmet");
-url=require("url");
+const express=require("express");
+const body_parser=require("body-parser");
+const helmet=require("helmet");
+const url=require("url");
+const add_csp=process.argv[2] || "ws://localhost:3000/";
+console.log("add_csp:",add_csp);
 
 var app=express();
 app.use(helmet());
 app.use(helmet.contentSecurityPolicy({
    directives: {
-    defaultSrc: ["'self'"],
-    connectSrc: ["'self'", "ws://localhost:3000/"],
+       defaultSrc: ["'self'"],
+       connectSrc: ["'self'", add_csp ],
    },
-  connectSrc: [
-    "'self'",
-    "ws://localhost:3000/"
-  ]
+  connectSrc: [ "'self'", add_csp ]
 }));
 app.use(body_parser.urlencoded({extended: true}));
 app.use("/client.js", express.static("client.js"));
