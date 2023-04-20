@@ -1,12 +1,42 @@
+express=require("express");
+body_parser=require("body-parser");
+helmet=require("helmet");
+url=require("url");
+
+var app=express();
+app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+   directives: {
+    defaultSrc: ["'self'"],
+    connectSrc: ["'self'", "ws://localhost:3000/"],
+   },
+  connectSrc: [
+    "'self'",
+    "ws://localhost:3000/"
+  ]
+}));
+app.use(body_parser.urlencoded({extended: true}));
+app.use("/client.js", express.static("client.js"));
+app.use("/index.html", express.static("index.html"));
+app.get("/", function(req,res,next) {
+    res.sendFile( process.env.PWD + "/index.html") ;
+});
+var web_server = app.listen(3000,"0.0.0.0", function() {
+    console.log("web server is listening") ;
+});
+
+
+////////////
+
 const WebSocket = require('ws')
-const wss = new WebSocket.Server({ port: 8080 })
+const wsv = new WebSocket.Server({server:web_server});
 const users = {}
 
 const sendTo = (ws, message) => {
   ws.send(JSON.stringify(message))
 }
 
-wss.on('connection', ws => {
+wsv.on('connection', ws => {
   console.log('User connected')
 
   ws.on('message', message => {
@@ -97,29 +127,3 @@ wss.on('connection', ws => {
 })
 
 /////////////////
-express=require("express");
-body_parser=require("body-parser");
-helmet=require("helmet");
-url=require("url");
-
-var app=express();
-app.use(helmet());
-app.use(helmet.contentSecurityPolicy({
-   directives: {
-    defaultSrc: ["'self'"],
-    connectSrc: ["'self'", "ws://localhost:8080"],
-   },
-  connectSrc: [
-    "'self'",
-    "ws://localhost:8080"
-  ]
-}));
-app.use(body_parser.urlencoded({extended: true}));
-app.use("/client.js", express.static("client.js"));
-app.use("/index.html", express.static("index.html"));
-app.get("/", function(req,res,next) {
-    res.sendFile( process.env.PWD + "/index.html") ;
-});
-var web_server = app.listen(3000,"0.0.0.0", function() {
-    console.log("web server is listening") ;
-});

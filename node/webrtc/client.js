@@ -1,5 +1,5 @@
 var wsaddr = document.location.host.split(":")[0];
-const ws = new WebSocket(`ws://${wsaddr}:8080`);
+const ws = new WebSocket(`ws://${wsaddr}:3000`);
 
 ws.onopen = () => {
   console.log('Connected to the signaling server')
