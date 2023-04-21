@@ -277,23 +277,28 @@ var g_camera_stream;
 // この関数は、カメラを起動するためのボタンを押したときに呼び出される
 function startCamera() {
   // カメラを起動する
-  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-  navigator.getUserMedia({video: true, audio: true}, function(stream) {
-    var video = document.getElementById('video_local');
-    console.log("startCamera: video:",video,"stream:", stream);
-    video.srcObject=stream;
-    video.play();
-    g_camera_stream=stream;
-  }, function(error) {
-    // カメラを起動できなかった場合の処理
-    console.log(error);
-
-  });
+//  const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.mediaDevices.getUserMedia;
+    navigator.mediaDevices.getUserMedia({video: true, audio: true})
+        .then (function(stream) {
+            var video = document.getElementById('video_local');
+            console.log("startCamera: video:",video,"stream:", stream);
+            video.srcObject=stream;
+            video.play();
+            g_camera_stream=stream;
+        })
+        .catch(function(error) {
+            // カメラを起動できなかった場合の処理
+            console.log(error);
+        });
 }
 //ページがロードされたときにstartCamera関数を呼び出す
 
 
 
 window.onload = function() {
-  startCamera();
+//  startCamera();
 }
+
+document.querySelector('button#start_camera').addEventListener('click', () => {
+    startCamera();
+});
