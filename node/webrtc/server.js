@@ -38,7 +38,9 @@ const sendTo = (ws, message) => {
 
 wsv.on('connection', ws => {
   console.log('User connected')
-
+  ws.on("error", (e)=>{
+    console.log("ws.on erorr:",e);
+  });
   ws.on('message', message => {
     let data = null
 
