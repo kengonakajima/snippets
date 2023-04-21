@@ -1,19 +1,18 @@
-express=require("express");
-body_parser=require("body-parser");
-helmet=require("helmet");
-url=require("url");
+const express=require("express");
+const body_parser=require("body-parser");
+const helmet=require("helmet");
+const url=require("url");
+const add_csp=process.argv[2] || "ws://localhost:3000/";
+console.log("add_csp:",add_csp);
 
 var app=express();
 app.use(helmet());
 app.use(helmet.contentSecurityPolicy({
    directives: {
-    defaultSrc: ["'self'"],
-    connectSrc: ["'self'", "ws://localhost:3000/"],
+       defaultSrc: ["'self'"],
+       connectSrc: ["'self'", add_csp ],
    },
-  connectSrc: [
-    "'self'",
-    "ws://localhost:3000/"
-  ]
+  connectSrc: [ "'self'", add_csp ]
 }));
 app.use(body_parser.urlencoded({extended: true}));
 app.use("/client.js", express.static("client.js"));
@@ -63,7 +62,7 @@ wsv.on('connection', ws => {
         }
         break
       case 'offer':
-        console.log('Sending offer to: ', data.otherUsername)
+        console.log('Sending offer to: ', data.otherUsername,"offer:",data.offer)
         if (users[data.otherUsername] != null) {
           ws.otherUsername = data.otherUsername
           sendTo(users[data.otherUsername], {
@@ -74,7 +73,7 @@ wsv.on('connection', ws => {
         }
         break
       case 'answer':
-        console.log('Sending answer to: ', data.otherUsername)
+        console.log('Sending answer to: ', data.otherUsername,"answer:",data.answer)
         if (users[data.otherUsername] != null) {
           ws.otherUsername = data.otherUsername
           sendTo(users[data.otherUsername], {
@@ -84,7 +83,7 @@ wsv.on('connection', ws => {
         }
         break
       case 'candidate':
-        console.log('Sending candidate to:', data.otherUsername)
+        console.log('Sending candidate to:', data.otherUsername,"candidate:",data.candidate)
         if (users[data.otherUsername] != null) {
           sendTo(users[data.otherUsername], {
             type: 'candidate',

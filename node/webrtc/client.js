@@ -43,27 +43,28 @@ let name = null
 let otherUsername = null
 
 const sendMessage = message => {
-  if (otherUsername) {
-    message.otherUsername = otherUsername
-  }
+    console.log("sendMessage:",message);
+    if (otherUsername) {
+        message.otherUsername = otherUsername
+    }
 
-  ws.send(JSON.stringify(message))
+    ws.send(JSON.stringify(message))
 }
 
 document.querySelector('div#call').style.display = 'none'
 
 document.querySelector('button#login').addEventListener('click', event => {
-  username = document.querySelector('input#username').value
+    username = document.querySelector('input#username').value
 
-  if (username.length < 0) {
-    alert('Please enter a username 🙂')
-    return
-  }
+    if (username.length < 0) {
+        alert('Please enter a username 🙂')
+        return
+    }
 
-  sendMessage({
-    type: 'login',
-    username: username
-  })
+    sendMessage({
+        type: 'login',
+        username: username
+    })
 })
 
 const handleLogin = async success => {
@@ -72,23 +73,67 @@ const handleLogin = async success => {
   } else {
     document.querySelector('div#login').style.display = 'none'
     document.querySelector('div#call').style.display = 'block'
-
-    /*    let localStream
-          try {
-          localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true
-          })
-          } catch (error) {
-          alert(`${error.name}`)
-          console.error(error)
-          }
-
-          document.querySelector('video#local').srcObject = localStream
-    */
     
     const configuration = {
-      iceServers: [{ url: 'stun:stun2.1.google.com:19302' }]
+      iceServers: [
+        {
+          url: 'stun:stun2.1.google.com:19302', // work in chrome
+          urls: 'stun:stun2.1.google.com:19302', // work in safari
+        },
+        {
+          urls: [
+            'stun:stun2.1.google.com:19302' 
+          ]
+        }
+      ]
+    }
+    console.log("configuration:",configuration);
+
+    connection = new RTCPeerConnection(configuration)
+
+
+    var dc=connection.createDataChannel("mylabel", {ordered:false, maxRetransmitTime: 3000 });
+    console.log("createDataChannel:",dc);
+    dc.onopen=function() {
+      console.log("dc.onopen", dc.readyState);
+      var cnt=0;
+      setInterval( function() {
+        console.log("sending",dc);
+        cnt++;
+        dc.send("hello world "+cnt);              
+      },1000);
+    }
+    dc.onerror = function(e) { console.log("dc error:",e); }
+    dc.onclose = function() {
+      console.log("onclose");
+    }
+    dc.onmessage=function(event) {
+      console.log("dc message:",event.data);
+      document.querySelector('div#message').innerHTML=event.data;
+    }
+    //    connection.addStream(localStream)
+
+    //    connection.onaddstream = event => {
+    //      document.querySelector('video#remote').srcObject = event.stream
+    //    }
+
+    connection.ondatachannel = function(ev) {
+      console.log("connection.ondatachannel:",ev);
+      var cnt=0;
+      setInterval( function() {
+        console.log("sending",ev.channel);
+        cnt++;
+        ev.channel.send("hello world "+cnt);              
+      },1000);
+    }
+    connection.onicecandidate = event => {
+      console.log("connection.onicecandidate:",event.candidate);
+      if (event.candidate) {
+        sendMessage({
+          type: 'candidate',
+          candidate: event.candidate
+        })
+      }
     }
 
     connection = new RTCPeerConnection(configuration)
@@ -154,11 +199,12 @@ const handleLogin = async success => {
         audio_remote.srcObject = stream;
       }      
     };
-  }
+  }  
 }
 
 document.querySelector('button#call').addEventListener('click', () => {
   const callToUsername = document.querySelector('input#username-to-call').value
+  console.log("call clicked. username:",callToUsername);
 
   if (callToUsername.length === 0) {
     alert('Enter a username 😉')
@@ -166,39 +212,37 @@ document.querySelector('button#call').addEventListener('click', () => {
   }
 
   otherUsername = callToUsername
-
-  connection.createOffer(
-    offer => {
+  console.log("otherUsername:",callToUsername);
+  connection.createOffer()
+    .then(offer => {
+      console.log("connection.createOffer offer:",offer);
       sendMessage({
         type: 'offer',
         offer: offer
       })
-
       connection.setLocalDescription(offer)
-    },
-    error => {
+    })
+    .catch(error => {
       alert('Error when creating an offer')
       console.error(error)
-    }
-  )
-})
+    });                
+});
 
 const handleOffer = (offer, username) => {
   otherUsername = username
-  connection.setRemoteDescription(new RTCSessionDescription(offer))
-  connection.createAnswer(
-    answer => {
+  connection.setRemoteDescription(new RTCSessionDescription(offer));
+  connection.createAnswer()
+    .then (answer => {
       connection.setLocalDescription(answer)
       sendMessage({
         type: 'answer',
         answer: answer
       })
-    },
-    error => {
+    })
+    .catch(error => {
       alert('Error when creating an answer')
       console.error(error)
-    }
-  )
+    });
 }
 
 const handleAnswer = answer => {
@@ -251,5 +295,5 @@ function startCamera() {
 
 
 window.onload = function() {
-    startCamera();
+  startCamera();
 }
