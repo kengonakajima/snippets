@@ -2,11 +2,16 @@ const ffi = require('ffi-napi');
 const ref = require('ref-napi');
 const ArrayType = require('ref-array-napi');
 
-
-
 const int = ref.types.int;
 
-const myLibrary = ffi.Library('./hoge.dylib', {
+// windowsかどうか判定する
+const isWindows = process.platform === 'win32';
+if(isWindows) { 
+  suffix = '.dll';
+} else {
+  suffix = '.dylib';
+} 
+const myLibrary = ffi.Library('./hoge'+suffix, {
   'add': [int, [int, int]]
 });
 
