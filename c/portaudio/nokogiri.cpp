@@ -1,6 +1,8 @@
 #include "portaudio.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #define SAMPLE_RATE (44100)
 
@@ -54,8 +56,8 @@ int main()
     err=Pa_Initialize();
     if(err!=paNoError) printErrorExit(err);
 
-    err = Pa_Terminate();
-    if(err!=paNoError) printErrorExit(err);
+    //    err = Pa_Terminate();
+    //    if(err!=paNoError) printErrorExit(err);
 
 
     static paTestData data;
@@ -79,6 +81,12 @@ int main()
                                                    your callback*/
     if( err != paNoError ) printErrorExit(err);
 
+
+    err = Pa_StartStream(stream);
+    if(err!=paNoError) printErrorExit(err);
+    while(1) {
+        usleep(1000);
+    }
     
     return 0;
 }
