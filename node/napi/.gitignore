@@ -1,1 +1,5 @@
 hoge.dylib
+hoge.dll
+hoge.exp
+hoge.lib
+hoge.obj
