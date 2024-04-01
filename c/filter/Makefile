@@ -1,7 +1,12 @@
-all: fir rw
+all: fir echo no_echo.png
 
 fir: fir.cpp
 	g++ fir.cpp -o fir
 
-rw: randomwalk.cpp
-	g++ randomwalk.cpp -o rw
+echo: echo.cpp
+	g++ echo.cpp -o rw
+
+no_echo.png: echo
+	./rw
+	node wave.js no_echo.raw no_echo.png
+	node wave.js with_echo.raw with_echo.png
