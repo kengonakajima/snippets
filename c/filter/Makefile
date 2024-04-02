@@ -1,4 +1,4 @@
-all: fir echo no_echo.png
+all: fir echo rec.png
 
 fir: fir.cpp
 	g++ fir.cpp -o fir
@@ -6,7 +6,8 @@ fir: fir.cpp
 echo: echo.cpp
 	g++ echo.cpp -o rw
 
-no_echo.png: echo
+rec.png: echo
 	./rw
-	node wave.js no_echo.raw no_echo.png
-	node wave.js with_echo.raw with_echo.png
+	node wave.js rec.raw rec.png
+	node wave.js ref.raw ref.png
+	node wave.js final.raw final.png

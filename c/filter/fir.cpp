@@ -29,7 +29,7 @@ float fir_filter(float* input_signal, int start_index) {
 
 void init() {
     for(int i=0;i<FILTER_LENGTH;i++) filter_coefficients[i]=0.2;
-        
+    //filter_coefficients[FILTER_LENGTH-1]=0.2;
 }
 int main() {
     init();
@@ -37,8 +37,8 @@ int main() {
     const int N=30;
     float input_signal[N];
     for(int i=0;i<N/2;i++) input_signal[i]=0;
-    for(int i=N/2;i<N;i++) input_signal[i]=1;
-    //    input_signal[N/2]=1;
+    for(int i=N/2;i<N;i++) input_signal[i]=0;
+    input_signal[N/2]=1;
 
     printf("Input Signal: ");
     for (int i = 0; i < N; i++) {
