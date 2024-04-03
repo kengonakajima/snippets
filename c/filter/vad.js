@@ -1,5 +1,6 @@
 const fs = require('fs');
 
+// floatサンプルデータをLPCM16でファイルに保存する
 function save_f(buf, path) {
   const n = buf.length;
   const sb = new Int16Array(n);
@@ -16,6 +17,7 @@ function to_s(f) {
 }
 
 
+// DFTを実行する。gは複素数の配列で、実部に音声データを入れる
 function dft(g) {
   const N=g.length;
   const G=[];
@@ -43,7 +45,7 @@ function dft(g) {
   return G;
 }
 
-
+// 逆DFTを実行する。出力された配列の実部に音声データが出力される
 function idft(g) {
   const N=g.length;
   const G=[];
@@ -104,18 +106,20 @@ function exp(c) {
   };
 }
 
-
+// 実部の最大値を求める
 function max_re(ary) {
   let v=-99999;
   for(let i=0;i<ary.length;i++) if(ary[i].re>v)v=ary[i].re;
   return v;
   
 }
+// 配列の最大値を求める
 function max(ary) {
   let v=-99999;
   for(let i=0;i<ary.length;i++) if(ary[i]>v)v=ary[i];
   return v;
 }
+// スペクトルの文字列バー表示を生成する
 function spectrumBar(G) {
   const n=64;
   const step=G.length/n;
@@ -146,10 +150,12 @@ function s_to_f_array(s_ary) {
   return out;
 }
 
+// 複素数のエネルギー(振幅の2乗)を計算する
 function energy(complex) {
   return complex.re*complex.re + complex.im*complex.im;
 } 
 
+// VADを実行する
 function vad(G, threshold) {
   const voiceFrequencyMin = 300; // 人間の声の最小周波数（Hz）
   const voiceFrequencyMax = 3000; // 人間の声の最大周波数（Hz）
@@ -184,7 +190,7 @@ const numSamples = fileData.length / 2;
 const numChunks = Math.ceil(numSamples / chunkSize);
 const finalSamples=new Float32Array(numSamples);
 
-// ns
+// ノイズ削減用のフィルタ
 const wienerFilter = new Array(chunkSize);
 for(let i=0;i<chunkSize;i++) wienerFilter[i]={re:0,im:0};
 const noisePSD = new Array(chunkSize).fill(0);
