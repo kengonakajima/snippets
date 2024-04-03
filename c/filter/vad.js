@@ -1,0 +1,175 @@
+const fs = require('fs');
+
+
+function dft(g, G, N) {
+  const j2pn = {
+    re: 0,
+    im: -2 * Math.PI / N
+  };
+
+  for (let k = 0; k < N; k++) {
+    G[k] = {
+      re: 0,
+      im: 0
+    };
+
+    for (let n = 0; n < N; n++) {
+      const exponent = {
+        re: 0,
+        im: j2pn.im * n * k
+      };
+      const expResult = exp(exponent);
+      const product = multiply(g[n], expResult);
+      G[k] = add(G[k], product);
+    }
+  }
+}
+
+
+function idft(g, G, N) {
+  const j2pn = {
+    re: 0,
+    im: 2 * Math.PI / N
+  };
+
+  for (let k = 0; k < N; k++) {
+    G[k] = {
+      re: 0,
+      im: 0
+    };
+
+    for (let n = 0; n < N; n++) {
+      const exponent = {
+        re: 0,
+        im: j2pn.im * n * k
+      };
+      const expResult = exp(exponent);
+      const product = multiply(g[n], expResult);
+      G[k] = add(G[k], product);
+    }
+  }
+
+  for (let k = 0; k < N; k++) {
+    G[k] = {
+      re: G[k].re / N,
+      im: G[k].im / N
+    };
+  }
+}
+
+
+// 複素数の足し算
+function add(a, b) {
+  return {
+    re: a.re + b.re,
+    im: a.im + b.im
+  };
+}
+
+// 複素数の掛け算
+function multiply(a, b) {
+  return {
+    re: a.re * b.re - a.im * b.im,
+    im: a.re * b.im + a.im * b.re
+  };
+}
+
+// 複素数の指数関数
+function exp(c) {
+  const expReal = Math.exp(c.re);
+  return {
+    re: expReal * Math.cos(c.im),
+    im: expReal * Math.sin(c.im)
+  };
+}
+
+
+function max_re(ary) {
+  let v=-99999;
+  for(let i=0;i<ary.length;i++) if(ary[i].re>v)v=ary[i].re;
+  return v;
+  
+}
+function max(ary) {
+  let v=-99999;
+  for(let i=0;i<ary.length;i++) if(ary[i]>v)v=ary[i];
+  return v;
+}
+
+function spectrum(G) {
+  const n=64;
+  const step=G.length/n;
+  let s="";
+  for(let i=0;i<n;i++) {
+    const start=Math.floor(i*step);
+    let v=0;
+    for(let j=start;j<start+step;j++) {
+      if(G[j].re>v) v=G[j].re;
+    }
+    if(v>2) s+="*"; else if(v>0.4)s+="+"; else if(v>0.2) s+="."; else s+=" ";
+  }
+  return s;
+}
+function to_s(f) {
+  return Math.round(f * 32767);
+}
+function to_f(s) {
+  return s/32767.0;
+}
+
+function s_to_f_array(s_ary) {
+  const out=new Float32Array(s_ary.length);
+  for(let i=0;i<s_ary.length;i++) {
+    out[i]=to_f(s_ary[i]);
+  }
+  return out;
+}
+
+function energy(complex) {
+  return complex.re*complex.re + complex.im*complex.im;
+} 
+
+function vad(G, threshold) {
+  const voiceFrequencyMin = 300; // 人間の声の最小周波数（Hz）
+  const voiceFrequencyMax = 3000; // 人間の声の最大周波数（Hz）
+  const sampleRate = 44100; // サンプリングレート（Hz）
+  const fftSize = G.length;
+
+  // 人間の声の周波数帯域に対応する周波数ビンのインデックスを計算
+  const kMin = Math.floor((voiceFrequencyMin * fftSize) / sampleRate);
+  const kMax = Math.floor((voiceFrequencyMax * fftSize) / sampleRate);
+
+  // 人間の声の周波数帯域のエネルギーを合計
+  let voiceEnergySum = 0;
+  for (let k = kMin; k <= kMax; k++) {
+    voiceEnergySum += energy(G[k]);
+  }
+  return (voiceEnergySum > threshold) ;
+}
+
+///////////////////
+
+
+const chunkSize = 512;
+const fileData = fs.readFileSync(process.argv[2]);
+const numSamples = fileData.length / 2; 
+const numChunks = Math.ceil(numSamples / chunkSize);
+
+for (let i = 0; i < numChunks; i++) {
+  const start = i * chunkSize * 2;
+  const end = Math.min(start + chunkSize * 2, fileData.length);
+  const chunkData = fileData.slice(start, end);
+  const audioData = new Int16Array(chunkData.buffer, chunkData.byteOffset, chunkData.length / 2);
+  const samples=s_to_f_array(audioData);
+//  console.log(start,end,"audioData:",audioData[0],max(audioData));
+
+  // DFT
+  const g=[];
+  for(let i=0;i<chunkSize;i++) g[i]={ re: samples[i], im:0 };
+  const G=[];
+  dft(g,G,chunkSize);
+  const is_voice=vad(G,1);
+  const s=spectrum(G);
+  console.log("spectrum:",s,"max:",max(audioData),max_re(G),"is_voice:",is_voice);
+}
+
