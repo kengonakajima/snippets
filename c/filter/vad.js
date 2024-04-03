@@ -168,7 +168,7 @@ for (let i = 0; i < numChunks; i++) {
   for(let i=0;i<chunkSize;i++) g[i]={ re: samples[i], im:0 };
   const G=[];
   dft(g,G,chunkSize);
-  const is_voice=vad(G,1);
+  const is_voice=vad(G,4000); // 2000にするとvoice_canでたまにtrueになる
   const s=spectrum(G);
   console.log("spectrum:",s,"max:",max(audioData),max_re(G),"is_voice:",is_voice);
 }
