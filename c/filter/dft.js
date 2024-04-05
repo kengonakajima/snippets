@@ -127,7 +127,7 @@ const g=[];
 for(let i=0;i<N;i++) g[i]={ re: samples[i], im:0 };
 
 const G=[];
-dft(g,G,N);
+dft(g,G,N); // 37ms
 console.log("G:",G);
 for(let i=0;i<N;i++){
   const hz=sampleRate/N*i;
@@ -135,7 +135,7 @@ for(let i=0;i<N;i++){
 }
 
 const rg=[];
-idft(G,rg,N);
+idft(G,rg,N); // 33~37ms
 for(let i=0;i<N;i++){
   const diff=rg[i].re - g[i].re;
   console.log(i,rg[i].re,rg[i].im, g[i].re,g[i].im,"diff:",diff);
