@@ -6,8 +6,7 @@ fir: fir.cpp
 echo: echo.cpp util.cpp
 	g++ echo.cpp util.cpp -o echo
 
-rec.png: echo
-	./rw
+png: 
 	node wave.js rec.raw rec.png
 	node wave.js ref.raw ref.png
 	node wave.js final.raw final.png
