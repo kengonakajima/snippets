@@ -129,7 +129,7 @@ function spectrumBar(G) {
     let v=0;
     for(let j=start;j<start+step;j++) {
       const e=energy(G[j]);
-      if(e>v) v=e;
+      v+=e;
     }
     if(v>2) s+="*"; else if(v>0.4)s+="+"; else if(v>0.2) s+="."; else s+=" ";
   }
