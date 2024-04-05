@@ -1,4 +1,6 @@
-function dft(g, G, N) {
+function dft(g) {
+  const N=g.length;
+  const G=new Array(N);
   const j2pn = {
     re: 0,
     im: -2 * Math.PI / N
@@ -20,10 +22,13 @@ function dft(g, G, N) {
       G[k] = add(G[k], product);
     }
   }
+  return G;
 }
 
 
-function idft(g, G, N) {
+function idft(g) {
+  const N=g.length;
+  const G=new Array(N);
   const j2pn = {
     re: 0,
     im: 2 * Math.PI / N
@@ -52,6 +57,7 @@ function idft(g, G, N) {
       im: G[k].im / N
     };
   }
+  return G;
 }
 
 
@@ -91,6 +97,75 @@ function generateSineWave(sineWave, amplitude, frequency, duration, sampleRate, 
 }
 
 
+
+function fft(x) {
+  const n = x.length;
+
+  if (n === 1) {
+    return x;
+  }
+
+  const even = [];
+  const odd = [];
+
+  for (let i = 0; i < n; i++) {
+    if (i % 2 === 0) {
+      even.push(x[i]);
+    } else {
+      odd.push(x[i]);
+    }
+  }
+
+  const evenFFT = fft(even);
+  const oddFFT = fft(odd);
+
+  const result = new Array(n);
+
+  for (let k = 0; k < n / 2; k++) {
+    const angle = -2 * Math.PI * k / n;
+    const twiddle = {
+      re: Math.cos(angle),
+      im: Math.sin(angle)
+    };
+
+    const t = {
+      re: twiddle.re * oddFFT[k].re - twiddle.im * oddFFT[k].im,
+      im: twiddle.re * oddFFT[k].im + twiddle.im * oddFFT[k].re
+    };
+
+    result[k] = {
+      re: evenFFT[k].re + t.re,
+      im: evenFFT[k].im + t.im
+    };
+
+    result[k + n / 2] = {
+      re: evenFFT[k].re - t.re,
+      im: evenFFT[k].im - t.im
+    };
+  }
+
+  return result;
+}
+
+function ifft(x) {
+  const n = x.length;
+
+  // FFTの結果を複素共役にする
+  const conjugate = x.map(({ re, im }) => ({ re, im: -im }));
+
+  // 複素共役に対してFFTを適用する
+  const fftResult = fft(conjugate);
+
+  // 結果を実数部のみにして、大きさをn倍する
+  const result = fftResult.map(({ re }) => re / n);
+
+  return result;
+}
+
+
+//////////////////////////
+
+
 const fs = require('fs');
 
 function save_f(buf, path) {
@@ -123,22 +198,35 @@ console.log(samples);
 
 save_f(samples,"js_sine.raw");
 
+
+// g:元の信号
 const g=[];
 for(let i=0;i<N;i++) g[i]={ re: samples[i], im:0 };
 
-const G=[];
-dft(g,G,N); // 37ms
-console.log("G:",G);
+// まず遅いDFT
+const G=dft(g); // 37ms
 for(let i=0;i<N;i++){
   const hz=sampleRate/N*i;
   console.log(i,hz,G[i].re,G[i].im);
 }
-
-const rg=[];
-idft(G,rg,N); // 33~37ms
+// IDFTして戻す
+const rg=idft(G); // 37ms
 for(let i=0;i<N;i++){
   const diff=rg[i].re - g[i].re;
-  console.log(i,rg[i].re,rg[i].im, g[i].re,g[i].im,"diff:",diff);
+  console.log("dft diff:",i,rg[i].re,rg[i].im, g[i].re,g[i].im,"diff:",diff);
 }
+
+// 次にFFT
+const fG=fft(g); // 5ms
+for(let i=0;i<N;i++) {
+  const hz=sampleRate/N*i;
+  console.log(i,hz,fG[i].re,fG[i].im);
+}
+const rfg=ifft(fG); // 5ms
+for(let i=0;i<N;i++){
+  const diff=rfg[i]-g[i].re;
+  console.log("fft diff:",i,rfg[i],g[i].re,"diff:",diff);
+}
+
 
 
