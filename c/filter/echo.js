@@ -61,6 +61,9 @@ function firFilter(inputSignal, startIndex) {
   return output;
 }
 
+// ref,recの配列は同じ長さを前提とする。
+// recには、回り込み音が含まれていることが前提。
+// recに回り込み音が含まれてない場合、チャンクを伸ばす必要がある。
 function echoCancel(ref,rec) {
   const estimated=new Float32Array(N);
   const canceled=new Float32Array(N);
