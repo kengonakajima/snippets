@@ -61,6 +61,44 @@ function firFilter(inputSignal, startIndex) {
   return output;
 }
 
+function echoCancel(ref,rec) {
+  const estimated=new Float32Array(N);
+  const canceled=new Float32Array(N);
+  const err=new Float32Array(N);
+
+  for(let loop=0;loop<100;loop++) {
+    console.log("loop:",loop);
+
+    // エコーを推定する
+    for(let i=0;i<N;i++) estimated[i]=firFilter(ref,i);
+    console.log("estimated:",estimated);
+
+    // エコーを除去した信号をつくる
+    for(let i=0;i<N;i++) canceled[i]=rec[i]-estimated[i];
+    console.log("canceled:",canceled);
+
+    // エコーを減算する。これがエラー信号となる。エラー信号が小さければ良い。
+    for(let i=0;i<N;i++) err[i]=rec[i]-estimated[i];
+    const mse=calcMse(err);
+    console.log("err: mse:",mse,err);
+    if(mse<0.000001) {
+      console.log("found a good coefficients, quit loop");
+      break;
+    }        
+    // フィルタ係数を更新
+    const u=0.2;
+    for(let i=0;i<N;i++) {
+      for(let j=0;j<N;j++) {
+        if(i-j >= 0) {
+          filter_coefficients[j] += u * err[i] * ref[i - j];
+        }
+      }
+    }
+    console.log("filter_coefficients:",filter_coefficients);
+    console.log("===============\n");
+  }
+  return canceled;
+}
 
 const rec=new Float32Array(N); // rec: マイクからの新しい入力
 const ref=new Float32Array(N); // ref: 前回の再生結果(前半)
@@ -74,43 +112,10 @@ save_f(rec,"rec.raw");
 console.log("ref:",ref);
 save_f(ref,"ref.raw");
 
-const estimated=new Float32Array(N);
-const canceled=new Float32Array(N);
-const err=new Float32Array(N);
-
-for(let loop=0;loop<100;loop++) {
-  console.log("loop:",loop);
-
-  // エコーを推定する
-  for(let i=0;i<N;i++) estimated[i]=firFilter(ref,i);
-  console.log("estimated:",estimated);
-
-  // エコーを除去した信号をつくる
-  for(let i=0;i<N;i++) canceled[i]=rec[i]-estimated[i];
-  console.log("canceled:",canceled);
-
-  // エコーを減算する。これがエラー信号となる。エラー信号が小さければ良い。
-  for(let i=0;i<N;i++) err[i]=rec[i]-estimated[i];
-  const mse=calcMse(err);
-  console.log("err: mse:",mse,err);
-  if(mse<0.000001) {
-    console.log("found a good coefficients, quit loop");
-    break;
-  }        
-  // フィルタ係数を更新
-  const u=0.2;
-  for(let i=0;i<N;i++) {
-    for(let j=0;j<N;j++) {
-      if(i-j >= 0) {
-        filter_coefficients[j] += u * err[i] * ref[i - j];
-      }
-    }
-  }
-  console.log("filter_coefficients:",filter_coefficients);
-  console.log("===============\n");
-}
+const canceled=echoCancel(ref,rec);
 
 // 係数の更新が終わっているので、この時点でのcanceledが出力である
 console.log("finally output(canceled):",canceled);
 save_f(canceled,"final.raw");
+
 
