@@ -76,11 +76,7 @@ function echoCancel(ref,rec) {
     for(let i=0;i<N;i++) estimated[i]=firFilter(ref,i);
     console.log("estimated:",estimated);
 
-    // エコーを除去した信号をつくる
-    for(let i=0;i<N;i++) canceled[i]=rec[i]-estimated[i];
-    console.log("canceled:",canceled);
-
-    // エコーを減算する。これがエラー信号となる。エラー信号が小さければ良い。
+    // エコーを除去した信号をつくる。これがエラー信号となる。エラー信号が小さければ良い。
     for(let i=0;i<N;i++) err[i]=rec[i]-estimated[i];
     const mse=calcMse(err);
     console.log("err: mse:",mse,err);
@@ -100,7 +96,7 @@ function echoCancel(ref,rec) {
     console.log("filter_coefficients:",filter_coefficients);
     console.log("===============\n");
   }
-  return canceled;
+  return err;
 }
 
 const rec=new Float32Array(N); // rec: マイクからの新しい入力
