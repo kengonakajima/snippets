@@ -9,12 +9,12 @@ const {
 
 // LMSアルゴリズムのパラメータ設定
 const numWeights = 10;  // フィルタ係数の数. 10でもそれなりに動く。50ぐらいにするとなめらかなサイン波が現れる
-const mu = 0.01;        // ステップサイズを大きくすると、速く収束するが、大きなギザギザが残ってしまう。
 
-// 初期化
+
+// 初期化(LMS,NLMS共通)
 let weights = new Array(numWeights).fill(0);  // フィルタ係数の初期化
 
-// 予測関数
+// 予測関数(LMS,NLMS共通)
 function predict(input) {
   let output = 0;
   for (let i = 0; i < numWeights; i++) {
@@ -23,8 +23,9 @@ function predict(input) {
   return output;
 }
 
-// 更新関数
-function update(input, desiredOutput) {
+// LMSの更新関数
+function updateLMS(input, desiredOutput) {
+  const mu = 0.01;        // ステップサイズを大きくすると、速く収束するが、大きなギザギザが残ってしまう。  
   const output = predict(input);
   const error = desiredOutput - output;
 
@@ -33,14 +34,31 @@ function update(input, desiredOutput) {
   }
 }
 
-// LMSアルゴリズムの適用
-function applyLMS(inputSignal, desiredOutput) {
+// NLMSの更新関数
+function updateNLMS(input, desiredOutput) {
+  const mu=0.1; // ステップサイズ
+  const epsilon = 1e-6;   // 正則化パラメータ
+  const output = predict(input);
+  const error = desiredOutput - output;
+
+  // inputNormは、入力値の2乗の期待値にサンプル数をかけたものなので、単なる合計になる。
+  const inputNorm = input.reduce((sum, value) => sum + value * value, 0);
+  const normalizedStepSize = mu / (inputNorm + epsilon);
+
+  for (let i = 0; i < numWeights; i++) {
+    weights[i] += normalizedStepSize * error * (input[i]||0);
+  }
+}
+
+
+// LMS/NLMSアルゴリズムの適用
+function apply(inputSignal, desiredOutput, updateFunc) {
   const outputSignal = [];
   for (let i = 0; i < inputSignal.length; i++) {
     const input = inputSignal.slice(Math.max(0, i - numWeights + 1), i + 1);
     const output = predict(input);
     outputSignal.push(output);
-    update(input, desiredOutput[i]);
+    updateFunc(input, desiredOutput[i]);
   }
   return outputSignal;
 }
@@ -64,22 +82,31 @@ function generateNoise(numSamples, noiseAmplitude) {
 }
 
 // デモンストレーション
-function demonstrateLMS() {
+function demonstrateLMS(to_normalize) {
+  weights = new Array(numWeights).fill(0);  // フィルタ係数の初期化
   const numSamples = 1000;
   const sineWave = generateSineWave(numSamples, 20, 0.5); // 振幅を小さくすると weightsの値も小さくなる。　周期を高くすると、weightsの値は大きくなる。
   const noise = generateNoise(numSamples, 0.5);
   const noisySignal = sineWave.map((value, index) => value + noise[index]);
-  const filteredSignal = applyLMS(noisySignal, sineWave);
-  const avgPw=calcAveragePower(sineWave);
+  const updateFunc = (to_normalize ? updateNLMS : updateLMS);
+  const filteredSignal = apply(noisySignal, sineWave, updateFunc);
+  const avgPwOrig=calcAveragePower(sineWave);  
+  const error=new Array(numSamples);
+  for(let i=0;i<numSamples;i++) error[i]=filteredSignal[i]-sineWave[i];
+  const avgPwErr=calcAveragePower(error);
   console.log('Original Signal:',sineWave);
   console.log('Noisy Signal:', noisySignal);
   console.log('Filtered Signal:', filteredSignal);
-  console.log("averagePower:",avgPw); // 0.12ぐらいだった(振幅0.5, 周期による変化はない)
+  console.log("averagePower origSignal:",avgPwOrig); // 0.12ぐらいだった(振幅0.5, 周期による変化はない)
+  console.log("averagePower error:",avgPwErr); // LMS: 0.019 NLMS: 0.0074 いいね!
 
-  plotArrayToImage([sineWave,noisySignal],1024,512,`plots/lms_demo.png`,1);
-  plotArrayToImage([filteredSignal,weights],1024,512,`plots/lms_demo_w.png`,1);  
+  const prefix=(to_normalize ? "nlms" : "lms");
+  plotArrayToImage([sineWave,noisySignal],1024,512,`plots/${prefix}_demo.png`,1);
+  plotArrayToImage([filteredSignal,weights],1024,512,`plots/${prefix}_demo_w.png`,1);  
   console.log("weights:",weights.join("\n"))
 }
 
 // デモンストレーションの実行
-demonstrateLMS();
+
+demonstrateLMS(false);
+demonstrateLMS(true);
