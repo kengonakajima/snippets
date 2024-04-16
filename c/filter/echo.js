@@ -66,7 +66,6 @@ function firFilter(inputSignal, startIndex) {
 // recに回り込み音が含まれてない場合、チャンクを伸ばす必要がある。
 function echoCancel(ref,rec) {
   const estimated=new Float32Array(N);
-  const canceled=new Float32Array(N);
   const err=new Float32Array(N);
 
   for(let loop=0;loop<100;loop++) {
