@@ -1,4 +1,7 @@
 // RLSをゼロから構築する(単回帰)
+// https://yuyumoyuyu.com/2020/12/27/recursiveleastsquares/
+
+// これはy軸の切片がない。原点をとおる直線のみに対応している。
 
 class RLS {
   constructor(lambda = 0.99) {
