@@ -136,7 +136,7 @@ class RLSShimizu {
     this.theta=[];
     for(let i=0;i<d;i++) this.theta.push([0]); // rls1.jsではd次の行ベクトルだったが、清水版ではthetaは列ベクトルである
     this.P = createMatrix(d);
-    this.lambda=0.99;
+    this.lambda=0.2;
   }
   predict(x) {
     console.log("predict: x:",x,"theta:",this.theta);
@@ -274,7 +274,7 @@ onlineData.forEach(({ x, y }) => {
   const diff1=y-prediction1;
   console.log("DIFF:",(prediction1-prediction0),"prediction0:",prediction0,"prediction1:",prediction1,"diff0:",diff0,"diff1:",diff1);
 
-  // manabiのほうがだいぶ優秀かも
+  // shimizu版はlambdaで調整できる! 
   
 });
 
