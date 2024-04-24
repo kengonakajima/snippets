@@ -433,6 +433,176 @@ function calculateMaxEigenvalue(correlationMatrix) {
 }
 
 
+
+function transposeMatrix(matrix) {
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  
+  const out = [];
+  
+  for (let j = 0; j < cols; j++) {
+    out[j] = [];
+    for (let i = 0; i < rows; i++) {
+      out[j][i] = matrix[i][j];
+    }
+  }
+  
+  return out;
+}
+
+function multiplyMatrices(matrix1, matrix2) {
+  const rows1 = matrix1.length;
+  const cols1 = matrix1[0].length;
+  const rows2 = matrix2.length;
+  const cols2 = matrix2[0].length;
+
+  if (cols1 !== rows2) {
+    throw new Error("Cannot multiply matrices: dimensions do not match.");
+  }
+
+  const resultMatrix = [];
+
+  for (let i = 0; i < rows1; i++) {
+    resultMatrix[i] = [];
+    for (let j = 0; j < cols2; j++) {
+      let sum = 0;
+      for (let k = 0; k < cols1; k++) {
+        sum += matrix1[i][k] * matrix2[k][j];
+      }
+      resultMatrix[i][j] = sum;
+    }
+  }
+
+  return resultMatrix;
+}
+
+function invertMatrix(matrix) {
+  const n = matrix.length;
+
+  // 単位行列を作成
+  const identity = Array(n)
+    .fill()
+    .map(() => Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    identity[i][i] = 1;
+  }
+
+  // 行列とその単位行列を拡張して、ガウス・ジョルダン法を適用
+  const augmented = matrix.map((row, i) => [...row, ...identity[i]]);
+
+  // ガウス・ジョルダン法
+  for (let i = 0; i < n; i++) {
+    // ピボット要素を1にする
+    const pivot = augmented[i][i];
+    for (let j = 0; j < 2 * n; j++) {
+      augmented[i][j] /= pivot;
+    }
+
+    // ピボット要素以外の要素を0にする
+    for (let k = 0; k < n; k++) {
+      if (k !== i) {
+        const factor = augmented[k][i];
+        for (let j = 0; j < 2 * n; j++) {
+          augmented[k][j] -= factor * augmented[i][j];
+        }
+      }
+    }
+  }
+
+  // 拡張行列から逆行列を抽出
+  const inverse = augmented.map(row => row.slice(n));
+
+  return inverse;
+}
+
+function addMatrices(matrix1, matrix2) {
+  // 行列のサイズが等しいかチェック
+  if (matrix1.length !== matrix2.length || matrix1[0].length !== matrix2[0].length) {
+    throw new Error("行列のサイズが異なります");
+  }
+
+  const result = [];
+  for (let i = 0; i < matrix1.length; i++) {
+    result[i] = [];
+    for (let j = 0; j < matrix1[0].length; j++) {
+      result[i][j] = matrix1[i][j] + matrix2[i][j];
+    }
+  }
+  return result;
+}
+
+function subtractMatrices(matrix1, matrix2) {
+  // 行列のサイズが等しいかチェック
+  if (matrix1.length !== matrix2.length || matrix1[0].length !== matrix2[0].length) {
+    throw new Error("行列のサイズが異なります");
+  }
+
+  const result = [];
+  for (let i = 0; i < matrix1.length; i++) {
+    result[i] = [];
+    for (let j = 0; j < matrix1[0].length; j++) {
+      result[i][j] = matrix1[i][j] - matrix2[i][j];
+    }
+  }
+  return result;
+}
+
+// dxdの単位行列を作る
+function createMatrix(d) {
+  const o=[];
+  for(let i=0;i<d;i++) {
+    o[i]=[];
+    for(let j=0;j<d;j++) {
+      let v=0;
+      if(j==i)v=1;
+      o[i][j]=v;
+    }
+  }
+  return o;
+}
+function dotProduct(vector1, vector2) {
+  // ベクトルの長さが等しいかチェック
+  if (vector1.length !== vector2.length) {
+    throw new Error("ベクトルの長さが異なります");
+  }
+
+  // 内積の計算
+  let result = 0;
+  for (let i = 0; i < vector1.length; i++) {
+    result += vector1[i] * vector2[i];
+  }
+
+  return result;
+}
+
+function divideMatrixByScalar(matrix, scalar) {
+  if (scalar === 0) {
+    throw new Error("スカラー値が0です。ゼロ除算は許可されていません。");
+  }
+
+  const result = [];
+  for (let i = 0; i < matrix.length; i++) {
+    result[i] = [];
+    for (let j = 0; j < matrix[0].length; j++) {
+      result[i][j] = matrix[i][j] / scalar;
+    }
+  }
+  return result;
+}
+
+function multiplyMatrixByScalar(matrix, scalar) {
+  const result = [];
+  for (let i = 0; i < matrix.length; i++) {
+    result[i] = [];
+    for (let j = 0; j < matrix[0].length; j++) {
+      result[i][j] = matrix[i][j] * scalar;
+    }
+  }
+  return result;
+}
+
+
+
 exports.calculateCorrelationMatrix=calculateCorrelationMatrix;
 exports.calculateMaxEigenvalue=calculateMaxEigenvalue;
 exports.getMax=getMax;
@@ -468,3 +638,12 @@ exports.loadLPCMFileSync=loadLPCMFileSync;
 exports.firFilter=firFilter;
 exports.firFilterFFT=firFilterFFT;
 exports.findMax=findMax;
+exports.transposeMatrix=transposeMatrix;
+exports.multiplyMatrices=multiplyMatrices;
+exports.invertMatrix=invertMatrix;
+exports.addMatrices=addMatrices;
+exports.subtractMatrices=subtractMatrices;
+exports.createMatrix=createMatrix;
+exports.dotProduct=dotProduct;
+exports.divideMatrixByScalar=divideMatrixByScalar;
+exports.multiplyMatrixByScalar=multiplyMatrixByScalar;
