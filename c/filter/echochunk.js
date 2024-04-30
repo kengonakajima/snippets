@@ -4,35 +4,11 @@ const {
   plotArrayToImage,
   getAvg,
   getMin,
-  getMax
+  getMax,
+  save_f,
+  to_s,
+  calcAveragePower,  
 }=require("./util.js")
-
-function save_f(buf, path) {
-  const n = buf.length;
-  const sb = new Int16Array(n);
-
-  for (let i = 0; i < n; i++) {
-    sb[i] = to_s(buf[i]);
-  }
-
-  fs.writeFileSync(path, Buffer.from(sb.buffer));
-}
-
-function to_s(f) {
-  return Math.round(f * 32767);
-}
-
-
-function calcMse(errorSignal) {
-  let sumSquaredError = 0;
-
-  for (let i = 0; i < errorSignal.length; i++) {
-    sumSquaredError += errorSignal[i] * errorSignal[i];
-  }
-
-  return sumSquaredError / errorSignal.length;
-}
-
 
 ///////////
 
@@ -89,7 +65,7 @@ function echoCancel(ref,rec) {
 
     // エコーを除去した信号をつくる。これがエラー信号となる。エラー信号が小さければ良い。
     for(let i=0;i<N;i++) err[i]=rec[i]-estimated[i];
-    const eMse=calcMse(err);
+    const eMse=calcAveragePower(err);
 
 
 
