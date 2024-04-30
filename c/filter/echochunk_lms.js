@@ -7,7 +7,9 @@ const {
   getMax,
   save_f,
   to_s,
-  calcAveragePower,  
+  calcAveragePower,
+  firFilter,
+  padNumber
 }=require("./util.js")
 
 ///////////
@@ -30,38 +32,19 @@ for(let i=0;i<delay;i++) {
 }
 
 const FILTER_LENGTH=N;
-
-
 const filter_coefficients=new Float32Array(FILTER_LENGTH); 
 
-// FIRフィルタの処理関数
-function firFilter(inputSignal, startIndex) {
-  let output = 0;
-
-  // 畳み込み演算
-  for (let i = 0; i < FILTER_LENGTH; i++) {
-    const signalIndex = startIndex - i;
-    if (signalIndex >= 0) {
-      output += filter_coefficients[i] * inputSignal[signalIndex];
-    }
-  }
-
-  return output;
-}
 
 // ref,recの配列は同じ長さを前提とする。
 // recには、回り込み音が含まれていることが前提。
 // recに回り込み音が含まれてない場合、チャンクを伸ばす必要がある。
 function echoCancel(ref,rec) {
-  const estimated=new Float32Array(N);
   const err=new Float32Array(N);
 
   
   for(let loop=0;loop<100;loop++) {
-
-    // エコーを推定する
-    for(let i=0;i<N;i++) estimated[i]=firFilter(ref,i);
-
+    // エコーを推定する    
+    const estimated=firFilter(ref,filter_coefficients,N);
 
     // エコーを除去した信号をつくる。これがエラー信号となる。エラー信号が小さければ良い。
     for(let i=0;i<N;i++) err[i]=rec[i]-estimated[i];
@@ -132,8 +115,9 @@ function echoCancel(ref,rec) {
       }      
     }
       
-//    console.log("filter_coefficients:",filter_coefficients);
-    plotArrayToImage([ref,rec,estimated,err,filter_coefficients],1024,512,`plots/loop_${loop}.png`,1);
+    //    console.log("filter_coefficients:",filter_coefficients);
+    const pad=padNumber(loop,3,'0');
+    plotArrayToImage([ref,rec,estimated,err,filter_coefficients],1024,512,`plots/loop_${pad}.png`,1);
   }
   return err;
 }
