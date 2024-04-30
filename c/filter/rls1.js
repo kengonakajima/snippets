@@ -131,12 +131,12 @@ class RLSManabi {
 // rls0.js (清水版)の重回帰バージョン
 // https://yuyumoyuyu.com/2020/12/27/recursiveleastsquares/
 class RLSShimizu {
-  constructor(d) {
+  constructor(d,lambda) {
     this.d=d;
     this.theta=[];
     for(let i=0;i<d;i++) this.theta.push([0]); // rls1.jsではd次の行ベクトルだったが、清水版ではthetaは列ベクトルである
     this.P = createMatrix(d);
-    this.lambda=0.2;
+    this.lambda=lambda;
   }
   predict(x) {
     console.log("predict: x:",x,"theta:",this.theta);
@@ -252,24 +252,32 @@ const onlineData = [
 const rls0=new RLSManabi(2);
 rls0.init(initData);
 
-const rls1=new RLSShimizu(2);
+const rls1=new RLSShimizu(2,0.5);
 rls1.init(initData);
 
 
+const manabi_plot=[];
+const shimizu_plot=[];
+const y_plot=[];
+
 // 学習
 onlineData.forEach(({ x, y }) => {
+  y_plot.push(y);
+  
   console.log("Manabi Predicting..");
   const prediction0 = rls0.predict(x); // 現在のパラメータを使用して予測値を計算
   console.log(`Manabi Input: [${x}], Prediction: ${prediction0}, Actual: ${y}`); // 入力、予測値、実際の値を表示
   console.log("Manabi Updating..");  
   rls0.update(x, y); // パラメータの更新
+  manabi_plot.push(prediction0);
 
   console.log("Shimizu Predicting..");
   const prediction1 = rls1.predict(x); // 現在のパラメータを使用して予測値を計算
-  console.log(`Shimizu Input: [${x}], Prediction: ${prediction0}, Actual: ${y}`); // 入力、予測値、実際の値を表示
+  console.log(`Shimizu Input: [${x}], Prediction: ${prediction1}, Actual: ${y}`); // 入力、予測値、実際の値を表示
   console.log("Shimizu Updating..");  
   rls1.update(x, y); // パラメータの更新
-
+  shimizu_plot.push(prediction1);
+  
   const diff0=y-prediction0;
   const diff1=y-prediction1;
   console.log("DIFF:",(prediction1-prediction0),"prediction0:",prediction0,"prediction1:",prediction1,"diff0:",diff0,"diff1:",diff1);
@@ -278,3 +286,4 @@ onlineData.forEach(({ x, y }) => {
   
 });
 
+plotArrayToImage([y_plot,manabi_plot,shimizu_plot],1024,512,"plots/rls1_diff.png",0.1);
