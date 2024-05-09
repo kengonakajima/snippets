@@ -32,7 +32,8 @@ const N=512;
 const all_samples=[];
 for(let i=0;i<N;i++) all_samples.push(chunks[0][i]);
 for(let i=0;i<N;i++) all_samples.push(chunks[1][i]);
-
+const all_samples_with_noise=[];
+for(let i=0;i<all_samples.length;i++) all_samples_with_noise[i]=all_samples[i]+Math.random()*0.01;
 
 plotArrayToImage([all_samples],1024,512,`plots/all_samples.png`,1);
 
@@ -64,7 +65,7 @@ for(let d=0;d<300;d++) {
     // 推定信号を作る
     const estimated=pinFilter(d,r,all_samples, playStart, N);
     // エコーを除去した信号をつくる。これがエラー信号となる。エラー信号が小さければ良い。
-    for(let i=0;i<N;i++) err[i]=all_samples[recStart+i]*gain-estimated[i];
+    for(let i=0;i<N;i++) err[i]=all_samples_with_noise[recStart+i]*gain-estimated[i];
     const eMse=calcAveragePower(err);
     if(eMse<minMse) {
       minMse=eMse;
