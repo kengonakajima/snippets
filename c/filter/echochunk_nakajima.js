@@ -58,11 +58,15 @@ let minMse=9999;
 let estimatedDelay=999;
 let estimatedRatio=0;
 
+let tryCnt=0;
+
+const st=new Date().getTime();
 // d: 推定される遅延の候補の値
 for(let d=0;d<300;d++) {
   // r: 推定される倍率の候補の値
-  for(let r=0;r<=1.0;r+=0.01) {
+  for(let r=0;r<=0.5;r+=0.01) {
     // 推定信号を作る
+    tryCnt++;
     const estimated=pinFilter(d,r,all_samples, playStart, N);
     // エコーを除去した信号をつくる。これがエラー信号となる。エラー信号が小さければ良い。
     for(let i=0;i<N;i++) err[i]=all_samples_with_noise[recStart+i]*gain-estimated[i];
@@ -75,8 +79,9 @@ for(let d=0;d<300;d++) {
     }
   }
 }
+const et=new Date().getTime();
 // ここで、 estimatedDelayが105、 estimatedRatioが0.3付近になれば、推測成功
-console.log("conclusion:",{estimatedDelay,estimatedRatio}); 
+console.log("conclusion:",{estimatedDelay,estimatedRatio,dt:et-st,tryCnt}); 
 
 
 
