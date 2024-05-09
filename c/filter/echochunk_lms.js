@@ -22,13 +22,13 @@ let played_samples=[];
 let recorded_samples=[];
 
 const delay=15;
-played_samples=chunks[1];
+played_samples=chunks[0];
 for(let i=0;i<played_samples.length;i++) {
-  recorded_samples[i]=played_samples[i-15]||0;
+  recorded_samples[i]=played_samples[i+delay]||0;
 }
-const prevchunk=chunks[0];
+const nextchunk=chunks[0];
 for(let i=0;i<delay;i++) {
-  recorded_samples[i]=prevchunk[prevchunk.length-1-delay+i];
+  recorded_samples[recorded_samples.length-delay+i]=nextchunk[i];
 }
 
 const FILTER_LENGTH=N;
