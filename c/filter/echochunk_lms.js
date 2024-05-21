@@ -92,10 +92,9 @@ function echoCancel(ref,rec) {
         }
       }
     }
-    // Leaky LMS
-    
     // NLMS(学習同定法)
     // NLMSでは、uを動的に計算する。
+    // 収束がとても遅い。
     if(true) {
       const inputNorm = rec.reduce((sum, value) => sum + value * value, 0);
       let mu=0.03;
@@ -114,6 +113,8 @@ function echoCancel(ref,rec) {
         }
       }      
     }
+
+    // NLMSのログスケール版(webrtc)
       
     //    console.log("filter_coefficients:",filter_coefficients);
     const pad=padNumber(loop,3,'0');

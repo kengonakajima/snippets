@@ -125,7 +125,18 @@ function calcAveragePower(signal) {
   const averagePower = sum / signal.length;
   return averagePower;
 }
-
+function calcAveragePowerComplex(fftResult) {
+  const sum = fftResult.reduce((acc, { re, im }) => acc + re ** 2 + im ** 2, 0);
+  const averagePower = sum / fftResult.length;
+  return averagePower;
+}
+function calcPowerSpectrum(complexArray) {
+  const out=new Float32Array(complexArray.length);
+  for(let i=0;i<complexArray.length;i++) {
+    out[i]=complexArray[i].re * complexArray[i].re + complexArray[i].im * complexArray[i].im;
+  }
+  return out;
+}
 function padNumber(number, width, paddingChar = ' ') {
   return number.toString().padStart(width, paddingChar);
 }
@@ -207,6 +218,7 @@ function ifft_f(x) {
   return result;
 }
 
+// 複素数ではなくfloatの配列を受け取るFFT
 function fft_f(floats) {
   const n=floats.length;
   const g=to_c_array(floats);
@@ -306,7 +318,7 @@ function plotArrayToImage(data_list, width, height, outputFilename,scale=1) {
   ctx.lineTo(width - 20, height/2);
   ctx.stroke();
 
-  const colors=['blue','red','green','orange','purple','black','gray'];
+  const colors=['red','green','blue','orange','purple','black','gray'];
   // データをプロット
   const l=data_list[0].length;  
   for(let di=0;di<data_list.length;di++) {
@@ -620,6 +632,7 @@ exports.append_f = append_f;
 exports.rm=rm;
 exports.calcERLE = calcERLE;
 exports.calcAveragePower = calcAveragePower;
+exports.calcAveragePowerComplex = calcAveragePowerComplex;
 exports.padNumber=padNumber;
 exports.totMag=totMag;
 exports.fft=fft;
@@ -647,3 +660,4 @@ exports.createMatrix=createMatrix;
 exports.dotProduct=dotProduct;
 exports.divideMatrixByScalar=divideMatrixByScalar;
 exports.multiplyMatrixByScalar=multiplyMatrixByScalar;
+exports.calcPowerSpectrum=calcPowerSpectrum;
