@@ -25,7 +25,7 @@ function generateExpressions(target, count, maxNum) {
   }
 }
 
-// コマンドライン引数から問題を受け取る
+// 
 const args = process.argv.slice(2);
 const target = parseInt(args[0]);
 const count = parseInt(args[1]) || 10;
