@@ -204,10 +204,7 @@ if(!filename) throw "need_input_file";
 
 const chunks = parseMCA(filename);
 
-// JSONに変換
 const json = jsonStringifyWithBigInt(chunks);
 
-// ファイルに保存
-fs.writeFileSync(filename+'.json', json);
+console.log(json);
 
-console.log('MCAファイルを解析し、output.jsonに保存しました。');
