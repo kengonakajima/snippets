@@ -1,0 +1,115 @@
+.business-trip-form {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: sans-serif;
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #000;
+}
+
+.form-row {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: inline-block;
+  min-width: 80px;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="time"] {
+  padding: 5px;
+  border: 1px solid #000;
+  border-radius: 0;
+}
+
+.date-input {
+  width: 50px;
+  margin: 0 5px;
+}
+
+.full-width {
+  width: calc(100% - 90px);
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  border: 2px solid #000;
+}
+
+.schedule-table th {
+  border: 2px solid #000;
+  padding: 8px;
+  background-color: #fff;
+}
+
+.schedule-table td {
+  border: 1px solid #000;
+  padding: 8px;
+}
+
+.schedule-table input {
+  width: 100%;
+  border: none;
+  padding: 5px;
+  background: transparent;
+}
+
+.add-row-button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-row-button:hover {
+  background-color: #45a049;
+}
+
+.remarks-section {
+  margin-top: 30px;
+}
+
+.remarks-textarea {
+  width: 100%;
+  height: 150px;
+  padding: 10px;
+  border: 1px solid #000;
+  border-radius: 0;
+  resize: vertical;
+  background-image: linear-gradient(transparent calc(1.5rem - 1px), #ccc calc(1.5rem - 1px), #ccc 1.5rem);
+  background-size: 100% 1.5rem;
+  line-height: 1.5rem;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.document-no input {
+  border: 1px solid #000;
+  padding: 5px;
+  width: 200px;
+}
+
+h3 {
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
