@@ -41,14 +41,14 @@ plotArrayToImage([all_samples],1024,512,`plots/all_samples.png`,1);
            |-| delay
  */
 
-const delay=35; // recordedは、このサンプル数だけ、 playedよりも時間が進んでいる
+const delay=95; // recordedは、このサンプル数だけ、 playedよりも時間が進んでいる
 const playStart=100;
 const recStart=playStart+delay;
 
 const x=new Float32Array(N);
 for(let i=0;i<N;i++) x[i]=all_samples[playStart+i];
 const y=new Float32Array(N);
-for(let i=0;i<N;i++) y[i]=all_samples[recStart+i];
+for(let i=0;i<N;i++) y[i]=all_samples[recStart+i]+Math.random()*0.01;
 
 
 
@@ -89,6 +89,7 @@ for(let loop=0;loop<10;loop++) {
     E=ZeroPaddedFft(e) # Subtractor::Process() エラー信号の時間領域データeをFFTして周波数領域に変換。
   */
 
+  // 畳み込みの定理を使ってフィルタ結果を周波数領域で取得する。
   const S = X.map((x, i) => {
     const re = x.re * H[i].re - x.im * H[i].im;
     const im = x.re * H[i].im + x.im * H[i].re;
@@ -153,7 +154,7 @@ for(let loop=0;loop<10;loop++) {
   console.log("Es:",Es);
 
   plotArrayToImage([Xs,Es],1024,512,`plots/fft_${loop}.png`,1);
-  plotArrayToImage([x,y,e],1024,512,`plots/fft_xye_${loop}.png`,1);  
+  plotArrayToImage([x,y,e,s],1024,512,`plots/fft_xyes_${loop}.png`,1);  
   
   //     mu = H_error / (0.5* H_error* X2 + n * E2).
   // partitioningしていないので n=1
@@ -192,6 +193,17 @@ for(let loop=0;loop<10;loop++) {
 
   console.log("H updated:",H);
 
+  // 更新されたHを時間領域に戻してみてみる
+  const Ht=ifft_f(H);
+  console.log("Ht:",Ht);
+  const Hs=calcPowerSpectrum(H);
+
+  plotArrayToImage([Ht,Hs],1024,512,`plots/fft_Ht_${loop}.png`,1);   // 　Hsはぐちゃぐちゃ
+
+  // この結果にどういう意味があるのか?
+
+
+  
   const et=new Date().getTime();
   console.log("dt:",(et-st));
 }
