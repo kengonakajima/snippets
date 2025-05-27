@@ -2,3 +2,5 @@ a.out
 *.dSYM
 .DS_Store
 test.db
+
+**/.claude/settings.local.json

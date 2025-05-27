@@ -1,0 +1,15 @@
+{
+  "name": "elasticsearch-search-tool",
+  "version": "1.0.0",
+  "description": "Simple Elasticsearch search tool for localhost:9200",
+  "main": "search.js",
+  "scripts": {
+    "start": "node search.js"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.11.0"
+  },
+  "keywords": ["elasticsearch", "search", "cli"],
+  "author": "",
+  "license": "ISC"
+}
