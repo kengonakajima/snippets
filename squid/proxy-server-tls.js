@@ -7,15 +7,63 @@ const fs = require('fs');
 const HTTP_PORT = 3128;
 const HTTPS_PORT = 3129;
 
+// Basic認証の設定
+const PROXY_USERNAME = 'proxy';
+const PROXY_PASSWORD = 'secret123';
+
 // SSL証明書の設定
 const SSL_OPTIONS = {
   key: fs.readFileSync('/etc/letsencrypt/live/mwf-test2.mbe.dev.monobit.net/privkey.pem'),
   cert: fs.readFileSync('/etc/letsencrypt/live/mwf-test2.mbe.dev.monobit.net/fullchain.pem')
 };
 
+// Basic認証チェック関数
+function checkProxyAuth(req) {
+  const authHeader = req.headers['proxy-authorization'];
+  if (!authHeader) {
+    return false;
+  }
+
+  const base64Credentials = authHeader.split(' ')[1];
+  if (!base64Credentials) {
+    return false;
+  }
+
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+  const [username, password] = credentials.split(':');
+  
+  return username === PROXY_USERNAME && password === PROXY_PASSWORD;
+}
+
+// 認証エラーレスポンス
+function sendAuthRequired(res) {
+  res.writeHead(407, {
+    'Proxy-Authenticate': 'Basic realm="Proxy Authentication Required"',
+    'Content-Type': 'text/plain'
+  });
+  res.end('Proxy Authentication Required');
+}
+
+// 認証エラーレスポンス（CONNECT用）
+function sendConnectAuthRequired(clientSocket) {
+  const response = 'HTTP/1.1 407 Proxy Authentication Required\r\n' +
+                   'Proxy-Authenticate: Basic realm="Proxy Authentication Required"\r\n' +
+                   'Content-Length: 0\r\n' +
+                   '\r\n';
+  clientSocket.write(response);
+  clientSocket.end();
+}
+
 // プロキシハンドラー関数
 function handleProxyRequest(req, res) {
   console.log(`${req.socket.encrypted ? 'HTTPS' : 'HTTP'} ${req.method} ${req.url}`);
+  
+  // Basic認証チェック
+  if (!checkProxyAuth(req)) {
+    console.log('Proxy authentication failed');
+    sendAuthRequired(res);
+    return;
+  }
   
   if (req.method === 'GET' || req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE' || req.method === 'PATCH') {
     // Regular HTTP proxy
@@ -49,6 +97,13 @@ function handleConnect(req, clientSocket, head) {
   const [hostname, port] = req.url.split(':');
   console.log(`${clientSocket.encrypted ? 'HTTPS' : 'HTTP'} CONNECT ${hostname}:${port}`);
   
+  // Basic認証チェック
+  if (!checkProxyAuth(req)) {
+    console.log('CONNECT authentication failed');
+    sendConnectAuthRequired(clientSocket);
+    return;
+  }
+  
   const serverSocket = net.createConnection(port || 80, hostname, () => {
     clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
                        'Proxy-agent: Node.js-Proxy\r\n' +
@@ -75,6 +130,16 @@ function handleUpgrade(req, socket, head) {
   const hostname = target.hostname || req.headers.host?.split(':')[0];
   const port = target.port || req.headers.host?.split(':')[1] || 80;
   console.log(`${socket.encrypted ? 'HTTPS' : 'HTTP'} WebSocket upgrade to ${hostname}:${port}`);
+  
+  // Basic認証チェック
+  if (!checkProxyAuth(req)) {
+    console.log('WebSocket upgrade authentication failed');
+    socket.write('HTTP/1.1 407 Proxy Authentication Required\r\n' +
+                 'Proxy-Authenticate: Basic realm="Proxy Authentication Required"\r\n' +
+                 '\r\n');
+    socket.end();
+    return;
+  }
   
   const serverSocket = net.createConnection(port, hostname, () => {
     // Forward the upgrade request
@@ -123,9 +188,12 @@ httpServer.listen(HTTP_PORT, () => {
 
 httpsServer.listen(HTTPS_PORT, () => {
   console.log(`HTTPS Proxy server running on port ${HTTPS_PORT}`);
+  console.log('Basic Authentication required:');
+  console.log(`  Username: ${PROXY_USERNAME}`);
+  console.log(`  Password: ${PROXY_PASSWORD}`);
   console.log('Usage:');
-  console.log(`  HTTPS: curl -x https://localhost:${HTTPS_PORT} https://example.com`);
-  console.log(`  CONNECT: curl -x https://mwf-test2.mbe.dev.monobit.net:${HTTPS_PORT} https://example.com`);
+  console.log(`  HTTPS: curl -x https://${PROXY_USERNAME}:${PROXY_PASSWORD}@localhost:${HTTPS_PORT} https://example.com`);
+  console.log(`  CONNECT: curl -x https://${PROXY_USERNAME}:${PROXY_PASSWORD}@mwf-test2.mbe.dev.monobit.net:${HTTPS_PORT} https://example.com`);
 });
 
 // エラーハンドリング
