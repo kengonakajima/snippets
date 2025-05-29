@@ -7,6 +7,9 @@ const fs = require('fs');
 const HTTP_PORT = 3128;
 const HTTPS_PORT = 3129;
 
+// Basic認証設定フラグ
+const enableBasicAuth = true;
+
 // Basic認証の設定
 const PROXY_USERNAME = 'proxy';
 const PROXY_PASSWORD = 'secret123';
@@ -68,7 +71,7 @@ function handleProxyRequest(req, res) {
   console.log(`${req.socket.encrypted ? 'HTTPS' : 'HTTP'} ${req.method} ${req.url}`);
   
   // Basic認証チェック
-  if (!checkProxyAuth(req)) {
+  if (enableBasicAuth && !checkProxyAuth(req)) {
     console.log('Proxy authentication failed');
     sendAuthRequired(res);
     return;
@@ -107,7 +110,7 @@ function handleConnect(req, clientSocket, head) {
   console.log(`${clientSocket.encrypted ? 'HTTPS' : 'HTTP'} CONNECT ${hostname}:${port}`);
   
   // Basic認証チェック
-  if (!checkProxyAuth(req)) {
+  if (enableBasicAuth && !checkProxyAuth(req)) {
     console.log('CONNECT authentication failed');
     sendConnectAuthRequired(clientSocket);
     return;
@@ -123,13 +126,17 @@ function handleConnect(req, clientSocket, head) {
   });
   
   serverSocket.on('error', (err) => {
-    console.error('Server socket error:', err);
-    clientSocket.end();
+    console.error('Server socket error:', err.message);
+    if (clientSocket.writable) {
+      clientSocket.end();
+    }
   });
   
   clientSocket.on('error', (err) => {
-    console.error('Client socket error:', err);
-    serverSocket.end();
+    console.error('Client socket error:', err.message);
+    if (serverSocket.writable) {
+      serverSocket.end();
+    }
   });
 }
 
@@ -141,7 +148,7 @@ function handleUpgrade(req, socket, head) {
   console.log(`${socket.encrypted ? 'HTTPS' : 'HTTP'} WebSocket upgrade to ${hostname}:${port}`);
   
   // Basic認証チェック
-  if (!checkProxyAuth(req)) {
+  if (enableBasicAuth && !checkProxyAuth(req)) {
     console.log('WebSocket upgrade authentication failed');
     socket.write('HTTP/1.1 407 Proxy Authentication Required\r\n' +
                  'Proxy-Authenticate: Basic realm="Proxy Authentication Required"\r\n' +
@@ -168,13 +175,17 @@ function handleUpgrade(req, socket, head) {
   });
   
   serverSocket.on('error', (err) => {
-    console.error('WebSocket server error:', err);
-    socket.end();
+    console.error('WebSocket server error:', err.message);
+    if (socket.writable) {
+      socket.end();
+    }
   });
   
   socket.on('error', (err) => {
-    console.error('WebSocket client error:', err);
-    serverSocket.end();
+    console.error('WebSocket client error:', err.message);
+    if (serverSocket.writable) {
+      serverSocket.end();
+    }
   });
 }
 
@@ -188,6 +199,21 @@ const httpsServer = https.createServer(SSL_OPTIONS, handleProxyRequest);
 httpsServer.on('connect', handleConnect);
 httpsServer.on('upgrade', handleUpgrade);
 
+// TLSエラーハンドリング
+httpsServer.on('clientError', (err, socket) => {
+  console.log('TLS client error:', err.message);
+  if (socket.writable) {
+    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+  }
+});
+
+httpsServer.on('tlsClientError', (err, socket) => {
+  console.log('TLS handshake error:', err.message);
+  if (socket.writable) {
+    socket.end();
+  }
+});
+
 // サーバー起動
 httpServer.listen(HTTP_PORT, () => {
   console.log(`HTTP Proxy server running on port ${HTTP_PORT}`);
@@ -197,12 +223,19 @@ httpServer.listen(HTTP_PORT, () => {
 
 httpsServer.listen(HTTPS_PORT, () => {
   console.log(`HTTPS Proxy server running on port ${HTTPS_PORT}`);
-  console.log('Basic Authentication required:');
-  console.log(`  Username: ${PROXY_USERNAME}`);
-  console.log(`  Password: ${PROXY_PASSWORD}`);
-  console.log('Usage:');
-  console.log(`  HTTPS: curl -x https://${PROXY_USERNAME}:${PROXY_PASSWORD}@localhost:${HTTPS_PORT} https://example.com`);
-  console.log(`  CONNECT: curl -x https://${PROXY_USERNAME}:${PROXY_PASSWORD}@mwf-test2.mbe.dev.monobit.net:${HTTPS_PORT} https://example.com`);
+  if (enableBasicAuth) {
+    console.log('Basic Authentication enabled:');
+    console.log(`  Username: ${PROXY_USERNAME}`);
+    console.log(`  Password: ${PROXY_PASSWORD}`);
+    console.log('Usage:');
+    console.log(`  HTTPS: curl -x https://${PROXY_USERNAME}:${PROXY_PASSWORD}@localhost:${HTTPS_PORT} https://example.com`);
+    console.log(`  CONNECT: curl -x https://${PROXY_USERNAME}:${PROXY_PASSWORD}@mwf-test2.mbe.dev.monobit.net:${HTTPS_PORT} https://example.com`);
+  } else {
+    console.log('Basic Authentication disabled');
+    console.log('Usage:');
+    console.log(`  HTTPS: curl -x https://localhost:${HTTPS_PORT} https://example.com`);
+    console.log(`  CONNECT: curl -x https://mwf-test2.mbe.dev.monobit.net:${HTTPS_PORT} https://example.com`);
+  }
 });
 
 // エラーハンドリング
