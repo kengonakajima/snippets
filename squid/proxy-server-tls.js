@@ -11,10 +11,19 @@ const HTTPS_PORT = 3129;
 const PROXY_USERNAME = 'proxy';
 const PROXY_PASSWORD = 'secret123';
 
+// コマンドライン引数から証明書パスを取得
+const args = process.argv.slice(2);
+if (args.length < 2) {
+  console.error('Usage: node proxy-server-tls.js <key-file-path(privkey)> <cert-file-path(fullchain)>');
+  process.exit(1);
+}
+
+const [keyPath, certPath] = args;
+
 // SSL証明書の設定
 const SSL_OPTIONS = {
-  key: fs.readFileSync('/etc/letsencrypt/live/mwf-test2.mbe.dev.monobit.net/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/mwf-test2.mbe.dev.monobit.net/fullchain.pem')
+  key: fs.readFileSync(keyPath),
+  cert: fs.readFileSync(certPath)
 };
 
 // Basic認証チェック関数
