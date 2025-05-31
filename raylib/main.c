@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifndef PI
+#define PI 3.14159265358979323846f
+#endif
+
 #define FIELD_SIZE 1000
 #define BLOCK_SIZE 24
 #define BALL_SIZE 10
@@ -21,12 +25,15 @@ typedef struct {
 Block blocks[FIELD_SIZE][FIELD_SIZE];
 Ball ball;
 int blocksRemaining;
+int score = 0;
 bool gameCleared = false;
 Vector2 camera = {0, 0};
 float zoom = 1.0f;
+Sound bounceSound;
 
 void InitializeGame(void) {
     blocksRemaining = 0;
+    score = 0;
     
     for (int i = 0; i < FIELD_SIZE; i++) {
         for (int j = 0; j < FIELD_SIZE; j++) {
@@ -72,6 +79,7 @@ void UpdateBall(void) {
     // Check left and right walls
     if (ballLeft <= 0 || ballRight >= FIELD_SIZE * BLOCK_SIZE) {
         ball.velocity.x = -ball.velocity.x;
+        PlaySound(bounceSound);
         if (ballLeft <= 0) {
             newPosition.x = BALL_SIZE/2;
         } else {
@@ -82,6 +90,7 @@ void UpdateBall(void) {
     // Check top and bottom walls
     if (ballTop <= 0 || ballBottom >= FIELD_SIZE * BLOCK_SIZE) {
         ball.velocity.y = -ball.velocity.y;
+        PlaySound(bounceSound);
         if (ballTop <= 0) {
             newPosition.y = BALL_SIZE/2;
         } else {
@@ -113,6 +122,7 @@ void UpdateBall(void) {
             if (blocks[blockY][blockX].active) {
                 blocks[blockY][blockX].active = false;
                 blocksRemaining--;
+                score++;
                 
                 float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
                 float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
@@ -126,6 +136,7 @@ void UpdateBall(void) {
                     ball.velocity.y = -ball.velocity.y;
                 }
                 
+                PlaySound(bounceSound);
                 break; // Only handle one collision per frame
             }
         }
@@ -211,15 +222,15 @@ void DrawGame(void) {
         DrawText("Press R to restart", WINDOW_WIDTH/2 - 80, WINDOW_HEIGHT/2 + 40, 20, WHITE);
     }
     
-    char scoreText[50];
-    sprintf(scoreText, "Blocks: %d", blocksRemaining);
-    DrawText(scoreText, 10, 10, 20, WHITE);
+    char scoreText[100];
+    sprintf(scoreText, "Score: %d | Blocks: %d", score, blocksRemaining);
+    DrawText(scoreText, 10, 10, 32, WHITE);
     
     // Display camera and ball position
     char posText[100];
     sprintf(posText, "Camera: (%.0f, %.0f) Ball: (%.0f, %.0f) Zoom: %.1fx", 
             camera.x, camera.y, ball.position.x, ball.position.y, zoom);
-    DrawText(posText, 10, 35, 16, LIGHTGRAY);
+    DrawText(posText, 10, 50, 16, LIGHTGRAY);
     
     EndDrawing();
 }
@@ -227,6 +238,28 @@ void DrawGame(void) {
 int main(void) {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Raylib Block Breaker");
     SetTargetFPS(60);
+    
+    InitAudioDevice();
+    
+    // Create a simple click sound
+    const int sampleRate = 44100;
+    const int sampleCount = sampleRate / 20; // 0.05 seconds
+    float *samples = (float *)malloc(sampleCount * sizeof(float));
+    
+    for (int i = 0; i < sampleCount; i++) {
+        float t = (float)i / sampleRate;
+        samples[i] = sinf(2 * PI * 800 * t) * expf(-t * 30); // Damped sine wave
+    }
+    
+    Wave wave = {0};
+    wave.frameCount = sampleCount;
+    wave.sampleRate = sampleRate;
+    wave.sampleSize = 32;
+    wave.channels = 1;
+    wave.data = samples;
+    
+    bounceSound = LoadSoundFromWave(wave);
+    free(samples);
     
     InitializeGame();
     
@@ -245,6 +278,8 @@ int main(void) {
         DrawGame();
     }
     
+    UnloadSound(bounceSound);
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
