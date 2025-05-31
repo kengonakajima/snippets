@@ -12,6 +12,7 @@
 #define BALL_SIZE 10
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
+#define MAX_BALLS 1000
 
 typedef struct {
     bool active;
@@ -20,10 +21,12 @@ typedef struct {
 typedef struct {
     Vector2 position;
     Vector2 velocity;
+    bool active;
 } Ball;
 
 Block blocks[FIELD_SIZE][FIELD_SIZE];
-Ball ball;
+Ball balls[MAX_BALLS];
+int ballCount = 0;
 int blocksRemaining;
 int score = 0;
 bool gameCleared = false;
@@ -31,9 +34,30 @@ Vector2 camera = {0, 0};
 float zoom = 1.0f;
 Sound bounceSound;
 
+void AddBall(void) {
+    if (ballCount >= MAX_BALLS) return;
+    
+    balls[ballCount].position.x = (FIELD_SIZE/2) * BLOCK_SIZE + BLOCK_SIZE/2;
+    balls[ballCount].position.y = (FIELD_SIZE/2) * BLOCK_SIZE + BLOCK_SIZE/2;
+    balls[ballCount].active = true;
+    
+    float angle = GetRandomValue(0, 360) * DEG2RAD;
+    float speed = 50.0f;
+    balls[ballCount].velocity.x = cos(angle) * speed;
+    balls[ballCount].velocity.y = sin(angle) * speed;
+    
+    ballCount++;
+}
+
 void InitializeGame(void) {
     blocksRemaining = 0;
     score = 0;
+    ballCount = 0;
+    
+    // Initialize all balls as inactive
+    for (int i = 0; i < MAX_BALLS; i++) {
+        balls[i].active = false;
+    }
     
     for (int i = 0; i < FIELD_SIZE; i++) {
         for (int j = 0; j < FIELD_SIZE; j++) {
@@ -46,98 +70,99 @@ void InitializeGame(void) {
         }
     }
     
-    ball.position.x = (FIELD_SIZE/2) * BLOCK_SIZE + BLOCK_SIZE/2;
-    ball.position.y = (FIELD_SIZE/2) * BLOCK_SIZE + BLOCK_SIZE/2;
+    // Add first ball
+    AddBall();
     
-    // Center camera on ball
-    camera.x = ball.position.x - WINDOW_WIDTH/2;
-    camera.y = ball.position.y - WINDOW_HEIGHT/2;
+    // Center camera on first ball
+    camera.x = balls[0].position.x - WINDOW_WIDTH/2;
+    camera.y = balls[0].position.y - WINDOW_HEIGHT/2;
     
     // Keep camera within bounds
     camera.x = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_WIDTH, camera.x));
     camera.y = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_HEIGHT, camera.y));
-    
-    float angle = GetRandomValue(0, 360) * DEG2RAD;
-    float speed = 50.0f;
-    ball.velocity.x = cos(angle) * speed;
-    ball.velocity.y = sin(angle) * speed;
 }
 
-void UpdateBall(void) {
+void UpdateBalls(void) {
     float deltaTime = GetFrameTime();
-    Vector2 newPosition = {
-        ball.position.x + ball.velocity.x * deltaTime,
-        ball.position.y + ball.velocity.y * deltaTime
-    };
     
-    // Check ball's 4 corners against walls
-    float ballLeft = newPosition.x - BALL_SIZE/2;
-    float ballRight = newPosition.x + BALL_SIZE/2;
-    float ballTop = newPosition.y - BALL_SIZE/2;
-    float ballBottom = newPosition.y + BALL_SIZE/2;
-    
-    // Check left and right walls
-    if (ballLeft <= 0 || ballRight >= FIELD_SIZE * BLOCK_SIZE) {
-        ball.velocity.x = -ball.velocity.x;
-        PlaySound(bounceSound);
-        if (ballLeft <= 0) {
-            newPosition.x = BALL_SIZE/2;
-        } else {
-            newPosition.x = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
-        }
-    }
-    
-    // Check top and bottom walls
-    if (ballTop <= 0 || ballBottom >= FIELD_SIZE * BLOCK_SIZE) {
-        ball.velocity.y = -ball.velocity.y;
-        PlaySound(bounceSound);
-        if (ballTop <= 0) {
-            newPosition.y = BALL_SIZE/2;
-        } else {
-            newPosition.y = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
-        }
-    }
-    
-    ball.position = newPosition;
-    
-    // Check collision with blocks using ball's 4 corners
-    ballLeft = ball.position.x - BALL_SIZE/2;
-    ballRight = ball.position.x + BALL_SIZE/2;
-    ballTop = ball.position.y - BALL_SIZE/2;
-    ballBottom = ball.position.y + BALL_SIZE/2;
-    
-    // Check 4 corners: top-left, top-right, bottom-left, bottom-right
-    int corners[4][2] = {
-        {(int)(ballLeft / BLOCK_SIZE), (int)(ballTop / BLOCK_SIZE)},      // top-left
-        {(int)(ballRight / BLOCK_SIZE), (int)(ballTop / BLOCK_SIZE)},     // top-right
-        {(int)(ballLeft / BLOCK_SIZE), (int)(ballBottom / BLOCK_SIZE)},   // bottom-left
-        {(int)(ballRight / BLOCK_SIZE), (int)(ballBottom / BLOCK_SIZE)}   // bottom-right
-    };
-    
-    for (int i = 0; i < 4; i++) {
-        int blockX = corners[i][0];
-        int blockY = corners[i][1];
+    for (int ballIndex = 0; ballIndex < ballCount; ballIndex++) {
+        if (!balls[ballIndex].active) continue;
         
-        if (blockX >= 0 && blockX < FIELD_SIZE && blockY >= 0 && blockY < FIELD_SIZE) {
-            if (blocks[blockY][blockX].active) {
-                blocks[blockY][blockX].active = false;
-                blocksRemaining--;
-                score++;
-                
-                float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
-                float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
-                
-                float diffX = ball.position.x - blockCenterX;
-                float diffY = ball.position.y - blockCenterY;
-                
-                if (fabs(diffX) > fabs(diffY)) {
-                    ball.velocity.x = -ball.velocity.x;
-                } else {
-                    ball.velocity.y = -ball.velocity.y;
+        Ball* ball = &balls[ballIndex];
+        Vector2 newPosition = {
+            ball->position.x + ball->velocity.x * deltaTime,
+            ball->position.y + ball->velocity.y * deltaTime
+        };
+        
+        // Check ball's 4 corners against walls
+        float ballLeft = newPosition.x - BALL_SIZE/2;
+        float ballRight = newPosition.x + BALL_SIZE/2;
+        float ballTop = newPosition.y - BALL_SIZE/2;
+        float ballBottom = newPosition.y + BALL_SIZE/2;
+        
+        // Check left and right walls
+        if (ballLeft <= 0 || ballRight >= FIELD_SIZE * BLOCK_SIZE) {
+            ball->velocity.x = -ball->velocity.x;
+            PlaySound(bounceSound);
+            if (ballLeft <= 0) {
+                newPosition.x = BALL_SIZE/2;
+            } else {
+                newPosition.x = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
+            }
+        }
+        
+        // Check top and bottom walls
+        if (ballTop <= 0 || ballBottom >= FIELD_SIZE * BLOCK_SIZE) {
+            ball->velocity.y = -ball->velocity.y;
+            PlaySound(bounceSound);
+            if (ballTop <= 0) {
+                newPosition.y = BALL_SIZE/2;
+            } else {
+                newPosition.y = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
+            }
+        }
+        
+        ball->position = newPosition;
+        
+        // Check collision with blocks using ball's 4 corners
+        ballLeft = ball->position.x - BALL_SIZE/2;
+        ballRight = ball->position.x + BALL_SIZE/2;
+        ballTop = ball->position.y - BALL_SIZE/2;
+        ballBottom = ball->position.y + BALL_SIZE/2;
+        
+        // Check 4 corners: top-left, top-right, bottom-left, bottom-right
+        int corners[4][2] = {
+            {(int)(ballLeft / BLOCK_SIZE), (int)(ballTop / BLOCK_SIZE)},      // top-left
+            {(int)(ballRight / BLOCK_SIZE), (int)(ballTop / BLOCK_SIZE)},     // top-right
+            {(int)(ballLeft / BLOCK_SIZE), (int)(ballBottom / BLOCK_SIZE)},   // bottom-left
+            {(int)(ballRight / BLOCK_SIZE), (int)(ballBottom / BLOCK_SIZE)}   // bottom-right
+        };
+        
+        for (int i = 0; i < 4; i++) {
+            int blockX = corners[i][0];
+            int blockY = corners[i][1];
+            
+            if (blockX >= 0 && blockX < FIELD_SIZE && blockY >= 0 && blockY < FIELD_SIZE) {
+                if (blocks[blockY][blockX].active) {
+                    blocks[blockY][blockX].active = false;
+                    blocksRemaining--;
+                    score++;
+                    
+                    float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
+                    float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
+                    
+                    float diffX = ball->position.x - blockCenterX;
+                    float diffY = ball->position.y - blockCenterY;
+                    
+                    if (fabs(diffX) > fabs(diffY)) {
+                        ball->velocity.x = -ball->velocity.x;
+                    } else {
+                        ball->velocity.y = -ball->velocity.y;
+                    }
+                    
+                    PlaySound(bounceSound);
+                    break; // Only handle one collision per frame
                 }
-                
-                PlaySound(bounceSound);
-                break; // Only handle one collision per frame
             }
         }
     }
@@ -154,6 +179,11 @@ void HandleInput(void) {
     if (IsKeyDown(KEY_S)) camera.y += scrollSpeed;
     if (IsKeyDown(KEY_A)) camera.x -= scrollSpeed;
     if (IsKeyDown(KEY_D)) camera.x += scrollSpeed;
+    
+    // Add ball on left click
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        AddBall();
+    }
     
     // Handle zoom with mouse wheel
     float wheelMove = GetMouseWheelMove();
@@ -211,11 +241,15 @@ void DrawGame(void) {
         }
     }
     
-    // Draw ball
-    float ballScreenX = ball.position.x * zoom - camera.x - (BALL_SIZE * zoom) / 2;
-    float ballScreenY = ball.position.y * zoom - camera.y - (BALL_SIZE * zoom) / 2;
-    float ballScreenSize = BALL_SIZE * zoom;
-    DrawRectangle(ballScreenX, ballScreenY, ballScreenSize, ballScreenSize, WHITE);
+    // Draw balls
+    for (int i = 0; i < ballCount; i++) {
+        if (balls[i].active) {
+            float ballScreenX = balls[i].position.x * zoom - camera.x - (BALL_SIZE * zoom) / 2;
+            float ballScreenY = balls[i].position.y * zoom - camera.y - (BALL_SIZE * zoom) / 2;
+            float ballScreenSize = BALL_SIZE * zoom;
+            DrawRectangle(ballScreenX, ballScreenY, ballScreenSize, ballScreenSize, WHITE);
+        }
+    }
     
     if (gameCleared) {
         DrawText("GAME CLEAR!", WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, 30, GREEN);
@@ -228,8 +262,8 @@ void DrawGame(void) {
     
     // Display camera and ball position
     char posText[100];
-    sprintf(posText, "Camera: (%.0f, %.0f) Ball: (%.0f, %.0f) Zoom: %.1fx", 
-            camera.x, camera.y, ball.position.x, ball.position.y, zoom);
+    sprintf(posText, "Camera: (%.0f, %.0f) Balls: %d Zoom: %.1fx", 
+            camera.x, camera.y, ballCount, zoom);
     DrawText(posText, 10, 50, 16, LIGHTGRAY);
     
     EndDrawing();
@@ -272,7 +306,7 @@ int main(void) {
         HandleInput();
         
         if (!gameCleared) {
-            UpdateBall();
+            UpdateBalls();
         }
         
         DrawGame();
