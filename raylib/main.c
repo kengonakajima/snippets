@@ -14,9 +14,12 @@
 #define WINDOW_HEIGHT 600
 #define MAX_BALLS 1000
 
+#define BLOCK_COST 10
+
 typedef enum {
     BLOCK_TYPE_BLUE = 1,    // 1 hit to destroy
-    BLOCK_TYPE_ORANGE = 2   // 2 hits to destroy
+    BLOCK_TYPE_ORANGE = 2,  // 2 hits to destroy
+    BLOCK_TYPE_GRAY = 3     // Indestructible
 } BlockType;
 
 typedef struct {
@@ -40,6 +43,8 @@ Vector2 camera = {0, 0};
 float zoom = 1.0f;
 Sound bounceSound;
 Sound ballCollisionSound;
+Vector2 lastMousePos = {0, 0};
+bool isDragging = false;
 
 void AddBall(void) {
     if (ballCount >= MAX_BALLS) return;
@@ -167,6 +172,7 @@ void UpdateBalls(void) {
                         blocksRemaining--;
                         score++;
                     }
+                    // Gray blocks don't change or get destroyed
                     
                     float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
                     float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
@@ -253,9 +259,87 @@ void HandleInput(void) {
     if (IsKeyDown(KEY_A)) camera.x -= scrollSpeed;
     if (IsKeyDown(KEY_D)) camera.x += scrollSpeed;
     
-    // Add ball on left click
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    // Add ball on space key press
+    if (IsKeyPressed(KEY_SPACE)) {
         AddBall();
+    }
+    
+    // Handle mouse dragging for camera movement
+    Vector2 mousePos = GetMousePosition();
+    
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        lastMousePos = mousePos;
+        isDragging = true;
+    }
+    
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && isDragging) {
+        Vector2 mouseDelta = {
+            mousePos.x - lastMousePos.x,
+            mousePos.y - lastMousePos.y
+        };
+        
+        // Move camera in opposite direction of mouse movement
+        camera.x -= mouseDelta.x;
+        camera.y -= mouseDelta.y;
+        
+        lastMousePos = mousePos;
+    }
+    
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        if (isDragging) {
+            // Check if it was a click (small movement) vs drag
+            Vector2 totalDelta = {
+                mousePos.x - lastMousePos.x,
+                mousePos.y - lastMousePos.y
+            };
+            float totalDistance = sqrtf(totalDelta.x * totalDelta.x + totalDelta.y * totalDelta.y);
+            
+            // If movement was small, treat as click to place gray block
+            if (totalDistance < 5.0f && score >= BLOCK_COST) {
+                // Convert screen coordinates to world coordinates
+                float worldX = (mousePos.x + camera.x) / zoom;
+                float worldY = (mousePos.y + camera.y) / zoom;
+                
+                // Convert to block coordinates
+                int blockX = (int)(worldX / BLOCK_SIZE);
+                int blockY = (int)(worldY / BLOCK_SIZE);
+                
+                // Place gray block if within bounds and empty, and not overlapping with any ball
+                if (blockX >= 0 && blockX < FIELD_SIZE && blockY >= 0 && blockY < FIELD_SIZE) {
+                    if (!blocks[blockY][blockX].active) {
+                        // Check if any ball would overlap with this block position
+                        bool canPlace = true;
+                        float blockLeft = blockX * BLOCK_SIZE;
+                        float blockRight = blockX * BLOCK_SIZE + BLOCK_SIZE;
+                        float blockTop = blockY * BLOCK_SIZE;
+                        float blockBottom = blockY * BLOCK_SIZE + BLOCK_SIZE;
+                        
+                        for (int i = 0; i < ballCount; i++) {
+                            if (balls[i].active) {
+                                float ballLeft = balls[i].position.x - BALL_SIZE/2;
+                                float ballRight = balls[i].position.x + BALL_SIZE/2;
+                                float ballTop = balls[i].position.y - BALL_SIZE/2;
+                                float ballBottom = balls[i].position.y + BALL_SIZE/2;
+                                
+                                // Check if ball rectangle overlaps with block rectangle
+                                if (ballRight > blockLeft && ballLeft < blockRight &&
+                                    ballBottom > blockTop && ballTop < blockBottom) {
+                                    canPlace = false;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (canPlace) {
+                            blocks[blockY][blockX].active = true;
+                            blocks[blockY][blockX].type = BLOCK_TYPE_GRAY;
+                            score -= BLOCK_COST;
+                        }
+                    }
+                }
+            }
+        }
+        isDragging = false;
     }
     
     // Handle zoom with mouse wheel
@@ -271,7 +355,7 @@ void HandleInput(void) {
         
         // Apply zoom
         zoom += wheelMove * 0.1f * zoom;
-        zoom = fmaxf(0.1f, fminf(5.0f, zoom));
+        zoom = fmaxf(0.01f, fminf(5.0f, zoom));
         
         // Adjust camera to keep mouse position fixed
         camera.x = worldPos.x * zoom - mousePos.x;
@@ -315,6 +399,8 @@ void DrawGame(void) {
                     blockColor = BLUE;
                 } else if (blocks[i][j].type == BLOCK_TYPE_ORANGE) {
                     blockColor = ORANGE;
+                } else if (blocks[i][j].type == BLOCK_TYPE_GRAY) {
+                    blockColor = GRAY;
                 }
                 
                 DrawRectangle(screenX, screenY, screenSize, screenSize, blockColor);
