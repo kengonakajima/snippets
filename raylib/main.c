@@ -215,6 +215,12 @@ void DrawGame(void) {
     sprintf(scoreText, "Blocks: %d", blocksRemaining);
     DrawText(scoreText, 10, 10, 20, WHITE);
     
+    // Display camera and ball position
+    char posText[100];
+    sprintf(posText, "Camera: (%.0f, %.0f) Ball: (%.0f, %.0f) Zoom: %.1fx", 
+            camera.x, camera.y, ball.position.x, ball.position.y, zoom);
+    DrawText(posText, 10, 35, 16, LIGHTGRAY);
+    
     EndDrawing();
 }
 
