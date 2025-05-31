@@ -4,8 +4,8 @@
 #include <math.h>
 
 #define FIELD_SIZE 1000
-#define BLOCK_SIZE 6
-#define BALL_SIZE 4
+#define BLOCK_SIZE 24
+#define BALL_SIZE 10
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
@@ -50,7 +50,7 @@ void InitializeGame(void) {
     camera.y = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_HEIGHT, camera.y));
     
     float angle = GetRandomValue(0, 360) * DEG2RAD;
-    float speed = 200.0f;
+    float speed = 50.0f;
     ball.velocity.x = cos(angle) * speed;
     ball.velocity.y = sin(angle) * speed;
 }
@@ -62,42 +62,70 @@ void UpdateBall(void) {
         ball.position.y + ball.velocity.y * deltaTime
     };
     
-    if (newPosition.x - BALL_SIZE/2 <= 0) {
+    // Check ball's 4 corners against walls
+    float ballLeft = newPosition.x - BALL_SIZE/2;
+    float ballRight = newPosition.x + BALL_SIZE/2;
+    float ballTop = newPosition.y - BALL_SIZE/2;
+    float ballBottom = newPosition.y + BALL_SIZE/2;
+    
+    // Check left and right walls
+    if (ballLeft <= 0 || ballRight >= FIELD_SIZE * BLOCK_SIZE) {
         ball.velocity.x = -ball.velocity.x;
-        newPosition.x = BALL_SIZE/2;
-    } else if (newPosition.x + BALL_SIZE/2 >= FIELD_SIZE * BLOCK_SIZE) {
-        ball.velocity.x = -ball.velocity.x;
-        newPosition.x = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
+        if (ballLeft <= 0) {
+            newPosition.x = BALL_SIZE/2;
+        } else {
+            newPosition.x = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
+        }
     }
     
-    if (newPosition.y - BALL_SIZE/2 <= 0) {
+    // Check top and bottom walls
+    if (ballTop <= 0 || ballBottom >= FIELD_SIZE * BLOCK_SIZE) {
         ball.velocity.y = -ball.velocity.y;
-        newPosition.y = BALL_SIZE/2;
-    } else if (newPosition.y + BALL_SIZE/2 >= FIELD_SIZE * BLOCK_SIZE) {
-        ball.velocity.y = -ball.velocity.y;
-        newPosition.y = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
+        if (ballTop <= 0) {
+            newPosition.y = BALL_SIZE/2;
+        } else {
+            newPosition.y = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
+        }
     }
     
     ball.position = newPosition;
     
-    int blockX = (int)(ball.position.x / BLOCK_SIZE);
-    int blockY = (int)(ball.position.y / BLOCK_SIZE);
+    // Check collision with blocks using ball's 4 corners
+    ballLeft = ball.position.x - BALL_SIZE/2;
+    ballRight = ball.position.x + BALL_SIZE/2;
+    ballTop = ball.position.y - BALL_SIZE/2;
+    ballBottom = ball.position.y + BALL_SIZE/2;
     
-    if (blockX >= 0 && blockX < FIELD_SIZE && blockY >= 0 && blockY < FIELD_SIZE) {
-        if (blocks[blockY][blockX].active) {
-            blocks[blockY][blockX].active = false;
-            blocksRemaining--;
-            
-            float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
-            float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
-            
-            float diffX = ball.position.x - blockCenterX;
-            float diffY = ball.position.y - blockCenterY;
-            
-            if (fabs(diffX) > fabs(diffY)) {
-                ball.velocity.x = -ball.velocity.x;
-            } else {
-                ball.velocity.y = -ball.velocity.y;
+    // Check 4 corners: top-left, top-right, bottom-left, bottom-right
+    int corners[4][2] = {
+        {(int)(ballLeft / BLOCK_SIZE), (int)(ballTop / BLOCK_SIZE)},      // top-left
+        {(int)(ballRight / BLOCK_SIZE), (int)(ballTop / BLOCK_SIZE)},     // top-right
+        {(int)(ballLeft / BLOCK_SIZE), (int)(ballBottom / BLOCK_SIZE)},   // bottom-left
+        {(int)(ballRight / BLOCK_SIZE), (int)(ballBottom / BLOCK_SIZE)}   // bottom-right
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        int blockX = corners[i][0];
+        int blockY = corners[i][1];
+        
+        if (blockX >= 0 && blockX < FIELD_SIZE && blockY >= 0 && blockY < FIELD_SIZE) {
+            if (blocks[blockY][blockX].active) {
+                blocks[blockY][blockX].active = false;
+                blocksRemaining--;
+                
+                float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
+                float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
+                
+                float diffX = ball.position.x - blockCenterX;
+                float diffY = ball.position.y - blockCenterY;
+                
+                if (fabs(diffX) > fabs(diffY)) {
+                    ball.velocity.x = -ball.velocity.x;
+                } else {
+                    ball.velocity.y = -ball.velocity.y;
+                }
+                
+                break; // Only handle one collision per frame
             }
         }
     }
@@ -146,7 +174,11 @@ void DrawGame(void) {
     }
     
     // Draw ball
-    DrawRectangle(ball.position.x - BALL_SIZE/2 - camera.x, ball.position.y - BALL_SIZE/2 - camera.y, BALL_SIZE, BALL_SIZE, WHITE);
+    DrawRectangle(ball.position.x - BALL_SIZE/2 - camera.x +0,
+                  ball.position.y - BALL_SIZE/2 - camera.y +0,
+                  BALL_SIZE -0,
+                  BALL_SIZE -0,
+                  WHITE);
     
     if (gameCleared) {
         DrawText("GAME CLEAR!", WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, 30, GREEN);
