@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define FIELD_SIZE 20
-#define BLOCK_SIZE 30
-#define BALL_RADIUS 8
+#define FIELD_SIZE 100
+#define BLOCK_SIZE 6
+#define BALL_SIZE 4
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
@@ -53,20 +53,20 @@ void UpdateBall(void) {
         ball.position.y + ball.velocity.y * deltaTime
     };
     
-    if (newPosition.x - BALL_RADIUS <= 0) {
+    if (newPosition.x - BALL_SIZE/2 <= 0) {
         ball.velocity.x = -ball.velocity.x;
-        newPosition.x = BALL_RADIUS;
-    } else if (newPosition.x + BALL_RADIUS >= FIELD_SIZE * BLOCK_SIZE) {
+        newPosition.x = BALL_SIZE/2;
+    } else if (newPosition.x + BALL_SIZE/2 >= FIELD_SIZE * BLOCK_SIZE) {
         ball.velocity.x = -ball.velocity.x;
-        newPosition.x = FIELD_SIZE * BLOCK_SIZE - BALL_RADIUS;
+        newPosition.x = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
     }
     
-    if (newPosition.y - BALL_RADIUS <= 0) {
+    if (newPosition.y - BALL_SIZE/2 <= 0) {
         ball.velocity.y = -ball.velocity.y;
-        newPosition.y = BALL_RADIUS;
-    } else if (newPosition.y + BALL_RADIUS >= FIELD_SIZE * BLOCK_SIZE) {
+        newPosition.y = BALL_SIZE/2;
+    } else if (newPosition.y + BALL_SIZE/2 >= FIELD_SIZE * BLOCK_SIZE) {
         ball.velocity.y = -ball.velocity.y;
-        newPosition.y = FIELD_SIZE * BLOCK_SIZE - BALL_RADIUS;
+        newPosition.y = FIELD_SIZE * BLOCK_SIZE - BALL_SIZE/2;
     }
     
     ball.position = newPosition;
@@ -110,7 +110,7 @@ void DrawGame(void) {
         }
     }
     
-    DrawCircleV(ball.position, BALL_RADIUS, WHITE);
+    DrawRectangle(ball.position.x - BALL_SIZE/2, ball.position.y - BALL_SIZE/2, BALL_SIZE, BALL_SIZE, WHITE);
     
     if (gameCleared) {
         DrawText("GAME CLEAR!", WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, 30, GREEN);
