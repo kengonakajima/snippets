@@ -33,6 +33,7 @@ bool gameCleared = false;
 Vector2 camera = {0, 0};
 float zoom = 1.0f;
 Sound bounceSound;
+Sound ballCollisionSound;
 
 void AddBall(void) {
     if (ballCount >= MAX_BALLS) return;
@@ -165,6 +166,59 @@ void UpdateBalls(void) {
                 }
             }
         }
+        
+        // Check collision with other balls
+        for (int otherIndex = ballIndex + 1; otherIndex < ballCount; otherIndex++) {
+            if (!balls[otherIndex].active) continue;
+            
+            Ball* otherBall = &balls[otherIndex];
+            
+            // Calculate distance between ball centers
+            float dx = ball->position.x - otherBall->position.x;
+            float dy = ball->position.y - otherBall->position.y;
+            float distance = sqrtf(dx * dx + dy * dy);
+            
+            // Check if balls are overlapping (collision)
+            if (distance < BALL_SIZE) {
+                // Prevent division by zero
+                if (distance == 0) {
+                    dx = 1;
+                    dy = 0;
+                    distance = 1;
+                }
+                
+                // Normalize collision vector
+                float nx = dx / distance;
+                float ny = dy / distance;
+                
+                // Separate balls to prevent overlap
+                float overlap = BALL_SIZE - distance;
+                float separateDistance = overlap / 2;
+                
+                ball->position.x += nx * separateDistance;
+                ball->position.y += ny * separateDistance;
+                otherBall->position.x -= nx * separateDistance;
+                otherBall->position.y -= ny * separateDistance;
+                
+                // Calculate relative velocity
+                float rvx = ball->velocity.x - otherBall->velocity.x;
+                float rvy = ball->velocity.y - otherBall->velocity.y;
+                
+                // Calculate relative velocity in collision normal direction
+                float speedAlongNormal = rvx * nx + rvy * ny;
+                
+                // Do not resolve if velocities are separating
+                if (speedAlongNormal > 0) continue;
+                
+                // Apply impulse to separate the balls
+                ball->velocity.x -= speedAlongNormal * nx;
+                ball->velocity.y -= speedAlongNormal * ny;
+                otherBall->velocity.x += speedAlongNormal * nx;
+                otherBall->velocity.y += speedAlongNormal * ny;
+                
+                PlaySound(ballCollisionSound);
+            }
+        }
     }
     
     if (blocksRemaining == 0) {
@@ -275,7 +329,7 @@ int main(void) {
     
     InitAudioDevice();
     
-    // Create a simple click sound
+    // Create a bounce sound (wall/block collision)
     const int sampleRate = 44100;
     const int sampleCount = sampleRate / 20; // 0.05 seconds
     float *samples = (float *)malloc(sampleCount * sizeof(float));
@@ -295,6 +349,25 @@ int main(void) {
     bounceSound = LoadSoundFromWave(wave);
     free(samples);
     
+    // Create a high-pitched short sound for ball-ball collision
+    const int shortSampleCount = sampleRate / 40; // 0.025 seconds (shorter)
+    float *shortSamples = (float *)malloc(shortSampleCount * sizeof(float));
+    
+    for (int i = 0; i < shortSampleCount; i++) {
+        float t = (float)i / sampleRate;
+        shortSamples[i] = sinf(2 * PI * 1600 * t) * expf(-t * 60); // Higher frequency, faster decay
+    }
+    
+    Wave shortWave = {0};
+    shortWave.frameCount = shortSampleCount;
+    shortWave.sampleRate = sampleRate;
+    shortWave.sampleSize = 32;
+    shortWave.channels = 1;
+    shortWave.data = shortSamples;
+    
+    ballCollisionSound = LoadSoundFromWave(shortWave);
+    free(shortSamples);
+    
     InitializeGame();
     
     while (!WindowShouldClose()) {
@@ -313,6 +386,7 @@ int main(void) {
     }
     
     UnloadSound(bounceSound);
+    UnloadSound(ballCollisionSound);
     CloseAudioDevice();
     CloseWindow();
     return 0;
