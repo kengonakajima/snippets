@@ -14,8 +14,14 @@
 #define WINDOW_HEIGHT 600
 #define MAX_BALLS 1000
 
+typedef enum {
+    BLOCK_TYPE_BLUE = 1,    // 1 hit to destroy
+    BLOCK_TYPE_ORANGE = 2   // 2 hits to destroy
+} BlockType;
+
 typedef struct {
     bool active;
+    BlockType type;
 } Block;
 
 typedef struct {
@@ -64,6 +70,12 @@ void InitializeGame(void) {
         for (int j = 0; j < FIELD_SIZE; j++) {
             if (i != FIELD_SIZE/2 || j != FIELD_SIZE/2) {
                 blocks[i][j].active = true;
+                // Randomly assign block types: 70% blue, 30% orange
+                if (GetRandomValue(1, 100) <= 70) {
+                    blocks[i][j].type = BLOCK_TYPE_BLUE;
+                } else {
+                    blocks[i][j].type = BLOCK_TYPE_ORANGE;
+                }
                 blocksRemaining++;
             } else {
                 blocks[i][j].active = false;
@@ -145,9 +157,16 @@ void UpdateBalls(void) {
             
             if (blockX >= 0 && blockX < FIELD_SIZE && blockY >= 0 && blockY < FIELD_SIZE) {
                 if (blocks[blockY][blockX].active) {
-                    blocks[blockY][blockX].active = false;
-                    blocksRemaining--;
-                    score++;
+                    if (blocks[blockY][blockX].type == BLOCK_TYPE_ORANGE) {
+                        // Orange block becomes blue after one hit
+                        blocks[blockY][blockX].type = BLOCK_TYPE_BLUE;
+                        score++;
+                    } else if (blocks[blockY][blockX].type == BLOCK_TYPE_BLUE) {
+                        // Blue block is destroyed after one hit
+                        blocks[blockY][blockX].active = false;
+                        blocksRemaining--;
+                        score++;
+                    }
                     
                     float blockCenterX = blockX * BLOCK_SIZE + BLOCK_SIZE/2;
                     float blockCenterY = blockY * BLOCK_SIZE + BLOCK_SIZE/2;
@@ -290,7 +309,15 @@ void DrawGame(void) {
                 float screenX = j * scaledBlockSize - camera.x;
                 float screenY = i * scaledBlockSize - camera.y;
                 float screenSize = scaledBlockSize - 1;
-                DrawRectangle(screenX, screenY, screenSize, screenSize, BLUE);
+                
+                Color blockColor = BLUE; // Default
+                if (blocks[i][j].type == BLOCK_TYPE_BLUE) {
+                    blockColor = BLUE;
+                } else if (blocks[i][j].type == BLOCK_TYPE_ORANGE) {
+                    blockColor = ORANGE;
+                }
+                
+                DrawRectangle(screenX, screenY, screenSize, screenSize, blockColor);
             }
         }
     }
