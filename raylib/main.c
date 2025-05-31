@@ -23,6 +23,7 @@ Ball ball;
 int blocksRemaining;
 bool gameCleared = false;
 Vector2 camera = {0, 0};
+float zoom = 1.0f;
 
 void InitializeGame(void) {
     blocksRemaining = 0;
@@ -143,20 +144,43 @@ void HandleInput(void) {
     if (IsKeyDown(KEY_A)) camera.x -= scrollSpeed;
     if (IsKeyDown(KEY_D)) camera.x += scrollSpeed;
     
+    // Handle zoom with mouse wheel
+    float wheelMove = GetMouseWheelMove();
+    if (wheelMove != 0) {
+        Vector2 mousePos = GetMousePosition();
+        
+        // Get world position before zoom
+        Vector2 worldPos = {
+            (mousePos.x + camera.x) / zoom,
+            (mousePos.y + camera.y) / zoom
+        };
+        
+        // Apply zoom
+        zoom += wheelMove * 0.1f * zoom;
+        zoom = fmaxf(0.1f, fminf(5.0f, zoom));
+        
+        // Adjust camera to keep mouse position fixed
+        camera.x = worldPos.x * zoom - mousePos.x;
+        camera.y = worldPos.y * zoom - mousePos.y;
+    }
+    
     // Keep camera within bounds
-    camera.x = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_WIDTH, camera.x));
-    camera.y = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_HEIGHT, camera.y));
+    float worldWidth = FIELD_SIZE * BLOCK_SIZE * zoom;
+    float worldHeight = FIELD_SIZE * BLOCK_SIZE * zoom;
+    camera.x = fmaxf(0, fminf(worldWidth - WINDOW_WIDTH, camera.x));
+    camera.y = fmaxf(0, fminf(worldHeight - WINDOW_HEIGHT, camera.y));
 }
 
 void DrawGame(void) {
     BeginDrawing();
     ClearBackground(BLACK);
     
-    // Calculate visible block range
-    int startX = (int)(camera.x / BLOCK_SIZE);
-    int endX = (int)((camera.x + WINDOW_WIDTH) / BLOCK_SIZE) + 1;
-    int startY = (int)(camera.y / BLOCK_SIZE);
-    int endY = (int)((camera.y + WINDOW_HEIGHT) / BLOCK_SIZE) + 1;
+    // Calculate visible block range with zoom
+    float scaledBlockSize = BLOCK_SIZE * zoom;
+    int startX = (int)(camera.x / scaledBlockSize);
+    int endX = (int)((camera.x + WINDOW_WIDTH) / scaledBlockSize) + 1;
+    int startY = (int)(camera.y / scaledBlockSize);
+    int endY = (int)((camera.y + WINDOW_HEIGHT) / scaledBlockSize) + 1;
     
     // Clamp to field bounds
     startX = fmaxf(0, startX);
@@ -168,17 +192,19 @@ void DrawGame(void) {
     for (int i = startY; i < endY; i++) {
         for (int j = startX; j < endX; j++) {
             if (blocks[i][j].active) {
-                DrawRectangle(j * BLOCK_SIZE - camera.x, i * BLOCK_SIZE - camera.y, BLOCK_SIZE - 1, BLOCK_SIZE - 1, BLUE);
+                float screenX = j * scaledBlockSize - camera.x;
+                float screenY = i * scaledBlockSize - camera.y;
+                float screenSize = scaledBlockSize - 1;
+                DrawRectangle(screenX, screenY, screenSize, screenSize, BLUE);
             }
         }
     }
     
     // Draw ball
-    DrawRectangle(ball.position.x - BALL_SIZE/2 - camera.x +0,
-                  ball.position.y - BALL_SIZE/2 - camera.y +0,
-                  BALL_SIZE -0,
-                  BALL_SIZE -0,
-                  WHITE);
+    float ballScreenX = ball.position.x * zoom - camera.x - (BALL_SIZE * zoom) / 2;
+    float ballScreenY = ball.position.y * zoom - camera.y - (BALL_SIZE * zoom) / 2;
+    float ballScreenSize = BALL_SIZE * zoom;
+    DrawRectangle(ballScreenX, ballScreenY, ballScreenSize, ballScreenSize, WHITE);
     
     if (gameCleared) {
         DrawText("GAME CLEAR!", WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, 30, GREEN);
