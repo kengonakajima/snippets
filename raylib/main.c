@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define FIELD_SIZE 100
+#define FIELD_SIZE 1000
 #define BLOCK_SIZE 6
 #define BALL_SIZE 4
 #define WINDOW_WIDTH 800
@@ -22,6 +22,7 @@ Block blocks[FIELD_SIZE][FIELD_SIZE];
 Ball ball;
 int blocksRemaining;
 bool gameCleared = false;
+Vector2 camera = {0, 0};
 
 void InitializeGame(void) {
     blocksRemaining = 0;
@@ -39,6 +40,14 @@ void InitializeGame(void) {
     
     ball.position.x = (FIELD_SIZE/2) * BLOCK_SIZE + BLOCK_SIZE/2;
     ball.position.y = (FIELD_SIZE/2) * BLOCK_SIZE + BLOCK_SIZE/2;
+    
+    // Center camera on ball
+    camera.x = ball.position.x - WINDOW_WIDTH/2;
+    camera.y = ball.position.y - WINDOW_HEIGHT/2;
+    
+    // Keep camera within bounds
+    camera.x = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_WIDTH, camera.x));
+    camera.y = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_HEIGHT, camera.y));
     
     float angle = GetRandomValue(0, 360) * DEG2RAD;
     float speed = 200.0f;
@@ -98,19 +107,46 @@ void UpdateBall(void) {
     }
 }
 
+void HandleInput(void) {
+    float scrollSpeed = 300.0f * GetFrameTime();
+    
+    if (IsKeyDown(KEY_W)) camera.y -= scrollSpeed;
+    if (IsKeyDown(KEY_S)) camera.y += scrollSpeed;
+    if (IsKeyDown(KEY_A)) camera.x -= scrollSpeed;
+    if (IsKeyDown(KEY_D)) camera.x += scrollSpeed;
+    
+    // Keep camera within bounds
+    camera.x = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_WIDTH, camera.x));
+    camera.y = fmaxf(0, fminf(FIELD_SIZE * BLOCK_SIZE - WINDOW_HEIGHT, camera.y));
+}
+
 void DrawGame(void) {
     BeginDrawing();
     ClearBackground(BLACK);
     
-    for (int i = 0; i < FIELD_SIZE; i++) {
-        for (int j = 0; j < FIELD_SIZE; j++) {
+    // Calculate visible block range
+    int startX = (int)(camera.x / BLOCK_SIZE);
+    int endX = (int)((camera.x + WINDOW_WIDTH) / BLOCK_SIZE) + 1;
+    int startY = (int)(camera.y / BLOCK_SIZE);
+    int endY = (int)((camera.y + WINDOW_HEIGHT) / BLOCK_SIZE) + 1;
+    
+    // Clamp to field bounds
+    startX = fmaxf(0, startX);
+    endX = fminf(FIELD_SIZE, endX);
+    startY = fmaxf(0, startY);
+    endY = fminf(FIELD_SIZE, endY);
+    
+    // Draw visible blocks
+    for (int i = startY; i < endY; i++) {
+        for (int j = startX; j < endX; j++) {
             if (blocks[i][j].active) {
-                DrawRectangle(j * BLOCK_SIZE, i * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1, BLUE);
+                DrawRectangle(j * BLOCK_SIZE - camera.x, i * BLOCK_SIZE - camera.y, BLOCK_SIZE - 1, BLOCK_SIZE - 1, BLUE);
             }
         }
     }
     
-    DrawRectangle(ball.position.x - BALL_SIZE/2, ball.position.y - BALL_SIZE/2, BALL_SIZE, BALL_SIZE, WHITE);
+    // Draw ball
+    DrawRectangle(ball.position.x - BALL_SIZE/2 - camera.x, ball.position.y - BALL_SIZE/2 - camera.y, BALL_SIZE, BALL_SIZE, WHITE);
     
     if (gameCleared) {
         DrawText("GAME CLEAR!", WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, 30, GREEN);
@@ -135,6 +171,8 @@ int main(void) {
             gameCleared = false;
             InitializeGame();
         }
+        
+        HandleInput();
         
         if (!gameCleared) {
             UpdateBall();
