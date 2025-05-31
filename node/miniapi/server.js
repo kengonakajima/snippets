@@ -4,7 +4,10 @@ const app = express();
 let count = 0;
 
 app.get('/count', (req, res) => {
-  res.json({ count: ++count });
+  count++;
+  console.log(`Count accessed: ${count}`);
+  console.log('Headers:', req.headers);
+  res.json({ count });
 });
 
 app.listen(3300, () => {
