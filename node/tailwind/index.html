@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO App - Tailwind CSS Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'hypr-bg': '#1a1b26',
+                        'hypr-bg-secondary': '#24283b',
+                        'hypr-fg': '#c0caf5',
+                        'hypr-accent': '#7aa2f7',
+                        'hypr-accent-hover': '#7dcfff',
+                        'hypr-red': '#f7768e',
+                        'hypr-green': '#9ece6a',
+                        'hypr-yellow': '#e0af68',
+                        'hypr-border': '#414868'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-hypr-bg min-h-screen text-hypr-fg">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 class="text-4xl font-bold text-hypr-accent mb-8 text-center">TODOアプリ</h1>
+        
+        <div class="bg-hypr-bg-secondary rounded-lg shadow-xl border border-hypr-border p-6 mb-6">
+            <form id="todo-form" class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="todo-input" 
+                    class="flex-1 px-4 py-2 bg-hypr-bg border border-hypr-border rounded-lg focus:outline-none focus:ring-2 focus:ring-hypr-accent text-hypr-fg placeholder-gray-500"
+                    placeholder="新しいタスクを入力..."
+                    required
+                >
+                <button 
+                    type="submit"
+                    class="px-6 py-2 bg-hypr-accent text-hypr-bg rounded-lg hover:bg-hypr-accent-hover transition-colors duration-200 font-medium"
+                >
+                    追加
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-hypr-bg-secondary rounded-lg shadow-xl border border-hypr-border p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-hypr-fg">タスク一覧</h2>
+                <div class="flex gap-2">
+                    <button 
+                        onclick="filterTodos('all')"
+                        class="filter-btn px-3 py-1 text-sm rounded-md transition-colors duration-200"
+                        data-filter="all"
+                    >
+                        すべて
+                    </button>
+                    <button 
+                        onclick="filterTodos('active')"
+                        class="filter-btn px-3 py-1 text-sm rounded-md transition-colors duration-200"
+                        data-filter="active"
+                    >
+                        未完了
+                    </button>
+                    <button 
+                        onclick="filterTodos('completed')"
+                        class="filter-btn px-3 py-1 text-sm rounded-md transition-colors duration-200"
+                        data-filter="completed"
+                    >
+                        完了済み
+                    </button>
+                </div>
+            </div>
+            
+            <ul id="todo-list" class="space-y-2">
+            </ul>
+            
+            <div id="empty-state" class="text-center py-8 text-gray-400 hidden">
+                タスクがありません
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <button 
+                onclick="clearCompleted()"
+                class="text-sm text-gray-400 hover:text-hypr-red transition-colors duration-200"
+            >
+                完了済みをクリア
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
