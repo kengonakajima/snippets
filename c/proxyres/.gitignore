@@ -1,1 +1,24 @@
 proxy_detect
+proxy_detect_windows_static.exe
+
+# Compiled files
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.dll
+*.exp
+
+# Visual Studio files
+*.vcxproj*
+*.sln
+*.suo
+*.user
+.vs/
+
+# Build directories
+build/
+Debug/
+Release/
+x64/
