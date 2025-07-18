@@ -19,58 +19,88 @@
                         'hypr-green': '#9ece6a',
                         'hypr-yellow': '#e0af68',
                         'hypr-border': '#414868'
+                    },
+                    fontFamily: {
+                        'mono': ['JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace']
                     }
                 }
             }
         }
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-<body class="bg-hypr-bg min-h-screen text-hypr-fg">
+<body class="bg-hypr-bg min-h-screen text-hypr-fg font-mono text-xs">
     <div class="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 class="text-4xl font-bold text-hypr-accent mb-8 text-center">TODOアプリ</h1>
+        <h1 class="text-lg font-semibold text-hypr-accent mb-4 text-center">// TODO_APP.tsx</h1>
         
-        <div class="bg-hypr-bg-secondary rounded-lg shadow-xl border border-hypr-border p-6 mb-6">
-            <form id="todo-form" class="flex gap-2">
-                <input 
-                    type="text" 
-                    id="todo-input" 
-                    class="flex-1 px-4 py-2 bg-hypr-bg border border-hypr-border rounded-lg focus:outline-none focus:ring-2 focus:ring-hypr-accent text-hypr-fg placeholder-gray-500"
-                    placeholder="新しいタスクを入力..."
-                    required
-                >
-                <button 
-                    type="submit"
-                    class="px-6 py-2 bg-hypr-accent text-hypr-bg rounded-lg hover:bg-hypr-accent-hover transition-colors duration-200 font-medium"
-                >
-                    追加
-                </button>
+        <div class="bg-hypr-bg-secondary rounded border border-hypr-border p-3 mb-3">
+            <form id="todo-form" class="space-y-2">
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="todo-input" 
+                        class="flex-1 px-2 py-1 bg-hypr-bg border border-hypr-border rounded focus:outline-none focus:ring-1 focus:ring-hypr-accent text-hypr-fg placeholder-gray-500 text-xs"
+                        placeholder="// new Task()"
+                        required
+                    >
+                    <label class="px-2 py-1 bg-hypr-bg border border-hypr-border rounded hover:bg-hypr-accent/20 transition-colors duration-200 cursor-pointer text-xs">
+                        <input 
+                            type="file" 
+                            id="image-input" 
+                            accept="image/*"
+                            class="hidden"
+                            onchange="handleImageSelect(event)"
+                        >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </label>
+                    <button 
+                        type="submit"
+                        class="px-3 py-1 bg-hypr-accent text-hypr-bg rounded hover:bg-hypr-accent-hover transition-colors duration-200 font-medium text-xs"
+                    >
+                        ADD
+                    </button>
+                </div>
+                <div id="image-preview" class="hidden">
+                    <div class="relative inline-block">
+                        <img id="preview-img" class="h-16 rounded border border-hypr-border" />
+                        <button 
+                            type="button"
+                            onclick="clearImage()"
+                            class="absolute -top-1 -right-1 w-4 h-4 bg-hypr-red rounded-full text-hypr-bg flex items-center justify-center text-xs hover:bg-hypr-red/80"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
 
-        <div class="bg-hypr-bg-secondary rounded-lg shadow-xl border border-hypr-border p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-hypr-fg">タスク一覧</h2>
+        <div class="bg-hypr-bg-secondary rounded border border-hypr-border p-3">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-sm font-medium text-hypr-fg">// Tasks[]</h2>
                 <div class="flex gap-2">
                     <button 
                         onclick="filterTodos('all')"
-                        class="filter-btn px-3 py-1 text-sm rounded-md transition-colors duration-200"
+                        class="filter-btn px-2 py-0.5 text-xs rounded transition-colors duration-200"
                         data-filter="all"
                     >
-                        すべて
+                        ALL
                     </button>
                     <button 
                         onclick="filterTodos('active')"
-                        class="filter-btn px-3 py-1 text-sm rounded-md transition-colors duration-200"
+                        class="filter-btn px-2 py-0.5 text-xs rounded transition-colors duration-200"
                         data-filter="active"
                     >
-                        未完了
+                        ACTIVE
                     </button>
                     <button 
                         onclick="filterTodos('completed')"
-                        class="filter-btn px-3 py-1 text-sm rounded-md transition-colors duration-200"
+                        class="filter-btn px-2 py-0.5 text-xs rounded transition-colors duration-200"
                         data-filter="completed"
                     >
-                        完了済み
+                        DONE
                     </button>
                 </div>
             </div>
@@ -78,17 +108,23 @@
             <ul id="todo-list" class="space-y-2">
             </ul>
             
-            <div id="empty-state" class="text-center py-8 text-gray-400 hidden">
-                タスクがありません
+            <div id="empty-state" class="text-center py-4 text-gray-500 hidden text-xs">
+                // No tasks found
             </div>
         </div>
 
-        <div class="mt-4 text-center">
+        <div class="mt-4 text-center space-x-4">
             <button 
                 onclick="clearCompleted()"
-                class="text-sm text-gray-400 hover:text-hypr-red transition-colors duration-200"
+                class="text-xs text-gray-500 hover:text-hypr-red transition-colors duration-200"
             >
-                完了済みをクリア
+                CLEAR_COMPLETED()
+            </button>
+            <button 
+                onclick="clearAllData()"
+                class="text-xs text-gray-500 hover:text-hypr-red transition-colors duration-200"
+            >
+                CLEAR_ALL_DATA()
             </button>
         </div>
     </div>
