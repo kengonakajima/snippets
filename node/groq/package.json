@@ -1,0 +1,14 @@
+{
+  "name": "groq-hello-world",
+  "version": "1.0.0",
+  "description": "Groq Cloud API hello world sample",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "groq-sdk": "^0.7.0",
+    "dotenv": "^16.4.5"
+  }
+}
