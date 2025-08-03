@@ -1,0 +1,27 @@
+# 依存関係
+node_modules/
+
+# 認証情報ファイル
+*.json
+
+# 環境変数
+.env
+.env.*
+!.env.sample
+!.env.example
+
+# ログファイル
+*.log
+npm-debug.log*
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# IDEファイル
+.vscode/
+.idea/
+
+# その他
+*.tmp
+*.temp
