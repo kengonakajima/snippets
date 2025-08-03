@@ -1,0 +1,17 @@
+{
+  "name": "github-app-example",
+  "version": "1.0.0",
+  "description": "GitHub App example for fetching organization repositories",
+  "main": "github-app-repos.js",
+  "scripts": {
+    "start": "node github-app-repos.js"
+  },
+  "dependencies": {
+    "@octokit/app": "^14.0.2",
+    "@octokit/rest": "^20.0.2",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
