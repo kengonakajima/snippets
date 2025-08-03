@@ -1,0 +1,14 @@
+{
+  "name": "mcp-adder",
+  "version": "1.0.0",
+  "description": "MCP adder demo",
+  "type": "module",
+  "main": "adder.mjs",
+  "scripts": {
+    "start": "node adder2.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "zod": "latest"
+  }
+}

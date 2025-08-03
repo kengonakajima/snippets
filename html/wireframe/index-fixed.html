@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト画面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左側のペインコンテナ */
+        .left-panes {
+            width: 320px;
+            background-color: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* 各ペイン共通スタイル */
+        .pane {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 16px;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .pane h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+
+        /* プロジェクトのアウトライン（ペインA） */
+        .projects-pane {
+            background-color: #fafafa;
+        }
+
+        /* やることリスト（ペインB） */
+        .categories-pane {
+            background-color: #fafafa;
+        }
+
+        /* ピン止めされたメモ（ペインC） */
+        .filters-pane {
+            background-color: #fafafa;
+        }
+
+        /* Markdownコンテンツ共通スタイル */
+        .markdown-content {
+            font-size: 14px;
+            line-height: 1.6;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .markdown-content:hover {
+            background-color: rgba(33, 150, 243, 0.05);
+        }
+
+        .markdown-content h1 {
+            font-size: 20px;
+            margin-top: 16px;
+            margin-bottom: 12px;
+        }
+
+        .markdown-content h2 {
+            font-size: 18px;
+            margin-top: 14px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-content h3 {
+            font-size: 16px;
+            margin-top: 12px;
+            margin-bottom: 8px;
+        }
+
+        .markdown-content p {
+            margin-bottom: 10px;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-content li {
+            margin-bottom: 4px;
+        }
+
+        .markdown-content code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        .markdown-content pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-bottom: 10px;
+        }
+
+        .markdown-content blockquote {
+            border-left: 3px solid #ddd;
+            padding-left: 12px;
+            margin-left: 0;
+            color: #666;
+        }
+
+        /* 編集中の表示 */
+        .editing-indicator {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: #2196F3;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* 全画面Markdownエディタ */
+        .fullscreen-editor {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #fff;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .fullscreen-editor.active {
+            display: flex;
+        }
+
+        .editor-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .editor-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .editor-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .editor-btn.preview {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .editor-btn.preview:hover {
+            background-color: #5a6268;
+        }
+
+        .editor-btn.cancel {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .editor-btn.cancel:hover {
+            background-color: #c82333;
+        }
+
+        .editor-btn.save {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .editor-btn.save:hover {
+            background-color: #218838;
+        }
+
+        .editor-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .fullscreen-textarea {
+            flex: 1;
+            width: 100%;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            background-color: #fafafa;
+        }
+
+        .fullscreen-textarea:focus {
+            border-color: #2196F3;
+            background-color: #fff;
+        }
+
+        .fullscreen-preview {
+            flex: 1;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .fullscreen-preview h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .fullscreen-preview h2 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .fullscreen-preview h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .fullscreen-preview p {
+            margin-bottom: 12px;
+        }
+
+        .fullscreen-preview ul, .fullscreen-preview ol {
+            margin-left: 24px;
+            margin-bottom: 12px;
+        }
+
+        .fullscreen-preview li {
+            margin-bottom: 6px;
+        }
+
+        .fullscreen-preview code {
+            background-color: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        .fullscreen-preview pre {
+            background-color: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .fullscreen-preview blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 16px;
+            margin-left: 0;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* タイムライン */
+        .timeline-container {
+            flex: 1;
+            background-color: #fff;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .timeline-header {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .post-composer {
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .post-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .post-button {
+            margin-top: 12px;
+            padding: 8px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .post-button:hover {
+            background-color: #1976D2;
+        }
+
+        /* タイムラインアイテム */
+        .timeline-item {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: box-shadow 0.2s;
+        }
+
+        .timeline-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #2196F3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .post-meta {
+            flex: 1;
+        }
+
+        .username {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .post-content {
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 20px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .action-button:hover {
+            color: #2196F3;
+        }
+
+        .action-icon {
+            font-size: 18px;
+        }
+
+        .action-count {
+            font-size: 14px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="data-manager.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 左側のペイン -->
+        <div class="left-panes">
+            <!-- ペインA: プロジェクトのアウトライン -->
+            <div class="pane projects-pane" id="outline-pane">
+                <h2>プロジェクトのアウトライン</h2>
+                <div class="markdown-content" id="outline-content"></div>
+            </div>
+
+            <!-- ペインB: やることリスト -->
+            <div class="pane categories-pane" id="todo-pane">
+                <h2>やることリスト</h2>
+                <div class="markdown-content" id="todo-content"></div>
+            </div>
+
+            <!-- ペインC: ピン止めされたメモ -->
+            <div class="pane filters-pane" id="pinned-pane">
+                <h2>ピン止めされたメモ</h2>
+                <div class="markdown-content" id="pinned-content"></div>
+            </div>
+        </div>
+
+        <!-- タイムライン -->
+        <div class="timeline-container">
+            <div class="timeline-header">
+                <h1>タイムライン</h1>
+            </div>
+
+            <!-- 投稿作成エリア -->
+            <div class="post-composer">
+                <textarea class="post-input" placeholder="今何をしていますか？"></textarea>
+                <button class="post-button">投稿</button>
+                <div style="clear: both;"></div>
+            </div>
+
+            <!-- サンプル投稿 -->
+            <div class="timeline-item">
+                <div class="post-header">
+                    <div class="avatar">T</div>
+                    <div class="post-meta">
+                        <div class="username">田中太郎</div>
+                        <div class="timestamp">2時間前</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    新しいReactのプロジェクトを開始しました！Next.js 14を使って、App Routerで構築していきます。TypeScriptとTailwind CSSも導入済みです。
+                </div>
+                <div class="post-actions">
+                    <div class="action-button">
+                        <span class="action-icon">💬</span>
+                        <span class="action-count">12</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">🔄</span>
+                        <span class="action-count">5</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">❤️</span>
+                        <span class="action-count">28</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全画面Markdownエディタ -->
+        <div class="fullscreen-editor" id="fullscreen-editor">
+            <div class="editor-header">
+                <div class="editor-title" id="editor-title">Markdownエディタ</div>
+                <div class="editor-actions">
+                    <button class="editor-btn preview" id="editor-preview-btn">プレビュー</button>
+                    <button class="editor-btn cancel" id="editor-cancel-btn">キャンセル</button>
+                    <button class="editor-btn save" id="editor-save-btn">保存</button>
+                </div>
+            </div>
+            <div class="editor-content">
+                <textarea class="fullscreen-textarea" id="fullscreen-textarea" placeholder="Markdownを入力してください..."></textarea>
+                <div class="fullscreen-preview" id="fullscreen-preview" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // アプリケーション初期化
+        class TimelineApp {
+            constructor() {
+                this.dataManager = window.dataManager;
+                this.currentEditingPane = null;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // データ管理システムの初期化を待つ
+                    await this.waitForDataManager();
+
+                    // Markdownコンテンツの読み込みと表示
+                    this.loadAndRenderMarkdown();
+
+                    // タイムライン投稿の読み込みと表示
+                    this.loadAndRenderTimeline();
+
+                    // イベントリスナーの設定
+                    this.setupEventListeners();
+
+                    console.log('Timeline App initialized successfully');
+                } catch (error) {
+                    console.error('Failed to initialize Timeline App:', error);
+                    // フォールバック: デフォルトコンテンツで初期化
+                    this.initializeWithDefaults();
+                }
+            }
+
+            async waitForDataManager() {
+                let attempts = 0;
+                const maxAttempts = 50;
+
+                while (!window.dataManager && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+
+                if (!window.dataManager) {
+                    throw new Error('DataManager not available');
+                }
+            }
+
+            loadAndRenderMarkdown() {
+                try {
+                    const markdownContent = this.dataManager.loadMarkdownContent('all');
+
+                    // 各ペインにMarkdownコンテンツをレンダリング
+                    document.getElementById('outline-content').innerHTML = marked.parse(markdownContent.outline);
+                    document.getElementById('todo-content').innerHTML = marked.parse(markdownContent.todo);
+                    document.getElementById('pinned-content').innerHTML = marked.parse(markdownContent.pinned);
+                } catch (error) {
+                    console.error('Failed to load markdown content:', error);
+                    this.initializeWithDefaults();
+                }
+            }
+
+            loadAndRenderTimeline() {
+                try {
+                    const posts = this.dataManager.loadPosts();
+                    this.renderTimelinePosts(posts);
+                } catch (error) {
+                    console.error('Failed to load timeline posts:', error);
+                }
+            }
+
+            renderTimelinePosts(posts) {
+                const timelineContainer = document.querySelector('.timeline-container');
+                const existingItems = timelineContainer.querySelectorAll('.timeline-item');
+
+                // 既存の静的投稿を削除（最初の投稿作成エリアは残す）
+                existingItems.forEach(item => item.remove());
+
+                // 新しい投稿を追加
+                posts.forEach(post => {
+                    const postElement = this.createPostElement(post);
+                    timelineContainer.appendChild(postElement);
+                });
+            }
+
+            createPostElement(post) {
+                const postDiv = document.createElement('div');
+                postDiv.className = 'timeline-item';
+                postDiv.dataset.postId = post.id;
+
+                const timeAgo = this.getTimeAgo(new Date(post.timestamp));
+
+                postDiv.innerHTML = `
+                    <div class="post-header">
+                        <div class="avatar">${post.avatar}</div>
+                        <div class="post-meta">
+                            <div class="username">${post.author}</div>
+                            <div class="timestamp">${timeAgo}</div>
+                        </div>
+                    </div>
+                    <div class="post-content">${post.content}</div>
+                    <div class="post-actions">
+                        <div class="action-button" data-action="comment">
+                            <span class="action-icon">💬</span>
+                            <span class="action-count">${post.comments || 0}</span>
+                        </div>
+                        <div class="action-button" data-action="share">
+                            <span class="action-icon">🔄</span>
+                            <span class="action-count">${post.shares || 0}</span>
+                        </div>
+                        <div class="action-button" data-action="like">
+                            <span class="action-icon">❤️</span>
+                            <span class="action-count">${post.likes || 0}</span>
+                        </div>
+                    </div>
+                `;
+
+                return postDiv;
+            }
+
+            setupEventListeners() {
+                // 投稿ボタンのイベントリスナー
+                const postButton = document.querySelector('.post-button');
+                const postInput = document.querySelector('.post-input');
+
+                postButton.addEventListener('click', () => {
+                    this.handleNewPost();
+                });
+
+                postInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        this.handleNewPost();
+                    }
+                });
+
+                // 左側ペインのクリックイベント（Markdownエディタ機能）
+                this.setupMarkdownEditorListeners();
+
+                // 投稿アクションのイベントリスナー
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.action-button')) {
+                        this.handlePostAction(e);
+                    }
+                });
+            }
+
+            setupMarkdownEditorListeners() {
+                // 各ペインのMarkdownコンテンツエリアにクリックイベントを追加
+                const markdownContents = document.querySelectorAll('.markdown-content');
+
+                markdownContents.forEach(content => {
+                    content.addEventListener('click', (e) => {
+                        // 編集モード中の場合は無視
+                        if (this.currentEditingPane) {
+                            return;
+                        }
+
+                        // クリックされたペインを特定
+                        const paneId = content.id;
+                        const paneName = this.getPaneNameFromId(paneId);
+
+                        if (paneName) {
+                            this.enableEditMode(paneName, content);
+                        }
+                    });
+                });
+            }
+
+            getPaneNameFromId(contentId) {
+                const mapping = {
+                    'outline-content': 'outline',
+                    'todo-content': 'todo',
+                    'pinned-content': 'pinned'
+                };
+                return mapping[contentId];
+            }
+
+            enableEditMode(paneName, contentElement) {
+                try {
+                    // 現在の編集状態をチェック
+                    if (this.currentEditingPane) {
+                        console.warn('Another pane is already being edited');
+                        return;
+                    }
+
+                    // 現在のMarkdownコンテンツを取得
+                    const currentMarkdown = this.dataManager.loadMarkdownContent(paneName);
+
+                    // 編集状態を設定
+                    this.currentEditingPane = paneName;
+
+                    // 全画面エディタを表示
+                    this.showFullscreenEditor(paneName, currentMarkdown);
+
+                    // 編集中インジケーターを追加
+                    this.addEditingIndicator(contentElement.parentElement);
+
+                    console.log(`Edit mode enabled for pane: ${paneName}`);
+                } catch (error) {
+                    console.error('Failed to enable edit mode:', error);
+                    this.currentEditingPane = null;
+                }
+            }
+
+            showFullscreenEditor(paneName, currentMarkdown) {
+                const fullscreenEditor = document.getElementById('fullscreen-editor');
+                const editorTitle = document.getElementById('editor-title');
+                const fullscreenTextarea = document.getElementById('fullscreen-textarea');
+                const fullscreenPreview = document.getElementById('fullscreen-preview');
+
+                // エディタタイトルを設定
+                const paneNames = {
+                    'outline': 'プロジェクトのアウトライン',
+                    'todo': 'やることリスト',
+                    'pinned': 'ピン止めされたメモ'
+                };
+                editorTitle.textContent = `編集中: ${paneNames[paneName]}`;
+
+                // テキストエリアにコンテンツを設定
+                fullscreenTextarea.value = currentMarkdown;
+
+                // プレビューを非表示にしてテキストエリアを表示
+                fullscreenTextarea.style.display = 'block';
+                fullscreenPreview.style.display = 'none';
+
+                // プレビューボタンのテキストをリセット
+                document.getElementById('editor-preview-btn').textContent = 'プレビュー';
+
+                // 全画面エディタを表示
+                fullscreenEditor.classList.add('active');
+
+                // テキストエリアにフォーカス
+                fullscreenTextarea.focus();
+
+                // 全画面エディタのイベントリスナーを設定
+                this.setupFullscreenEditorListeners();
+            }
+
+            setupFullscreenEditorListeners() {
+                const saveBtn = document.getElementById('editor-save-btn');
+                const cancelBtn = document.getElementById('editor-cancel-btn');
+                const previewBtn = document.getElementById('editor-preview-btn');
+                const textarea = document.getElementById('fullscreen-textarea');
+
+                // 既存のイベントリスナーを削除
+                saveBtn.replaceWith(saveBtn.cloneNode(true));
+                cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+                previewBtn.replaceWith(previewBtn.cloneNode(true));
+
+                // 新しい参照を取得
+                const newSaveBtn = document.getElementById('editor-save-btn');
+                const newCancelBtn = document.getElementById('editor-cancel-btn');
+                const newPreviewBtn = document.getElementById('editor-preview-btn');
+
+                // 保存ボタン
+                newSaveBtn.addEventListener('click', () => {
+                    this.saveFullscreenMarkdown();
+                });
+
+                // キャンセルボタン
+                newCancelBtn.addEventListener('click', () => {
+                    this.closeFullscreenEditor();
+                });
+
+                // プレビューボタン
+                newPreviewBtn.addEventListener('click', () => {
+                    this.toggleFullscreenPreview();
+                });
+
+                // キーボードショートカット
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeFullscreenEditor();
+                    }
+                    if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        this.saveFullscreenMarkdown();
+                    }
+                });
+            }
+
+            saveFullscreenMarkdown() {
+                const textarea = document.getElementById('fullscreen-textarea');
+                const content = textarea.value;
+
+                try {
+                    // データを保存
+                    const success = this.dataManager.saveMarkdownContent(this.currentEditingPane, content);
+
+                    if (success) {
+                        // 左側ペインのコンテンツを更新
+                        const contentElement = document.getElementById(`${this.currentEditingPane}-content`);
+                        const renderedHTML = marked.parse(content);
+                        contentElement.innerHTML = renderedHTML;
+
+                        // 全画面エディタを閉じる
+                        this.closeFullscreenEditor();
+
+                        // イベントリスナーを再設定
+                        this.reattachClickListener(contentElement);
+
+                        console.log(`Markdown content saved for pane: ${this.currentEditingPane}`);
+                        this.showSaveMessage('保存しました', 'success');
+                    } else {
+                        throw new Error('Failed to save markdown content');
+                    }
+                } catch (error) {
+                    console.error('Failed to save markdown content:', error);
+                    this.showSaveMessage('保存に失敗しました', 'error');
+                }
+            }
+
+            closeFullscreenEditor() {
+                const fullscreenEditor = document.getElementById('fullscreen-editor');
+
+                // 全画面エディタを非表示
+                fullscreenEditor.classList.remove('active');
+
+                // 編集状態をリセット
+                this.exitEditMode();
+
+                console.log('Fullscreen editor closed');
+            }
+
+            toggleFullscreenPreview() {
+                const textarea = document.getElementById('fullscreen-textarea');
+                const preview = document.getElementById('fullscreen-preview');
+                const previewBtn = document.getElementById('editor-preview-btn');
+
+                if (previewBtn.textContent === 'プレビュー') {
+                    // プレビューモードに切り替え
+                    const markdownContent = textarea.value;
+                    const previewHTML = marked.parse(markdownContent);
+
+                    preview.innerHTML = previewHTML;
+                    textarea.style.display = 'none';
+                    preview.style.display = 'block';
+                    previewBtn.textContent = '編集';
+                } else {
+                    // 編集モードに戻す
+                    textarea.style.display = 'block';
+                    preview.style.display = 'none';
+                    previewBtn.textContent = 'プレビュー';
+                    textarea.focus();
+                }
+            }
+
+            exitEditMode() {
+                // 編集中インジケーターを削除
+                document.querySelectorAll('.editing-indicator').forEach(indicator => {
+                    indicator.remove();
+                });
+
+                // 編集状態をリセット
+                this.currentEditingPane = null;
+            }
+
+            addEditingIndicator(paneElement) {
+                const indicator = document.createElement('div');
+                indicator.className = 'editing-indicator';
+                indicator.textContent = '編集中';
+                paneElement.appendChild(indicator);
+            }
+
+            reattachClickListener(contentElement) {
+                // 編集終了後にクリックイベントリスナーを再設定
+                contentElement.addEventListener('click', (e) => {
+                    // 編集モード中の場合は無視
+                    if (this.currentEditingPane) {
+                        return;
+                    }
+
+                    // クリックされたペインを特定
+                    const paneId = contentElement.id;
+                    const paneName = this.getPaneNameFromId(paneId);
+
+                    if (paneName) {
+                        this.enableEditMode(paneName, contentElement);
+                    }
+                });
+            }
+
+            showSaveMessage(message, type) {
+                // 簡単な通知メッセージを表示
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = message;
+                messageDiv.style.position = 'fixed';
+                messageDiv.style.top = '20px';
+                messageDiv.style.right = '20px';
+                messageDiv.style.padding = '10px 20px';
+                messageDiv.style.borderRadius = '4px';
+                messageDiv.style.color = 'white';
+                messageDiv.style.fontWeight = 'bold';
+                messageDiv.style.zIndex = '1000';
+                messageDiv.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
+
+                document.body.appendChild(messageDiv);
+
+                // 3秒後に削除
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 3000);
+            }
+
+            handleNewPost() {
+                const postInput = document.querySelector('.post-input');
+                const content = postInput.value.trim();
+
+                if (!content) {
+                    return;
+                }
+
+                const config = this.dataManager.getConfig();
+                const newPost = {
+                    content: content,
+                    author: config.user.name,
+                    avatar: config.user.avatar,
+                    timestamp: new Date().toISOString()
+                };
+
+                if (this.dataManager.savePost(newPost)) {
+                    // 投稿成功: UIを更新
+                    postInput.value = '';
+                    this.loadAndRenderTimeline();
+                    console.log('New post saved successfully');
+                } else {
+                    console.error('Failed to save new post');
+                    alert('投稿の保存に失敗しました。');
+                }
+            }
+
+            handlePostAction(e) {
+                const actionButton = e.target.closest('.action-button');
+                const action = actionButton.dataset.action;
+                const postElement = actionButton.closest('.timeline-item');
+                const postId = postElement.dataset.postId;
+
+                if (!postId) return;
+
+                const countElement = actionButton.querySelector('.action-count');
+                let currentCount = parseInt(countElement.textContent) || 0;
+
+                // アクションに応じてカウントを更新
+                const updates = {};
+                updates[action + 's'] = currentCount + 1;
+
+                if (this.dataManager.updatePost(postId, updates)) {
+                    countElement.textContent = currentCount + 1;
+                    console.log(`Post ${action} updated for post ${postId}`);
+                } else {
+                    console.error(`Failed to update post ${action}`);
+                }
+            }
+
+            getTimeAgo(date) {
+                const now = new Date();
+                const diffInSeconds = Math.floor((now - date) / 1000);
+
+                if (diffInSeconds < 60) {
+                    return `${diffInSeconds}秒前`;
+                } else if (diffInSeconds < 3600) {
+                    return `${Math.floor(diffInSeconds / 60)}分前`;
+                } else if (diffInSeconds < 86400) {
+                    return `${Math.floor(diffInSeconds / 3600)}時間前`;
+                } else {
+                    return `${Math.floor(diffInSeconds / 86400)}日前`;
+                }
+            }
+
+            initializeWithDefaults() {
+                // フォールバック: デフォルトコンテンツで初期化
+                const defaultMarkdown = {
+                    outline: `# プロジェクト概要
+
+このプロジェクトは、チーム内での情報共有とコミュニケーションを円滑にするためのタイムラインシステムです。
+
+## 主な機能
+
+- リアルタイムでの投稿共有
+- プロジェクト別の情報整理
+- Markdownによる柔軟な記述
+- タスク管理機能
+
+## 技術スタック
+
+- フロントエンド: HTML/CSS/JavaScript
+- Markdownパーサー: marked.js
+- デザイン: レスポンシブ対応`,
+                    todo: `## 今週のタスク
+
+- [ ] ユーザー認証機能の実装
+- [ ] データベース設計の見直し
+- [x] UIモックアップの作成
+- [ ] APIエンドポイントの設計
+- [ ] テストケースの作成
+
+## 来週の予定
+
+- プロトタイプのレビュー
+- ステークホルダーへのプレゼン
+- フィードバックの収集と反映`,
+                    pinned: `## 重要な情報
+
+### プロジェクトのゴール
+
+> チーム全体の生産性を20%向上させる
+
+### 連絡先
+
+- PM: 田中太郎 (tanaka@example.com)
+- Tech Lead: 佐藤花子 (sato@example.com)
+- Designer: 山田次郎 (yamada@example.com)
+
+### 参考リンク
+
+- [プロジェクト仕様書](https://example.com/spec)
+- [デザインガイドライン](https://example.com/design)
+- [API ドキュメント](https://example.com/api)`
+                };
+
+                document.getElementById('outline-content').innerHTML = marked.parse(defaultMarkdown.outline);
+                document.getElementById('todo-content').innerHTML = marked.parse(defaultMarkdown.todo);
+                document.getElementById('pinned-content').innerHTML = marked.parse(defaultMarkdown.pinned);
+
+                console.log('Initialized with default content');
+            }
+        }
+
+        // DOMが読み込まれたらアプリケーションを初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.timelineApp = new TimelineApp();
+        });
+    </script>
+</body>
+</html>

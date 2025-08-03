@@ -1,0 +1,9 @@
+{
+  "data": {
+    "outline": "# プロジェクト概要2\n\nこのプロジェクトは、チーム内での情報共有とコミュニケーションを円滑にするためのタイムラインシステムです。\n\n## 主な機能\n\n- リアルタイムでの投稿共有\n- プロジェクト別の情報整理\n- Markdownによる柔軟な記述\n- タスク管理機能\n\n## 技術スタック\n\n- フロントエンド: HTML/CSS/JavaScript\n- Markdownパーサー: marked.js\n- デザイン: レスポンシブ対応\n- ccccc test debug",
+    "todo": "## 今週のタスク\n\n- [ ] ユーザー認証機能の実装\n- [ ] データベース設計の見直し\n- [x] UIモックアップの作成\n- [ ] APIエンドポイントの設計\n- [ ] テストケースの作成\n\n## 来週の予定\n\n- プロトタイプのレビュー\n- ステークホルダーへのプレゼン\n- フィードバックの収集と反映",
+    "pinned": "## 重要な情報\n\n### プロジェクトのゴール\n\n> チーム全体の生産性を20%向上させる\n\n### 連絡先\n\n- PM: 田中太郎 (tanaka@example.com)\n- Tech Lead: 佐藤花子 (sato@example.com)\n- Designer: 山田次郎 (yamada@example.com)\n\n### 参考リンク\n\n- [プロジェクト仕様書](https://example.com/spec)\n- [デザインガイドライン](https://example.com/design)\n- [API ドキュメント](https://example.com/api)"
+  },
+  "lastUpdated": "2025-07-15T05:26:38.568Z",
+  "version": "1.0"
+}

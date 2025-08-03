@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト管理画面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: white;
+            box-shadow: 0 0 40px rgba(0,0,0,0.05);
+        }
+
+        /* 左側のペインコンテナ */
+        .left-sidebar {
+            width: 400px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e1e8ed;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* 各セクション共通スタイル */
+        .section {
+            padding: 24px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* セクションA: プロジェクトゴール */
+        .goal-section {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        /* セクションB: プロジェクトステータス */
+        .status-section {
+            background-color: #cfe2ff;
+            border-left: 4px solid #0d6efd;
+        }
+
+        /* セクションC: スタッフステータス */
+        .staff-section {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+        }
+
+        /* Markdownコンテンツ共通スタイル */
+        .markdown-content {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #495057;
+        }
+
+        .markdown-content h1 {
+            font-size: 24px;
+            margin: 20px 0 16px;
+            color: #212529;
+        }
+
+        .markdown-content h2 {
+            font-size: 20px;
+            margin: 16px 0 12px;
+            color: #343a40;
+        }
+
+        .markdown-content h3 {
+            font-size: 18px;
+            margin: 12px 0 8px;
+            color: #495057;
+        }
+
+        .markdown-content p {
+            margin-bottom: 12px;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-left: 24px;
+            margin-bottom: 12px;
+        }
+
+        .markdown-content li {
+            margin-bottom: 6px;
+        }
+
+        .markdown-content strong {
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+            color: #6c757d;
+        }
+
+        .markdown-content code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: #e83e8c;
+        }
+
+        .markdown-content pre {
+            background-color: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            border: 1px solid #dee2e6;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #6c757d;
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* スタッフメンバー表示 */
+        .staff-member {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background-color: white;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .staff-member:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .staff-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .staff-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .staff-info {
+            flex: 1;
+        }
+
+        .staff-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: #212529;
+        }
+
+        .staff-status {
+            font-size: 14px;
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        /* 中央のコンテンツエリア */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* outputs領域 */
+        .outputs-section {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e1e8ed;
+            padding: 24px;
+        }
+
+        .outputs-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .outputs-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+        }
+
+        .output-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            border: 1px solid #e1e8ed;
+            aspect-ratio: 1;
+        }
+
+        .output-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .output-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .output-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .output-type {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* タイムライン */
+        .timeline-container {
+            flex: 1;
+            background-color: #ffffff;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .timeline-header {
+            margin-bottom: 32px;
+        }
+
+        .timeline-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #212529;
+        }
+
+        .timeline-subtitle {
+            font-size: 16px;
+            color: #6c757d;
+        }
+
+        /* タイムラインアイテム */
+        .timeline-item {
+            background-color: #fff;
+            border: 1px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+        }
+
+        .timeline-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .post-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .post-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .post-meta {
+            flex: 1;
+        }
+
+        .post-author {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: #212529;
+        }
+
+        .post-time {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .post-content {
+            margin-bottom: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        /* 成果物表示 */
+        .post-artifact {
+            margin: 16px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .post-screenshot {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .post-screenshot:hover {
+            transform: scale(1.02);
+        }
+
+        .code-diff {
+            background-color: #f8f9fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        .diff-line {
+            margin: 2px 0;
+            padding: 2px 8px;
+        }
+
+        .diff-add {
+            background-color: #e6ffed;
+            color: #24292e;
+        }
+
+        .diff-remove {
+            background-color: #ffeef0;
+            color: #24292e;
+        }
+
+        .diff-context {
+            color: #6a737d;
+        }
+
+        /* コメントツリー */
+        .post-comments {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e1e8ed;
+        }
+
+        .comment {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .comment-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            font-size: 14px;
+            color: #212529;
+        }
+
+        .comment-time {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #495057;
+        }
+
+        /* 投稿作成エリア */
+        .post-composer {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            border: 1px solid #e1e8ed;
+        }
+
+        .post-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 15px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .post-input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        }
+
+        .post-button {
+            margin-top: 12px;
+            padding: 10px 24px;
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            float: right;
+            transition: all 0.2s;
+        }
+
+        .post-button:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+        }
+
+        /* アクションボタン */
+        .post-actions {
+            display: flex;
+            gap: 24px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6c757d;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 14px;
+        }
+
+        .action-button:hover {
+            color: #0d6efd;
+        }
+
+        .action-icon {
+            font-size: 16px;
+        }
+
+        /* レスポンシブデザイン */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e1e8ed;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .left-sidebar {
+                padding: 16px;
+            }
+            
+            .timeline-container {
+                padding: 16px;
+            }
+            
+            .section {
+                padding: 16px;
+            }
+            
+            .outputs-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 左側のサイドバー -->
+        <div class="left-sidebar">
+            <!-- セクションA: プロジェクトゴール -->
+            <div class="section goal-section">
+                <h2>🎯 Goal</h2>
+                <div class="markdown-content">
+                    <p><strong>ECプラットフォーム「ShopFlow」開発</strong></p>
+                    <p>目標: CV率35%向上、読込2秒以内</p>
+                    <p><em>10月リリース予定</em></p>
+                </div>
+            </div>
+
+            <!-- セクションB: プロジェクトステータス -->
+            <div class="section status-section">
+                <h2>📊 Status</h2>
+                <div class="markdown-content">
+                    <p><strong>進捗: 72%</strong> ✅ Sprint 23/30</p>
+                    <p>🔄 決済API統合 85%</p>
+                    <p>🔄 検索機能 70%</p>
+                    <p><code>次回デモ: 7/25 15:00</code></p>
+                </div>
+            </div>
+
+            <!-- セクションC: スタッフステータス -->
+            <div class="section staff-section">
+                <h2>👥 Staff</h2>
+                <div class="markdown-content" style="margin-bottom: 16px;">
+                    <p><strong>チーム稼働状況:</strong> 8名全員アクティブ | <strong>残業時間:</strong> 月平均15時間（健全レベル）</p>
+                </div>
+                
+                <div class="staff-member">
+                    <div class="staff-avatar">
+                        <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&q=80" alt="山田太郎">
+                    </div>
+                    <div class="staff-info">
+                        <div class="staff-name">山田太郎（テックリード）</div>
+                        <div class="staff-status">
+                            WebSocket実装完了。現在マイクロサービス最適化中。<br>
+                            Redis Clusterの設定問題を明日解決予定。
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="staff-member">
+                    <div class="staff-avatar">
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&q=80" alt="佐藤花子">
+                    </div>
+                    <div class="staff-info">
+                        <div class="staff-name">佐藤花子（UIデザイナー）</div>
+                        <div class="staff-status">
+                            商品詳細ページ完成。チェックアウトを3→2ステップに改善中。<br>
+                            デザインシステムv2.0をFigmaで公開。
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="staff-member">
+                    <div class="staff-avatar">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&q=80" alt="鈴木一郎">
+                    </div>
+                    <div class="staff-info">
+                        <div class="staff-name">鈴木一郎（セキュリティエンジニア）</div>
+                        <div class="staff-status">
+                            SQLインジェクション対策完了。PCI DSS監査準備中（8/1予定）。<br>
+                            【重要】セキュリティ研修受講必須（締切: 7/31）
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="staff-member">
+                    <div class="staff-avatar">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&q=80" alt="田中美咲">
+                    </div>
+                    <div class="staff-info">
+                        <div class="staff-name">田中美咲（フロントエンドエンジニア）</div>
+                        <div class="staff-status">
+                            React Query導入でAPI40%高速化。仮想スクロール実装中。<br>
+                            1万件表示でも60fps維持。今週中に完了予定。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中央のコンテンツエリア -->
+        <div class="main-content">
+            <!-- outputs領域 -->
+            <div class="outputs-section">
+                <h2 class="outputs-title">📦 最近の成果物</h2>
+                <div class="outputs-grid">
+                    <!-- 成果物1: チェックアウト画面 -->
+                    <div class="output-item">
+                        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200&h=200&fit=crop&q=80" alt="チェックアウト画面" class="output-thumbnail">
+                        <div class="output-type">UI</div>
+                        <div class="output-overlay">チェックアウト</div>
+                    </div>
+                    
+                    <!-- 成果物2: モバイル画面 -->
+                    <div class="output-item">
+                        <img src="https://images.unsplash.com/photo-1512428559087-560fa5ceab42?w=200&h=200&fit=crop&q=80" alt="モバイル画面" class="output-thumbnail">
+                        <div class="output-type">Mobile</div>
+                        <div class="output-overlay">商品一覧</div>
+                    </div>
+                    
+                    <!-- 成果物3: ダッシュボード -->
+                    <div class="output-item">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200&h=200&fit=crop&q=80" alt="ダッシュボード" class="output-thumbnail">
+                        <div class="output-type">Analytics</div>
+                        <div class="output-overlay">管理画面</div>
+                    </div>
+                    
+                    <!-- 成果物4: APIドキュメント -->
+                    <div class="output-item">
+                        <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=200&h=200&fit=crop&q=80" alt="APIドキュメント" class="output-thumbnail">
+                        <div class="output-type">Code</div>
+                        <div class="output-overlay">API仕様書</div>
+                    </div>
+                    
+                    <!-- 成果物5: テスト結果 -->
+                    <div class="output-item">
+                        <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=200&h=200&fit=crop&q=80" alt="テスト結果" class="output-thumbnail">
+                        <div class="output-type">Test</div>
+                        <div class="output-overlay">パフォーマンス</div>
+                    </div>
+                    
+                    <!-- 成果物6: デザインシステム -->
+                    <div class="output-item">
+                        <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=200&h=200&fit=crop&q=80" alt="デザインシステム" class="output-thumbnail">
+                        <div class="output-type">Design</div>
+                        <div class="output-overlay">コンポーネント</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タイムライン -->
+            <div class="timeline-container">
+            <div class="timeline-header">
+                <h1>タイムライン</h1>
+                <p class="timeline-subtitle">プロジェクトの成果物と進捗を共有</p>
+            </div>
+
+            <!-- 投稿作成エリア -->
+            <div class="post-composer">
+                <textarea class="post-input" placeholder="今何をしていますか？成果物や進捗を共有しましょう。"></textarea>
+                <button class="post-button">投稿</button>
+                <div style="clear: both;"></div>
+            </div>
+
+            <!-- タイムライン投稿（1: チェックアウト画面の新デザイン） -->
+            <div class="timeline-item">
+                <div class="post-header">
+                    <div class="post-avatar">
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&q=80" alt="佐藤花子">
+                    </div>
+                    <div class="post-meta">
+                        <div class="post-author">佐藤花子</div>
+                        <div class="post-time">30分前</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    チェックアウトフローの新しいデザインが完成しました！🎉<br>
+                    3ステップから2ステップに簡略化し、ユーザーの負担を大幅に軽減しました。
+                </div>
+                <div class="post-artifact">
+                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop&q=80" alt="チェックアウト画面" class="post-screenshot">
+                </div>
+                <div class="post-actions">
+                    <div class="action-button">
+                        <span class="action-icon">💬</span>
+                        <span class="action-count">5</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">🔄</span>
+                        <span class="action-count">2</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">❤️</span>
+                        <span class="action-count">12</span>
+                    </div>
+                </div>
+                
+                <!-- コメントツリー -->
+                <div class="post-comments">
+                    <div class="comment">
+                        <div class="comment-avatar">
+                            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&q=80" alt="山田太郎">
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">山田太郎</span>
+                                <span class="comment-time">25分前</span>
+                            </div>
+                            <div class="comment-text">
+                                素晴らしいデザインですね！特にプログレスインジケーターが分かりやすくて良いです。これでCV率の向上が期待できそうです。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comment">
+                        <div class="comment-avatar">
+                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&q=80" alt="田中美咲">
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">田中美咲</span>
+                                <span class="comment-time">20分前</span>
+                            </div>
+                            <div class="comment-text">
+                                フロントエンド実装の準備を始めます。アニメーションのパフォーマンスも考慮して実装しますね！
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タイムライン投稿（2: パフォーマンス最適化の成果） -->
+            <div class="timeline-item">
+                <div class="post-header">
+                    <div class="post-avatar">
+                        <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&q=80" alt="山田太郎">
+                    </div>
+                    <div class="post-meta">
+                        <div class="post-author">山田太郎</div>
+                        <div class="post-time">2時間前</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    マイクロサービス間の通信最適化が完了しました。<br>
+                    gRPCを導入して、レイテンシを<strong>45%削減</strong>することに成功しました🚀
+                </div>
+                <div class="post-artifact">
+                    <div class="code-diff">
+                        <div class="diff-line diff-context">// services/product.service.ts</div>
+                        <div class="diff-line diff-remove">- const response = await fetch(`${API_URL}/products/${id}`);</div>
+                        <div class="diff-line diff-remove">- const data = await response.json();</div>
+                        <div class="diff-line diff-add">+ const product = await productClient.getProduct({ id });</div>
+                        <div class="diff-line diff-add">+ // gRPCでバイナリプロトコルを使用</div>
+                        <div class="diff-line diff-context">  return product;</div>
+                    </div>
+                </div>
+                <div class="post-actions">
+                    <div class="action-button">
+                        <span class="action-icon">💬</span>
+                        <span class="action-count">8</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">🔄</span>
+                        <span class="action-count">12</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">❤️</span>
+                        <span class="action-count">24</span>
+                    </div>
+                </div>
+                
+                <!-- コメント -->
+                <div class="post-comments">
+                    <div class="comment">
+                        <div class="comment-avatar">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&q=80" alt="鈴木一郎">
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">鈴木一郎</span>
+                                <span class="comment-time">1時間前</span>
+                            </div>
+                            <div class="comment-text">
+                                gRPCのTLS設定も忘れずに！セキュリティチェックリストに追加しておきました。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タイムライン投稿（3: モバイル画面のスクリーンショット） -->
+            <div class="timeline-item">
+                <div class="post-header">
+                    <div class="post-avatar">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&q=80" alt="田中美咲">
+                    </div>
+                    <div class="post-meta">
+                        <div class="post-author">田中美咲</div>
+                        <div class="post-time">4時間前</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    モバイル版の商品一覧が完成しました📱<br>
+                    仮想スクロールを実装して、1万件の商品でもサクサク動きます！
+                </div>
+                <div class="post-artifact">
+                    <img src="https://images.unsplash.com/photo-1512428559087-560fa5ceab42?w=400&h=800&fit=crop&q=80" alt="モバイル画面" class="post-screenshot" style="max-width: 300px;">
+                </div>
+                <div class="post-actions">
+                    <div class="action-button">
+                        <span class="action-icon">💬</span>
+                        <span class="action-count">6</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">🔄</span>
+                        <span class="action-count">3</span>
+                    </div>
+                    <div class="action-button">
+                        <span class="action-icon">❤️</span>
+                        <span class="action-count">18</span>
+                    </div>
+                </div>
+                
+                <!-- コメント -->
+                <div class="post-comments">
+                    <div class="comment">
+                        <div class="comment-avatar">
+                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&q=80" alt="佐藤花子">
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">佐藤花子</span>
+                                <span class="comment-time">3時間前</span>
+                            </div>
+                            <div class="comment-text">
+                                UIがとても美しいです！フィルターボタンの配置も親指に優しい位置でいいですね。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comment">
+                        <div class="comment-avatar">
+                            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&q=80" alt="山田太郎">
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">山田太郎</span>
+                                <span class="comment-time">2時間半前</span>
+                            </div>
+                            <div class="comment-text">
+                                APIのページネーションもしっかり機能しているようですね。パフォーマンスも問題なさそうです👍
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

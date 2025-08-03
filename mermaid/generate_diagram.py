@@ -1,0 +1,28 @@
+import subprocess
+import os
+
+# Create a simple HTML file with Mermaid
+html_content = """<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+    <style>
+        body { background: white; margin: 20px; }
+        .mermaid { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="mermaid">
+graph TD
+    start([start]) --> ab["a=3<br>b=2"] --> result["result=a + b"] --> print["print result"] --> end([end])
+    </div>
+</body>
+</html>"""
+
+# Write HTML file
+with open('diagram_temp.html', 'w') as f:
+    f.write(html_content)
+
+print("HTML file created. Please open diagram_temp.html in a browser to view the diagram.")
+print("You can take a screenshot or use a headless browser to capture it as an image.")

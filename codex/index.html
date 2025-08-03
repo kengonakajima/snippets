@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Cookie Clicker Clone</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    #ui {
+      position: absolute; top: 10px; left: 10px; color: #fff; z-index: 100;
+      background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;
+    }
+    #cookie-count { font-size: 20px; }
+    button { margin-top: 5px; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div id="cookie-count">Cookies: 0</div>
+    <div id="cps">CPS: 0</div>
+    <button id="buy-cursor">Buy Cursor (Cost: 10)</button>
+    <div id="cursor-count">Cursors: 0</div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

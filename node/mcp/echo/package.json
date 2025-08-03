@@ -1,0 +1,24 @@
+{
+  "name": "sse-echo",
+  "version": "1.0.0",
+  "description": "SSE Echo server for MCP",
+  "main": "sse_echo.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node sse_echo.js",
+    "dev": "tsc && node sse_echo.js",
+    "test": "tsc && node test_sse_echo.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "express": "^4.18.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node-fetch": "^2.6.10",
+    "node-fetch": "^3.3.2",
+    "typescript": "^5.3.3"
+  }
+}

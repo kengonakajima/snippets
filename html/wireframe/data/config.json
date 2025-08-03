@@ -1,0 +1,12 @@
+{
+  "data": {
+    "user": {
+      "name": "ユーザー",
+      "avatar": "U"
+    },
+    "autoSave": true,
+    "maxPosts": 1000
+  },
+  "lastUpdated": "2025-07-15T05:25:48.549Z",
+  "version": "1.0"
+}
