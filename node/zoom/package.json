@@ -1,0 +1,14 @@
+{
+  "name": "zoom-organization-resources",
+  "version": "1.0.0",
+  "description": "Zoom organization resources fetcher",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1"
+  }
+}
