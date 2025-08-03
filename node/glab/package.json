@@ -1,0 +1,13 @@
+{
+  "name": "gitlab-repo-fetcher",
+  "version": "1.0.0",
+  "description": "GitLab organization repository list fetcher",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
