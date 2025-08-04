@@ -1,0 +1,27 @@
+{
+  "name": "vector-search-demo",
+  "version": "1.0.0",
+  "description": "Vector search demo using OpenAI embeddings and Redis",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "setup": "node setup.js",
+    "search": "node search.js"
+  },
+  "keywords": [
+    "vector",
+    "embeddings",
+    "redis",
+    "openai",
+    "search"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "openai": "^4.77.3",
+    "redis": "^4.7.0",
+    "dotenv": "^16.4.7",
+    "node-fetch": "^3.3.2"
+  }
+}
