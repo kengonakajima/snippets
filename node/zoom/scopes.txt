@@ -1,0 +1,50 @@
+# Zoom API Required Scopes for Organization Resources
+# 組織のZoomリソース取得に必要なスコープ一覧
+
+## Basic User and Meeting Management / 基本的なユーザー・ミーティング管理
+user:read:admin                          # 全ユーザー情報の読み取り権限
+user:read:list_users:admin               # ユーザーリストの取得権限
+user:read:user:admin                     # 個別ユーザー詳細情報の読み取り権限
+meeting:read:admin                       # 全ミーティング情報の読み取り権限
+meeting:read:list_meetings:admin         # ミーティングリストの取得権限
+meeting:read:meeting:admin               # 個別ミーティング詳細情報の読み取り権限
+meeting:read:list_past_meetings:admin    # 過去のミーティングリストの取得権限
+meeting:read:list_past_instances:admin   # 過去のミーティングインスタンス（繰り返しミーティングの各回）の取得権限
+meeting:read:invitation:admin            # ミーティング招待情報の読み取り権限
+meeting:read:summary:admin               # ミーティングサマリー（要約）の読み取り権限
+
+## Cloud Recording and Media / クラウド録画・メディア
+cloud_recording:read:admin                      # 全クラウド録画の読み取り権限
+cloud_recording:read:list_user_recordings:admin # ユーザー別の録画リスト取得権限
+cloud_recording:read:list_recording_files:admin # 録画ファイルリスト（MP4、M4A、トランスクリプト等）の取得権限
+cloud_recording:read:recording:admin            # 個別録画の詳細情報・ダウンロードURL取得権限
+cloud_recording:read:list_meeting_recordings:admin # ミーティング別の録画リスト取得権限
+recording:read:admin                            # 録画の読み取り権限（管理者レベル）
+recording:read                                  # 録画の読み取り権限（自分のみ）
+
+## Chat and Transcripts / チャット・文字起こし
+chat_message:read:admin                  # チャットメッセージの読み取り権限（ミーティング内チャット含む）
+chat_channel:read:admin                  # チャットチャンネルの読み取り権限
+
+## Groups and Rooms / グループ・ルーム
+group:read:admin                         # 全グループ情報の読み取り権限
+group:read:list_groups:admin             # グループリストの取得権限
+group:read:group:admin                   # 個別グループ詳細情報の読み取り権限
+room:read:admin                          # 全Zoom Rooms情報の読み取り権限
+room:read:list_rooms:admin               # Zoom Roomsリストの取得権限
+room:read:room:admin                     # 個別Zoom Room詳細情報の読み取り権限
+
+## Webinars (if using) / ウェビナー（使用している場合）
+webinar:read:admin                       # 全ウェビナー情報の読み取り権限
+webinar:read:list_webinars:admin         # ウェビナーリストの取得権限
+webinar:read:webinar:admin               # 個別ウェビナー詳細情報の読み取り権限
+
+## Reports and Analytics / レポート・分析
+report:read:admin                        # レポートの読み取り権限（使用状況、参加者レポート等）
+report:master                            # マスターアカウントレポートの読み取り権限
+dashboard:read:admin                     # ダッシュボード情報の読み取り権限
+dashboard_meetings:read:admin            # ミーティングダッシュボード（リアルタイム情報）の読み取り権限
+
+## Archive / アーカイブ
+archive:read:admin                       # アーカイブの読み取り権限
+archive_content:read:admin               # アーカイブコンテンツ（保存されたファイル）の読み取り権限
