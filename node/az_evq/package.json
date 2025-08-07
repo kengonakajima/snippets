@@ -1,0 +1,14 @@
+{
+  "name": "az-storage-queue-sample",
+  "version": "1.0.0",
+  "description": "Azure Storage Queue event processor sample",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@azure/storage-queue": "^12.23.0",
+    "@azure/storage-blob": "^12.23.0",
+    "dotenv": "^16.4.5"
+  }
+}
