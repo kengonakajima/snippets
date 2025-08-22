@@ -1,0 +1,28 @@
+{
+  "name": "sqlite-vec-demo",
+  "version": "1.0.0",
+  "description": "Vector search demo using sqlite-vec and OpenAI embeddings",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "sqlite",
+    "vector",
+    "search",
+    "openai",
+    "embeddings"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite-vec": "^0.1.6",
+    "better-sqlite3": "^11.5.0",
+    "openai": "^4.77.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.7",
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.5"
+  }
+}

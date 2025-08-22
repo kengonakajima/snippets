@@ -1,0 +1,93 @@
+# SQLite-Vecベクトル検索CLIデモ仕様書
+
+## 概要
+Node.jsとsqlite-vecを使用したベクトル検索のコマンドラインデモアプリケーション。
+OpenAI APIを利用してテキストを埋め込みベクトルに変換し、類似度検索を実行する。
+
+## 主要機能
+
+### 1. データ追加機能
+- テキストデータをデータベースに追加
+- OpenAI Embedding APIを使用してベクトル化
+- SQLiteデータベースに保存
+
+### 2. ベクトル検索機能
+- クエリテキストを入力
+- OpenAI APIでクエリをベクトル化
+- sqlite-vecを使用してコサイン類似度で検索
+- 上位N件の類似結果を返す
+
+### 3. データ一覧表示
+- 保存されている全データを表示
+- ID、テキスト、追加日時を表示
+
+### 4. データ削除機能
+- IDを指定してデータを削除
+- 全データクリア機能
+
+## 技術スタック
+- Node.js
+- sqlite-vec: SQLiteのベクトル拡張
+- OpenAI API: text-embedding-3-small モデル
+- Commander.js: CLIフレームワーク
+- dotenv: 環境変数管理
+
+## データベース構造
+```sql
+CREATE TABLE documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    embedding BLOB NOT NULL,  -- ベクトルデータ
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## コマンド仕様
+
+### 1. データ追加
+```bash
+node index.js add "テキストデータ"
+```
+
+### 2. 検索実行
+```bash
+node index.js search "検索クエリ" [--limit 5]
+```
+- --limit: 返す結果の数（デフォルト: 5）
+
+### 3. データ一覧
+```bash
+node index.js list
+```
+
+### 4. データ削除
+```bash
+node index.js delete <id>
+```
+
+### 5. 全データクリア
+```bash
+node index.js clear
+```
+
+## 環境設定
+`.env`ファイルに以下を設定：
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+## エラーハンドリング
+- OpenAI API接続エラー
+- データベース操作エラー
+- 入力検証エラー
+- 環境変数未設定エラー
+
+## 出力形式
+- 検索結果: スコア、ID、テキスト（冒頭100文字）
+- コンソールへの分かりやすい表形式出力
+- エラー時は赤色でエラーメッセージ表示
+
+## 制限事項
+- 埋め込みベクトルの次元: 1536（text-embedding-3-small）
+- テキストの最大長: OpenAI APIの制限に準拠
+- SQLiteファイル: ./vector_demo.db
