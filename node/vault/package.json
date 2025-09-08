@@ -1,0 +1,16 @@
+{
+  "name": "vault-basic-sample",
+  "version": "1.0.0",
+  "description": "Basic HashiCorp Vault sample for testing",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "node-vault": "^0.10.2"
+  },
+  "keywords": ["vault", "hashicorp", "secrets"],
+  "author": "",
+  "license": "MIT"
+}
