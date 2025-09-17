@@ -1,0 +1,15 @@
+{
+  "name": "fts5",
+  "version": "1.0.0",
+  "description": "SQLCipher と FTS5 を用いた暗号化付き全文検索サンプル",
+  "main": "src/benchmark.js",
+  "scripts": {
+    "benchmark": "node src/benchmark.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@journeyapps/sqlcipher": "^5.3.1"
+  }
+}
