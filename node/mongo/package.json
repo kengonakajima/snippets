@@ -1,0 +1,12 @@
+{
+  "name": "mongo-bench",
+  "version": "1.0.0",
+  "description": "MongoDB benchmark script",
+  "main": "bench.js",
+  "license": "MIT",
+  "dependencies": {
+    "libsodium-wrappers-sumo": "^0.7.13",
+    "mongodb": "^6.8.0",
+    "ulid": "^2.3.0"
+  }
+}

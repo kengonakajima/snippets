@@ -1,0 +1,16 @@
+# MongoDBの性能試験をする
+
+- node.js
+- このマシンにMongoをインストールし、
+- posts { id str, created_by str, message str } 
+- idはulid
+- created_byはuser idでやはりulid
+- messageは 30~500文字のランダムな英語文で、これがlibsodiumで暗号化される
+- 10万件, 1000ユーザー
+- データ投入にかかる時間を測定
+- id指定で1件取り出すのを1万回
+- created_by指定で全部取り出すのを100回
+
+- ./bench.js に出力、できるだけ短いコードに。
+
+
