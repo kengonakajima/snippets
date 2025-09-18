@@ -1,0 +1,34 @@
+{
+  "name": "pg-encryption-bench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PostgreSQL encryption pattern benchmark scripts",
+  "main": "index.js",
+  "scripts": {
+    "db:setup": "node scripts/setup.js",
+    "seed": "node scripts/seed.js",
+    "bench:insert": "node scripts/bench-insert.js",
+    "bench:single-select": "node scripts/bench-single-select.js",
+    "bench:range-select": "node scripts/bench-range-select.js",
+    "bench:insert:p1": "npm run seed -- --pattern=1 && node scripts/bench-insert.js --pattern=1",
+    "bench:insert:p2": "npm run seed -- --pattern=2 && node scripts/bench-insert.js --pattern=2",
+    "bench:insert:p3": "npm run seed -- --pattern=3 && node scripts/bench-insert.js --pattern=3",
+    "bench:single-select:p1": "npm run seed -- --pattern=1 && node scripts/bench-single-select.js --pattern=1",
+    "bench:single-select:p2": "npm run seed -- --pattern=2 && node scripts/bench-single-select.js --pattern=2",
+    "bench:single-select:p3": "npm run seed -- --pattern=3 && node scripts/bench-single-select.js --pattern=3",
+    "bench:range-select:p1": "npm run seed -- --pattern=1 && node scripts/bench-range-select.js --pattern=1",
+    "bench:range-select:p2": "npm run seed -- --pattern=2 && node scripts/bench-range-select.js --pattern=2",
+    "bench:range-select:p3": "npm run seed -- --pattern=3 && node scripts/bench-range-select.js --pattern=3",
+    "bench:like": "node scripts/bench-like-search.js",
+    "bench:like:p1": "npm run seed -- --pattern=1 && node scripts/bench-like-search.js --pattern=1",
+    "bench:like:p2": "npm run seed -- --pattern=2 && node scripts/bench-like-search.js --pattern=2",
+    "bench:like:p3": "npm run seed -- --pattern=3 && node scripts/bench-like-search.js --pattern=3"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.5",
+    "ulid": "^2.3.0",
+    "yargs": "^17.7.2"
+  }
+}

@@ -1,0 +1,80 @@
+# Postgresの性能試験をする
+
+- node.js
+- このマシンにPostgresをインストールし
+- pgcryptをインストールする
+- postsテーブル ( id str, created_by str, message str ) を定義する
+- idはulid
+- created_byはuser idでやはりulid
+- messageは 30~500文字のランダムな英語文で、これが暗号化される
+- パターン1: 暗号化なし
+- パターン2: message列は、全体でひとつの鍵で暗号化する
+- パターン3: message列は、created_by でユーザーごとに暗号化する
+
+
+このそれぞれの条件で、小規模なベンチマークをこのPCで実行したいです。
+
+仕様案を、以下の仕様のところに追記して下さい。
+
+## 仕様
+
+### ゴール
+- Postgresの暗号化有無および鍵粒度の違いがCRUD性能に与える影響を把握し、ローカル環境で比較できるベンチマーク結果を得る。
+
+### 前提環境
+- macOS 最新パッチ適用済みを前提とし、HomebrewでPostgreSQL 16系をインストールする。
+- Node.js 20系、`pg`ライブラリ、`ulid`、乱数生成用ライブラリ（`@faker-js/faker`など）を利用する。
+- PostgreSQL拡張として`pgcrypto`を有効化し、`CREATE EXTENSION IF NOT EXISTS pgcrypto;`を初回に実行する。
+- `.env`に共通鍵およびユーザー別鍵の種となる値を格納し、アプリコードは`dotenv`で読み込む。
+
+### スキーマ定義
+- `posts`テーブル構造
+  - `id`: `char(26)`、ULID文字列を格納する主キー。
+  - `created_by`: `char(26)`、投稿者ULID。
+  - `message`: `bytea`。パターン1ではUTF-8文字列を`::bytea`化して格納し、パターン2/3では暗号化済みバイナリを格納する。
+  - `created_at`: `timestamptz`、デフォルト`now()`。
+- 各パターンの実行前にテーブルを`TRUNCATE`し、同一DDLのままデータを入れ替える。
+
+### データ生成
+- ベンチデータ総件数はデフォルト10,000件とし、環境変数で可変とする（例: `BENCH_TOTAL_ROWS=10000`）。
+- `created_by`は1,000ユーザー（10件ずつ投稿）を想定し、ユーザー数も環境変数で調整可能にする。
+- `message`は30〜500文字のランダムな英語文をNodeスクリプトで生成。メッセージ長は一様分布とする。
+- データ投入はNodeスクリプトからバッチINSERT（例: 500件単位）で行い、投入時間を計測する。
+
+### 暗号化パターン実装
+- パターン1（暗号化なし）: `message`列へ`Buffer.from(message, 'utf8')`を直接格納。SELECT時には`encode(message, 'escape')`で文字列復元。
+- パターン2（共通鍵暗号）: `.env`に保存した共通鍵で`pgp_sym_encrypt(message, common_key)`を実行し、`message`列に格納。SELECT時はDB側で`pgp_sym_decrypt(message, common_key)`を使用。
+- パターン3（ユーザー別鍵）: `created_by`ごとに鍵を派生（例: `base_key + created_by`をPBKDF2で派生）し、INSERT/SELECTともに該当鍵を利用して`pgp_sym_encrypt/pgp_sym_decrypt`を呼び出す。鍵の派生はアプリケーション側で行い、実鍵はアプリメモリ内にのみ保持する。
+
+### ベンチマークシナリオ
+- シナリオA: データロード（INSERT）時間とスループット（件/秒）。
+- シナリオB: ランダムな`id`に対する単一行SELECTの平均レイテンシ（1,000リクエスト）。
+- シナリオC: `created_by`条件の範囲SELECT（各ユーザー10件想定）に対する平均レイテンシと復号オーバーヘッド。
+- 各シナリオはウォームアップ1回、本番3回実施し、中央値・平均・標準偏差を算出する。
+
+### スクリプト構成
+- `scripts/setup.js`: DDL適用と`pgcrypto`有効化を実行するセットアップ専用スクリプト。
+- `scripts/seed.js`: 指定パターンのデータを生成し、`posts`テーブルへ投入する。
+- `scripts/bench-insert.js`: シナリオAのINSERT計測のみを実施し、結果を記録する。
+- `scripts/bench-single-select.js`: シナリオBの単一行SELECT計測のみを実施する。
+- `scripts/bench-range-select.js`: シナリオCの範囲SELECT計測のみを実施する。
+- `package.json`で`npm run bench:<シナリオ名> -- --pattern=<1|2|3>`のようにラップし、必要なシナリオだけ個別に実行できる構成とする。
+
+### 計測と記録
+- Nodeスクリプトで`perf_hooks.performance.now()`によるミリ秒計測を行い、結果を`results/<timestamp>.json`および集計CSVに保存する。
+- PostgreSQL側で`EXPLAIN (ANALYZE, BUFFERS)`を各パターン1回取得し、Plan差を比較する。
+- 実行前後で`pg_stat_statements`をリセットし、クエリごとの平均時間も併せて記録する。
+
+### 実行フロー
+1. `.env`準備と`npm install`による依存関係取得。
+2. `npm run db:setup`でDB初期化（DDL・拡張有効化）。
+3. 必要なシナリオだけ、以下のコマンドで個別に実行する:
+   - `npm run bench:insert -- --pattern=<1|2|3>`
+   - `npm run bench:single-select -- --pattern=<1|2|3>`
+   - `npm run bench:range-select -- --pattern=<1|2|3>`
+4. すべてのパターンが完了したら、`results`ディレクトリ内に要約Markdownを生成する（任意）。
+
+### 成功条件
+- 3パターン分のベンチ結果が同一形式で比較可能に揃っている。
+- 暗号化ありシナリオで復号が成功し、取得データが元メッセージと一致する検証が行われている。
+- 実行手順がREADMEに追記され、 他者がコマンドひとつでベンチを再現できる状態になっている。
