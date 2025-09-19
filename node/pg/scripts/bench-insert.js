@@ -79,7 +79,10 @@ const buildEmbedding = (message) => {
 };
 const generateDataset = (totalRows, userCount) => {
   const users = Array.from({ length: userCount }, () => ulid());
-  return Array.from({ length: totalRows }, (_, i) => ({ id: ulid(), createdBy: users[i % userCount], message: buildMessage() }));
+  return Array.from({ length: totalRows }, (_, i) => {
+    const message = buildMessage();
+    return { id: ulid(), createdBy: users[i % userCount], message, messagePlain: message };
+  });
 };
 const userKeyCache = new Map();
 const deriveUserKey = (userId) => {
@@ -101,17 +104,17 @@ const bulkInsert = async (pool, rows, pattern, batchSize) => {
     for (const row of batch) {
       const embedding = buildEmbedding(row.message);
       if (pattern === 1) {
-        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, $${param + 3}, NOW())`);
-        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'), embedding);
-        param += 4;
+        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, $${param + 3}, $${param + 4}, NOW())`);
+        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'), row.messagePlain, embedding);
+        param += 5;
       } else {
         const key = pattern === 2 ? commonKey : deriveUserKey(row.createdBy);
-        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), $${param + 4}, NOW())`);
+        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), NULL, $${param + 4}, NOW())`);
         values.push(row.id, row.createdBy, row.message, key, embedding);
         param += 5;
       }
     }
-    await pool.query(`INSERT INTO posts (id, created_by, message, message_embedding, created_at) VALUES ${placeholders.join(',')}`, values);
+    await pool.query(`INSERT INTO posts (id, created_by, message, message_plain, message_embedding, created_at) VALUES ${placeholders.join(',')}`, values);
   }
 };
 const mean = (arr) => (arr.length ? arr.reduce((sum, v) => sum + v, 0) / arr.length : 0);

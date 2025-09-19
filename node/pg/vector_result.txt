@@ -1,0 +1,28 @@
+【ベクトル検索ベンチ結果まとめ】
+
+- 計測日: 2025-09-19
+- 共通設定: requests=500, warmup=1, runs=3, k=10, ivfflat.probes=10, vector_dim=1536, query_pool=500
+- ソース: results/2025-09-19T07-08-05-429Z-vector-search-p1.json, results/2025-09-19T07-10-02-389Z-vector-search-p2.json, results/2025-09-19T07-18-59-587Z-vector-search-p3.json
+
+1. パターン1（暗号化なし）
+   - median latency: 9.7757 ms
+   - mean latency: 9.8369 ms
+   - median throughput: 101.93 req/s
+   - hit ratio: 1.0000
+
+2. パターン2（共通鍵暗号）
+   - median latency: 10.8958 ms （p1比 +11%）
+   - mean latency: 10.7470 ms
+   - median throughput: 93.38 req/s （p1比 -8%）
+   - hit ratio: 1.0000
+
+3. パターン3（ユーザー別鍵暗号）
+   - median latency: 18.4814 ms （p1比 +89%）
+   - mean latency: 17.5913 ms
+   - median throughput: 57.43 req/s （p1比 -44%）
+   - hit ratio: 1.0000
+
+所感:
+- 共通鍵パターンは暗号化オーバーヘッドが小さく、レイテンシ・スループットともに平文と比較して1桁%台の差分に収まりました。
+- ユーザー別鍵パターンでは鍵導出・復号がリクエストごとに発生するため、レイテンシ・スループットの劣化が顕著です。pgvector検索自体の正確性（hit ratio）は全パターンで維持されています。
+- 追加調査として `ivfflat.probes` や `VECTOR_DIM` を調整し、暗号化方式と組み合わせた最適パラメータの探索が有効と思われます。

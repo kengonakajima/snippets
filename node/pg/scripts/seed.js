@@ -78,6 +78,7 @@ function generateDataset(totalRows, userCount) {
       id: ulid(),
       createdBy: users[i % userCount],
       message,
+      messagePlain: message,
       embedding
     });
   }
@@ -147,21 +148,21 @@ async function bulkInsert(pool, rows, pattern, batchSize) {
     let param = 1;
     for (const row of batch) {
       if (pattern === 1) {
-        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, $${param + 3}, NOW())`);
-        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'), row.embedding);
-        param += 4;
+        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, $${param + 3}, $${param + 4}, NOW())`);
+        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'), row.messagePlain, row.embedding);
+        param += 5;
       } else if (pattern === 2) {
-        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), $${param + 4}, NOW())`);
+        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), NULL, $${param + 4}, NOW())`);
         values.push(row.id, row.createdBy, row.message, commonKey, row.embedding);
         param += 5;
       } else {
         const key = deriveUserKey(row.createdBy);
-        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), $${param + 4}, NOW())`);
+        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), NULL, $${param + 4}, NOW())`);
         values.push(row.id, row.createdBy, row.message, key, row.embedding);
         param += 5;
       }
     }
-    const sql = `INSERT INTO posts (id, created_by, message, message_embedding, created_at) VALUES ${placeholders.join(',')}`;
+    const sql = `INSERT INTO posts (id, created_by, message, message_plain, message_embedding, created_at) VALUES ${placeholders.join(',')}`;
     await pool.query(sql, values);
   }
 }
