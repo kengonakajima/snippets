@@ -22,7 +22,11 @@
     "bench:like": "node scripts/bench-like-search.js",
     "bench:like:p1": "npm run seed -- --pattern=1 && node scripts/bench-like-search.js --pattern=1",
     "bench:like:p2": "npm run seed -- --pattern=2 && node scripts/bench-like-search.js --pattern=2",
-    "bench:like:p3": "npm run seed -- --pattern=3 && node scripts/bench-like-search.js --pattern=3"
+    "bench:like:p3": "npm run seed -- --pattern=3 && node scripts/bench-like-search.js --pattern=3",
+    "bench:vector-search": "node scripts/bench-vector-search.js",
+    "bench:vector-search:p1": "npm run seed -- --pattern=1 && node scripts/bench-vector-search.js --pattern=1",
+    "bench:vector-search:p2": "npm run seed -- --pattern=2 && node scripts/bench-vector-search.js --pattern=2",
+    "bench:vector-search:p3": "npm run seed -- --pattern=3 && node scripts/bench-vector-search.js --pattern=3"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

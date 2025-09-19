@@ -29,7 +29,8 @@ const CONFIG = {
   pbkdf2Iterations: numEnv('PBKDF2_ITERATIONS', 100000),
   pbkdf2KeyLength: numEnv('PBKDF2_KEY_LENGTH', 32),
   pbkdf2Digest: process.env.PBKDF2_DIGEST || 'sha256',
-  resultsDir: process.env.RESULTS_DIR || 'results'
+  resultsDir: process.env.RESULTS_DIR || 'results',
+  vectorDim: numEnv('VECTOR_DIM', numEnv('BENCH_VECTOR_DIM', 1536))
 };
 const argv = yargs(hideBin(process.argv))
   .option('pattern', { alias: 'p', type: 'number', choices: [1, 2, 3], demandOption: true, describe: '暗号化パターン' })
@@ -58,6 +59,24 @@ const buildMessage = () => {
   }
   return text.length > 500 ? text.slice(0, 500) : text;
 };
+const buildEmbedding = (message) => {
+  const values = [];
+  let counter = 0;
+  let buffer = Buffer.alloc(0);
+  while (values.length < CONFIG.vectorDim) {
+    const hash = crypto.createHash('sha256').update(message).update(String(counter)).digest();
+    buffer = Buffer.concat([buffer, hash]);
+    counter += 1;
+    while (buffer.length >= 4 && values.length < CONFIG.vectorDim) {
+      const chunk = buffer.subarray(0, 4);
+      buffer = buffer.subarray(4);
+      const int = chunk.readUInt32BE(0);
+      const value = (int / 0xffffffff) * 2 - 1;
+      values.push(Number(value.toFixed(6)));
+    }
+  }
+  return `[${values.join(',')}]`;
+};
 const generateDataset = (totalRows, userCount) => {
   const users = Array.from({ length: userCount }, () => ulid());
   return Array.from({ length: totalRows }, (_, i) => ({ id: ulid(), createdBy: users[i % userCount], message: buildMessage() }));
@@ -80,18 +99,19 @@ const bulkInsert = async (pool, rows, pattern, batchSize) => {
     const values = [];
     let param = 1;
     for (const row of batch) {
+      const embedding = buildEmbedding(row.message);
       if (pattern === 1) {
-        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, NOW())`);
-        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'));
-        param += 3;
+        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, $${param + 3}, NOW())`);
+        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'), embedding);
+        param += 4;
       } else {
         const key = pattern === 2 ? commonKey : deriveUserKey(row.createdBy);
-        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), NOW())`);
-        values.push(row.id, row.createdBy, row.message, key);
-        param += 4;
+        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), $${param + 4}, NOW())`);
+        values.push(row.id, row.createdBy, row.message, key, embedding);
+        param += 5;
       }
     }
-    await pool.query(`INSERT INTO posts (id, created_by, message, created_at) VALUES ${placeholders.join(',')}`, values);
+    await pool.query(`INSERT INTO posts (id, created_by, message, message_embedding, created_at) VALUES ${placeholders.join(',')}`, values);
   }
 };
 const mean = (arr) => (arr.length ? arr.reduce((sum, v) => sum + v, 0) / arr.length : 0);

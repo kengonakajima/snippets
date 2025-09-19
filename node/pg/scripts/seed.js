@@ -28,7 +28,8 @@ const DEFAULTS = {
   userBaseKey: process.env.USER_BASE_KEY,
   pbkdf2Iterations: numberEnv('PBKDF2_ITERATIONS', 100000),
   pbkdf2KeyLength: numberEnv('PBKDF2_KEY_LENGTH', 32),
-  pbkdf2Digest: process.env.PBKDF2_DIGEST || 'sha256'
+  pbkdf2Digest: process.env.PBKDF2_DIGEST || 'sha256',
+  vectorDim: numberEnv('VECTOR_DIM', numberEnv('BENCH_VECTOR_DIM', 1536))
 };
 
 const argv = yargs(hideBin(process.argv))
@@ -72,10 +73,12 @@ function generateDataset(totalRows, userCount) {
   const rows = [];
   for (let i = 0; i < totalRows; i += 1) {
     const message = buildMessage();
+    const embedding = buildEmbedding(message);
     rows.push({
       id: ulid(),
       createdBy: users[i % userCount],
-      message
+      message,
+      embedding
     });
   }
   return rows;
@@ -116,6 +119,25 @@ function deriveUserKey(userId) {
   return key;
 }
 
+function buildEmbedding(message) {
+  const values = [];
+  let counter = 0;
+  let buffer = Buffer.alloc(0);
+  while (values.length < DEFAULTS.vectorDim) {
+    const hash = crypto.createHash('sha256').update(message).update(String(counter)).digest();
+    buffer = Buffer.concat([buffer, hash]);
+    counter += 1;
+    while (buffer.length >= 4 && values.length < DEFAULTS.vectorDim) {
+      const chunk = buffer.subarray(0, 4);
+      buffer = buffer.subarray(4);
+      const int = chunk.readUInt32BE(0);
+      const value = (int / 0xffffffff) * 2 - 1; // [-1, 1] の範囲に正規化
+      values.push(Number(value.toFixed(6)));
+    }
+  }
+  return `[${values.join(',')}]`;
+}
+
 async function bulkInsert(pool, rows, pattern, batchSize) {
   const commonKey = pattern === 2 ? DEFAULTS.commonKey : null;
   for (let offset = 0; offset < rows.length; offset += batchSize) {
@@ -125,21 +147,21 @@ async function bulkInsert(pool, rows, pattern, batchSize) {
     let param = 1;
     for (const row of batch) {
       if (pattern === 1) {
-        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, NOW())`);
-        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'));
-        param += 3;
-      } else if (pattern === 2) {
-        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), NOW())`);
-        values.push(row.id, row.createdBy, row.message, commonKey);
+        placeholders.push(`($${param}, $${param + 1}, $${param + 2}, $${param + 3}, NOW())`);
+        values.push(row.id, row.createdBy, Buffer.from(row.message, 'utf8'), row.embedding);
         param += 4;
+      } else if (pattern === 2) {
+        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), $${param + 4}, NOW())`);
+        values.push(row.id, row.createdBy, row.message, commonKey, row.embedding);
+        param += 5;
       } else {
         const key = deriveUserKey(row.createdBy);
-        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), NOW())`);
-        values.push(row.id, row.createdBy, row.message, key);
-        param += 4;
+        placeholders.push(`($${param}, $${param + 1}, pgp_sym_encrypt($${param + 2}, $${param + 3}), $${param + 4}, NOW())`);
+        values.push(row.id, row.createdBy, row.message, key, row.embedding);
+        param += 5;
       }
     }
-    const sql = `INSERT INTO posts (id, created_by, message, created_at) VALUES ${placeholders.join(',')}`;
+    const sql = `INSERT INTO posts (id, created_by, message, message_embedding, created_at) VALUES ${placeholders.join(',')}`;
     await pool.query(sql, values);
   }
 }
