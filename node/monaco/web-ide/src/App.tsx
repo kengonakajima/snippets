@@ -10,7 +10,7 @@ type FileNode = {
   id: string
   name: string
   kind: 'file' | 'directory'
-  handle: EntryHandle
+  handle?: EntryHandle
   path: string
   children?: FileNode[]
 }
@@ -40,6 +40,7 @@ function App() {
   const [currentLanguage, setCurrentLanguage] = useState<'markdown' | 'plaintext'>('markdown')
   const [fileContent, setFileContent] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [dataSource, setDataSource] = useState<'none' | 'filesystem' | 'random'>('none')
 
   const treeContainerRef = useRef<HTMLDivElement | null>(null)
   const [treeSize, setTreeSize] = useState<{ width: number; height: number }>({
@@ -258,6 +259,7 @@ function App() {
       currentFileHandleRef.current = null
       setFileContent('')
       setHasUnsavedChanges(false)
+      setDataSource('filesystem')
     } catch (error) {
       setErrorMessage(getErrorMessage(error))
     } finally {
@@ -265,8 +267,21 @@ function App() {
     }
   }, [])
 
+  const handleGenerateRandomTree = useCallback(() => {
+    const randomRoot = generateRandomTree()
+    setTreeData([randomRoot])
+    setSelectedId(undefined)
+    setStatusMessage('ランダムツリーを表示中')
+    setCurrentFilePath(undefined)
+    currentFileHandleRef.current = null
+    setFileContent('')
+    setHasUnsavedChanges(false)
+    setErrorMessage(null)
+    setDataSource('random')
+  }, [])
+
   const openFile = useCallback(async (node: FileNode) => {
-    if (node.kind !== 'file') {
+    if (node.kind !== 'file' || !node.handle) {
       return
     }
 
@@ -303,22 +318,23 @@ function App() {
 
       setSelectedId(target.id)
 
-      if (target.data.kind === 'file') {
+      if (dataSource !== 'random' && target.data.kind === 'file') {
         void openFile(target.data)
       } else {
         setCurrentFilePath(undefined)
         currentFileHandleRef.current = null
         setFileContent('')
         setHasUnsavedChanges(false)
-        setStatusMessage(`フォルダ: ${target.data.path}`)
+        const label = target.data.kind === 'file' ? 'ノード' : 'フォルダ'
+        setStatusMessage(`${label}: ${target.data.path}`)
       }
     },
-    [openFile],
+    [dataSource, openFile],
   )
 
   const handleActivate = useCallback(
     (node: NodeApi<FileNode>) => {
-      if (node.data.kind === 'directory') {
+      if (node.data.kind === 'directory' || dataSource === 'random') {
         node.toggle()
         return
       }
@@ -326,7 +342,7 @@ function App() {
       setSelectedId(node.id)
       void openFile(node.data)
     },
-    [openFile],
+    [dataSource, openFile],
   )
 
   const handleSave = useCallback(async () => {
@@ -357,6 +373,10 @@ function App() {
       return errorMessage
     }
 
+    if (dataSource === 'random') {
+      return 'ランダムツリーは表示のみです'
+    }
+
     if (!currentFilePath) {
       return 'ツリーからMarkdownファイルを選択してください'
     }
@@ -379,6 +399,7 @@ function App() {
           <button className="primary" onClick={handleOpenDirectory} disabled={loading}>
             {loading ? '読込中...' : 'ディレクトリを開く'}
           </button>
+          <button onClick={handleGenerateRandomTree}>ランダムツリー</button>
           <button
             onClick={handleSave}
             disabled={!isMarkdownFile || !currentFileHandleRef.current || !hasUnsavedChanges}
@@ -497,7 +518,11 @@ function isMarkdown(path: string) {
   return lower.endsWith('.md') || lower.endsWith('.markdown')
 }
 
-async function ensurePermission(handle: FileSystemHandle, mode: PermissionMode) {
+async function ensurePermission(handle: FileSystemHandle | undefined, mode: PermissionMode) {
+  if (!handle) {
+    return false
+  }
+
   const withPermissions = handle as FileSystemHandleWithPermissions
 
   if (
@@ -571,6 +596,41 @@ function toModelUri(path: string) {
     .join('/')
 
   return monaco.Uri.parse(`file:///${encoded}`)
+}
+
+function generateRandomTree(): FileNode {
+  const rootId = `random-${Math.random().toString(36).slice(2)}`
+  return createRandomNode(rootId, rootId, 0)
+}
+
+function createRandomNode(id: string, path: string, depth: number): FileNode {
+  const shouldBeDirectory = depth < 2 ? Math.random() > 0.3 : false
+
+  if (!shouldBeDirectory) {
+    return {
+      id,
+      name: `node-${Math.floor(Math.random() * 1000)}`,
+      kind: 'file',
+      path,
+    }
+  }
+
+  const childCount = Math.floor(Math.random() * 4) + 1
+  const children: FileNode[] = []
+
+  for (let i = 0; i < childCount; i += 1) {
+    const childId = `${id}-${i}-${Math.floor(Math.random() * 1000)}`
+    const childPath = `${path}/child-${i}`
+    children.push(createRandomNode(childId, childPath, depth + 1))
+  }
+
+  return {
+    id,
+    name: `branch-${Math.floor(Math.random() * 1000)}`,
+    kind: 'directory',
+    path,
+    children,
+  }
 }
 
 export default App
