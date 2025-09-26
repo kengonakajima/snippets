@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>リアルタイム文字起こしデモ</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>リアルタイム文字起こしデモ</h1>
+        <p class="lead">iOS Safariからマイクを開いて、LAN上のNodeサーバー経由でOpenAI Realtime APIに接続します。</p>
+      </header>
+
+      <section class="controls">
+        <button id="start-button" type="button">録音開始</button>
+        <button id="stop-button" type="button" disabled>停止</button>
+        <span id="status" class="status">待機中</span>
+      </section>
+
+      <section class="device-selector">
+        <label for="input-device">マイクデバイス</label>
+        <select id="input-device" aria-label="マイクデバイス">
+          <option value="default">システム既定</option>
+        </select>
+        <button id="refresh-devices" type="button">再取得</button>
+      </section>
+
+      <section class="meters">
+        <div class="meter">
+          <span class="meter-label">クライアント音量</span>
+          <div class="meter-bar">
+            <div id="client-meter" class="meter-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="transcript">
+        <h2>文字起こし</h2>
+        <div id="transcript" class="transcript-output"></div>
+      </section>
+    </main>
+
+    <script src="/main.js" type="module"></script>
+  </body>
+</html>

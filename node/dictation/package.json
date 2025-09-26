@@ -1,0 +1,24 @@
+{
+  "name": "dictation",
+  "version": "1.0.0",
+  "description": "iOS Safari向けリアルタイム文字起こしデモ",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "keywords": [
+    "openai",
+    "realtime",
+    "speech-to-text",
+    "ios",
+    "safari"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "openai": "^5.23.0",
+    "ws": "^8.18.3"
+  }
+}
