@@ -17,6 +17,7 @@ if (missing.length > 0) {
 
 const MODEL = process.env.OPENAI_REALTIME_MODEL ?? 'gpt-4o-realtime-preview';
 const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? '0.0.0.0';
 const SAMPLE_RATE = 24000;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -245,6 +246,6 @@ wss.on('connection', async (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server listening on http://0.0.0.0:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Server listening on http://${HOST}:${PORT}`);
 });
