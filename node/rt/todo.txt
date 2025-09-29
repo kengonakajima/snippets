@@ -1,0 +1,20 @@
+# GPT realtiem APIスピードテストツール
+
+- OpenAIのリアルタイムAPI
+
+https://platform.openai.com/docs/guides/realtime?utm_source=chatgpt.com
+
+を用いて、テキストを送ってテキストで返信させ、その反応速度と、正確性を評価する。
+
+
+- 毎回、10~30個の、1~5桁の整数をJSONで表現する
+- その中から奇数だけを選択してJSONで戻させる
+- もどってきた値をルールベースで解析し、評価する
+- 100往復やって、正答率と平均レスポンス時間を計測し、レポートする
+
+- 必要なAPIキーは .envで指定する。 OPENAI_API_KEY
+
+
+
+
+
