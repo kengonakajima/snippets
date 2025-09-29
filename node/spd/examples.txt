@@ -1,0 +1,1 @@
+node benchmark.js -m openai/gpt-oss-20b -e https://api.groq.com/openai/v1/chat/completions -k GROQ_API_KEY -n 10 -l
