@@ -1,0 +1,16 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #f1f5f9;
+}
+
+button {
+  font-family: inherit;
+}
