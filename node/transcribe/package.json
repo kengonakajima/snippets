@@ -12,6 +12,7 @@
   "type": "module",
   "dependencies": {
     "dotenv": "^17.2.3",
-    "openai": "^6.0.1"
+    "openai": "^6.0.1",
+    "ws": "^8.18.3"
   }
 }
