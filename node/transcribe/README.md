@@ -3,11 +3,13 @@
 ## 概要
 - `transcribe-file.js`: OpenAI Node SDK の `audio.transcriptions.create`（モデル `gpt-4o-transcribe`）を使ってローカル音声を一括変換します。`dotenv` 経由で `OPENAI_API_KEY` を読み込み、返却された `text` を標準出力へ表示します。
 - `transcribe-realtime.js`: WAV ファイルをリアルタイム API（WebSocket `gpt-4o-realtime-preview`）へストリーミング送信し、`conversation.item.input_audio_transcription.*` イベントをすべて集約して最終的な全文を得ます。
+- `transcribe-pa.js`: PAmac.node (PortAudio) を使って Mac のマイク入力をリアルタイム API へ送信し、逐次的に文字起こしします。
 
 ## 必要環境
 - Node.js v23.11.1 以上（OpenAI SDK がネイティブ `fetch` を使用）
 - npm 依存: `openai`, `dotenv`, `ws`
 - システムツール: `ffmpeg`, `ffprobe`（音声変換と長さ計測に使用）
+- `transcribe-pa.js` 利用時は PAmac.node（PortAudio のネイティブバインディング）が `./PAmac.node` に必要
 - `.env` ファイル: 少なくとも `OPENAI_API_KEY` を定義（後述のオプションもここで設定可能）
 
 ## transcribe-file.js の動作
@@ -37,10 +39,26 @@
   - `REALTIME_TIMEOUT_MS`: 音源長が取得できない場合のフォールバック値
   - `REALTIME_GRACE_MS`: 音源長に追加する猶予時間（既定 10000ms）
   - `REALTIME_TEMPERATURE`: モデル温度
-  - `REALTIME_MAX_QUEUE`: 送信前にバッファするチャンク数（既定 50）
+- `REALTIME_MAX_QUEUE`: 送信前にバッファするチャンク数（既定 50）
 - 実行例（デフォルトは `japanese_sample_24k.wav`。別ファイルは引数で指定）：
   ```bash
   set -a && source .env && /Users/ringo/.nvm/versions/node/v23.11.1/bin/node transcribe-realtime.js
+  ```
+
+### transcribe-pa.js の補足
+- 使用 API / 設定は `transcribe-realtime.js` と同様だが、音声ソースがマイク入力。
+- 取得した 16kHz PCM16 を 100ms ごと（`PA_CHUNK_MS` 環境変数で調整可）に WebSocket へ送信し、約 2 秒ごと（`PA_COMMIT_INTERVAL_MS`）に `input_audio_buffer.commit` を発行。
+- VAD が区切った各 `conversation.item` の最終テキストを `> ...` 形式で標準出力に逐次表示。
+- 進捗情報やエラーログは `stderr` に JSON 形式で出力し、標準出力は認識された文字のみを流す。
+- 調整可能な環境変数（上記に加えて）
+  - `PA_SAMPLE_RATE` / `PA_BLOCK_SIZE`: PAmac の初期化パラメータ（既定 16000 / 64）
+  - `PA_POLL_INTERVAL_MS`: マイクバッファの読み取り間隔（既定 20）
+  - `PA_RESPONSE_MODALITIES`: `response.create` に指定するモダリティ配列（デフォルトは `text` のみ）
+  - `PA_SESSION_TIMEOUT_MS`: セッション無通信タイムアウト（既定 300000ms）
+  - `PA_TOTAL_DURATION_MS`: プログラム全体の最長稼働時間。0 で無効（既定 0）
+- 実行例:
+  ```bash
+  set -a && source .env && /Users/ringo/.nvm/versions/node/v23.11.1/bin/node transcribe-pa.js
   ```
 
 ## 注意点 / トラブルシューティング
