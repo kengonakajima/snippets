@@ -4,6 +4,7 @@
 - `transcribe-file.js`: OpenAI Node SDK の `audio.transcriptions.create`（モデル `gpt-4o-transcribe`）を使ってローカル音声を一括変換します。`dotenv` 経由で `OPENAI_API_KEY` を読み込み、返却された `text` を標準出力へ表示します。
 - `transcribe-realtime.js`: WAV ファイルをリアルタイム API（WebSocket `gpt-4o-realtime-preview`）へストリーミング送信し、`conversation.item.input_audio_transcription.*` イベントをすべて集約して最終的な全文を得ます。
 - `transcribe-pa.js`: PAmac.node (PortAudio) を使って Mac のマイク入力をリアルタイム API へ送信し、逐次的に文字起こしします。
+- `tool-pa.js`: `transcribe-pa.js` を拡張し、リアルタイム音声認識に加えて OpenAI のツール機能を利用します（現在は素数の個数を数える `count_primes` ツールを実装）。
 
 ## 必要環境
 - Node.js v23.11.1 以上（OpenAI SDK がネイティブ `fetch` を使用）
@@ -59,6 +60,17 @@
 - 実行例:
   ```bash
   set -a && source .env && /Users/ringo/.nvm/versions/node/v23.11.1/bin/node transcribe-pa.js
+  ```
+
+### tool-pa.js の補足
+- マイク入力・音声転写の流れは `transcribe-pa.js` と同じですが、`session.update` で `count_primes` ツールを公開し、素数個数の問い合わせがあればツール呼び出し→結果返却を自動化します。
+- ツール呼び出し結果は `stderr` に JSON ログが流れ、ユーザー向けテキスト応答はモデルからのレスポンスとして生成されます。
+- 追加環境変数
+  - `PA_TOOL_INSTRUCTIONS`: モデルに渡す追加指示（既定は素数の質問でツールを呼ぶよう促す日本語）
+- OpenAI Realtime の VAD を有効にしているため、発話が一区切りするとモデルが自動で回答/ツール呼び出しを開始します。
+- 実行例:
+  ```bash
+  set -a && source .env && /Users/ringo/.nvm/versions/node/v23.11.1/bin/node tool-pa.js
   ```
 
 ## 注意点 / トラブルシューティング

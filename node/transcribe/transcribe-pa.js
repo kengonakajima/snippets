@@ -243,7 +243,7 @@ process.on("SIGTERM", () => {
   shutdown(0);
 });
 
-const url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+const url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime";
 const ws = new WebSocket(url, {
   headers: {
     Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
