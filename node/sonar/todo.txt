@@ -1,0 +1,162 @@
+# PerplexityのSonar APIを用いてdeep researchと同等のCLIツールを実装したい。
+
+- node.js用
+- シングルファイルjsを ./に出力
+- APIキーは .envから dotenv
+- context7のMCPを用いて最新仕様に基づいて実装
+- コマンドライン引数で要求事項を与える
+- 制限時間の秒数または最大コスト(米ドル指定)またはループ回数で上限を設定してdeep researchを行う
+- 結果はmarkdownでレポートを出力する
+
+
+
+## 公式サイトのサンプルコード
+
+```
+import Perplexity from '@perplexity-ai/perplexity_ai';
+
+const client = new Perplexity({
+  apiKey: 'YOUR_API_KEY',
+});
+
+try {
+  const search = await perplexity.search.create({
+    query: "libwebrtcにAECMが追加されたのはいつか",
+    max_results: 10,
+    max_tokens: 25000,
+    max_tokens_per_page: 2048,
+    country: "US"
+  });
+
+  for (const result of search.results) {
+    console.log(`${result.title}: ${result.url}`)
+  }
+} catch (error) {
+  console.error(error)
+}
+```
+
+## 公式サイトのsonarのサンプル
+
+
+```
+curl --request POST \
+--url https://api.perplexity.ai/chat/completions \
+--header "Authorization: Bearer <token>" \
+--header "Content-Type: application/json" \
+--data '{
+  "model": "sonar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the latest news in AI research?"
+    }
+  ]
+}' | jq
+```
+
+sonar-proのサンプル
+
+
+```
+curl --request POST \
+  --url https://api.perplexity.ai/chat/completions \
+  --header "Authorization: Bearer <token>" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "model": "sonar-pro",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Analyze the competitive positioning of Perplexity in the AI search market and evaluate how Comet compares to similar offerings from other companies."
+      }
+    ]
+  }' | jq
+```
+
+
+sonar-deep-researchのサンプル
+
+
+```
+curl --request POST \
+  --url https://api.perplexity.ai/chat/completions \
+  --header "Authorization: Bearer <token>" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "model": "sonar-deep-research",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Conduct a comprehensive analysis of the quantum computing industry, including technological approaches, key players, market opportunities, regulatory challenges, and commercial viability projections through 2035."
+      }
+    ]
+  }' | jq
+```
+
+
+## sonar deep researchの async API
+
+submit request:
+
+```
+curl --location 'https://api.perplexity.ai/async/chat/completions' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data '{
+  "request": {
+    "model": "sonar-deep-research",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Provide an in-depth analysis of the impact of AI on global job markets over the next decade."
+      }
+    ]
+  }
+}' | jq
+```
+
+sample response:
+
+```
+{
+  "id": "784312ac-b8fd-405f-99fa-9bcbf48865bb",
+  "model": "sonar-deep-research",
+  "created_at": 1748565663,
+  "started_at": null,
+  "completed_at": null,
+  "response": null,
+  "failed_at": null,
+  "error_message": null,
+  "status": "CREATED"
+}
+```
+
+Retrieve Results:
+
+
+```
+curl --location 'https://api.perplexity.ai/async/chat/completions/{REPLACE_WITH_REQUEST_ID}' \
+  --header "Authorization: Bearer <token>"
+```
+
+poll until completion (python):
+
+```
+import requests
+import time
+
+def poll_request_status(request_id, token):
+    url = f"https://api.perplexity.ai/async/chat/completions/{request_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    while True:
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        if data.get('status') == 'COMPLETED':
+            return data.get('response')
+        time.sleep(1)
+
+# Usage:
+# result = poll_request_status("784312ac-b8fd-405f-99fa-9bcbf48865bb", "<token>")
+# print(result)
+```
