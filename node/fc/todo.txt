@@ -1,0 +1,21 @@
+# firecrawl を試す用の簡単なツール
+
+firecrawlの、 scrape,  map, searchを試せる。
+
+を試せる簡単なコマンドラインツール
+
+- crawl.js, scrape.js, map.js, search.js に分かれている
+- node scrape.js URL : サイトの中身をmarkdownまたはプレーンテキストで表示する
+
+- node search.js keyword : キーワードで検索して結果をJSONで出力する
+
+- node map.js URL : URLで指定して結果をJSONで出力する
+
+
+それぞれ共通に、
+
+
+- APIキーは .envで。 dotenvを用いる
+- 成果物は ./ に置く
+
+

@@ -1,0 +1,16 @@
+{
+  "name": "firecrawl-deep-research-cli",
+  "version": "0.1.0",
+  "description": "Firecrawl を使った自律的な調査 CLI ツール",
+  "main": "src/main.js",
+  "bin": {
+    "firecrawl-research": "src/main.js"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
