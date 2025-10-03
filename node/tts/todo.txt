@@ -1,0 +1,61 @@
+# googleの Gemini 2.5のTTSを使って文字列を音声ファイルに変換する
+
+必要な成果物は:
+
+- node.js用のJSスクリプト
+- コマンドライン引数で与えた日本語文字列をTTSして、generated.wavに保存する。
+- 生成にかかった時間を測定してstdoutに出力する
+- .envからdotenvでGoogleのAPIキーを読み込む
+
+
+
+
+## ChatGPTがくれたヒント
+
+npm i @google/genai wav
+export GOOGLE_API_KEY=あなたの_APIキー
+
+
+## ChatGPTがくれたサンプルコード
+
+```
+// single-speaker-tts.js
+import { GoogleGenAI } from '@google/genai';
+import wav from 'wav';
+import fs from 'node:fs';
+
+async function saveWav(filename, pcm, { channels = 1, rate = 24000, sampleWidth = 2 } = {}) {
+  await new Promise((resolve, reject) => {
+    const writer = new wav.FileWriter(filename, {
+      channels,
+      sampleRate: rate,
+      bitDepth: sampleWidth * 8,
+    });
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+    writer.write(pcm);
+    writer.end();
+  });
+}
+
+async function main() {
+  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+  const res = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-preview-tts',
+    contents: [{ parts: [{ text: 'こんにちは！今日は良い一日になりそうですね。' }] }],
+    config: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }, // 例: 'Kore', 'Charon' など
+      },
+    },
+  });
+
+  const b64 = res.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  const pcm = Buffer.from(b64, 'base64');
+  await saveWav('out.wav', pcm);  // 24kHz, mono, 16-bit PCM
+  console.log('saved: out.wav');
+}
+main();
+```

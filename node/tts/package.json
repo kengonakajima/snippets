@@ -1,0 +1,15 @@
+{
+  "name": "gemini-tts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Gemini 2.5 TTS",
+  "main": "tts.js",
+  "scripts": {
+    "start": "node tts.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.9.0",
+    "dotenv": "^16.4.5",
+    "wav": "^1.0.2"
+  }
+}
