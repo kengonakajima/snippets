@@ -1,0 +1,27 @@
+# voicevoxのTTSでずんだもんの声を合成する。
+
+voicevoxはインストールして、
+ローカルで、 TCP 50021でlisten状態になっていることを確認しました。
+
+voicevoxを使ってずんだもんの音声でwavを生成するttsのサンプルを実装して下さい。
+コマンドライン引数で日本語などの文字列を指定し、それを generated.wavに保存してください。
+
+
+## ChatGPTが作ってくれた参考コード
+
+```
+import { VoicevoxEngineClient } from 'voicevox-api-client';
+import fs from 'node:fs';
+
+const client = new VoicevoxEngineClient({ baseUrl: 'http://localhost:50021' });
+
+(async () => {
+  const speakers = await client.speakers();               // 一覧からIDを選ぶ
+  const zunda = speakers.flatMap(s => s.styles).find(st => st.speakerName.includes('ずんだもん'))!;
+  const speakerId = zunda.id;                              // 例: 1,3,5,7,22,38…環境で異なる
+
+  const q = await client.audioQuery({ text: 'こんにちは、ずんだもんなのだ！', speaker: speakerId });
+  const wav = await client.synthesis({ speaker: speakerId, audioQuery: q });
+  fs.writeFileSync('zunda.wav', Buffer.from(await wav.arrayBuffer()));
+})();
+```
