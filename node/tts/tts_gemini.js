@@ -6,9 +6,10 @@ import { performance } from 'node:perf_hooks';
 dotenv.config();
 
 const text = process.argv.slice(2).join(' ').trim();
+const SPEAKING_RATE = 1.8;
 
 if (!text) {
-  console.error('Usage: node tts.js "<text>"');
+  console.error('Usage: node tts_gemini.js "<text>"');
   process.exit(1);
 }
 
@@ -43,6 +44,7 @@ async function generateSpeech(ai, inputText) {
         voiceConfig: {
           prebuiltVoiceConfig: {
             voiceName: 'Kore',
+            speakingRate: SPEAKING_RATE,
           },
         },
       },

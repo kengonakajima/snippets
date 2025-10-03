@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Gemini 2.5 TTS",
-  "main": "tts.js",
+  "main": "tts_gemini.js",
   "scripts": {
-    "start": "node tts.js"
+    "start": "node tts_gemini.js"
   },
   "dependencies": {
     "@google/genai": "^1.9.0",
