@@ -1,0 +1,9 @@
+# OpenRouterで gpt-5-codex モデルに対して画像を送り、内容を解析させるサンプルコード
+
+- node.js用. nvmで23.11を使う
+- img.jsを作成する
+- OpenRouterのAPIを使う
+- gpt-5-codexモデル
+- chat completion のAPIを用いる
+- rana_standing.png を送る
+- .env から dotenvで読み込む
