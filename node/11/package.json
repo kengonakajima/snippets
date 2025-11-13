@@ -1,0 +1,17 @@
+{
+  "name": "11",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@elevenlabs/client": "^0.10.0",
+    "dotenv": "^17.2.3",
+    "node-record-lpcm16": "^1.0.1"
+  }
+}
