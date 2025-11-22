@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>Frappe Gantt カスタム列サンプル</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@1.0.4/dist/frappe-gantt.css">
+  <style>
+    :root {
+      --row-height: 32px;
+      --grid-width: 480px;
+      --header-bg: #f7f7f7;
+      --border: 1px solid #ddd;
+      --font: 13px/1.4 "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: var(--font);
+      color: #333;
+      background: #fff;
+    }
+    h1 {
+      margin: 16px 16px 8px;
+      font-size: 18px;
+    }
+    .layout {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 40px);
+      margin: 0 16px 16px;
+    }
+    .header-row {
+      display: flex;
+      border: var(--border);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      overflow: hidden;
+      background: var(--header-bg);
+    }
+    .body-scroll {
+      display: flex;
+      flex: 1;
+      border: var(--border);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #fff;
+    }
+    .task-grid {
+      width: var(--grid-width);
+      border-right: var(--border);
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      position: relative;
+    }
+    .task-grid table {
+      border-collapse: collapse;
+      width: 100%;
+      font: var(--font);
+    }
+    .task-grid th,
+    .task-grid td {
+      border-bottom: var(--border);
+      padding: 0 8px;
+      height: var(--row-height);
+      line-height: var(--row-height);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-sizing: border-box;
+    }
+    .task-grid th {
+      font-weight: 600;
+      text-align: left;
+      background: var(--header-bg);
+    }
+    .task-grid tbody {
+      display: block;
+    }
+    .task-grid thead tr,
+    .task-grid tbody tr {
+      display: grid;
+      grid-template-columns: 24px 160px 90px 70px 70px 90px 90px;
+    }
+    .indent {
+      padding-left: calc(12px * var(--level));
+    }
+    .gantt-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Gantt container gets its own min width to avoid shrinking */
+    #gantt {
+      min-width: 900px;
+      height: 100%;
+    }
+    /* シンプルなアウトライン用アイコン */
+    .tree-toggle::before {
+      content: "▸";
+      display: inline-block;
+      transform: rotate(90deg);
+      margin-right: 4px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Frappe Gantt で左カラムを持つ表＋チャートを並べる実装例</h1>
+  <div class="layout">
+    <div class="header-row">
+      <div class="task-grid" style="border-right:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>タスク</th>
+              <th>リソース</th>
+              <th>期間</th>
+              <th>%完了</th>
+              <th>開始日</th>
+              <th>終了日</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      <div class="gantt-wrapper" style="border-left:var(--border); border-top:none;">
+        <div id="gantt-header-placeholder"></div>
+      </div>
+    </div>
+    <div class="body-scroll">
+      <div class="task-grid">
+        <table>
+          <tbody id="grid-body"></tbody>
+        </table>
+      </div>
+      <div class="gantt-wrapper">
+        <div id="gantt"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.0.4/dist/frappe-gantt.umd.js"></script>
+  <script>
+    const BAR_HEIGHT = 20;
+    const PADDING = 12; // frappe-gantt options.padding に合わせる
+    const ROW_HEIGHT = BAR_HEIGHT + PADDING;
+
+    // CSSに行高を反映（テーブル側の高さをSVGと一致させる）
+    document.documentElement.style.setProperty('--row-height', `${ROW_HEIGHT}px`);
+
+    // デモ用タスク
+    const tasks = [
+      { id: '1', name: 'Define Chart API', start: '2008-07-20', end: '2008-08-29', progress: 80, resource: 'Brian', duration: '41 Days', parent: null },
+      { id: '1-1', name: 'Chart Object', start: '2008-07-20', end: '2008-08-29', progress: 100, resource: 'Shlomy', duration: '-', parent: '1' },
+      { id: '1-2', name: 'Task Objects', start: '2008-07-21', end: '2008-08-29', progress: 60, resource: 'Shlomy', duration: '40 Days', parent: '1' },
+      { id: '1-2-1', name: 'Constructor Proc', start: '2008-07-23', end: '2008-08-09', progress: 60, resource: 'Brian T.', duration: '60%', parent: '1-2' },
+      { id: '1-2-2', name: 'Task Variables', start: '2008-07-21', end: '2008-08-11', progress: 60, resource: 'Brian', duration: '20 Days', parent: '1-2' },
+      { id: '1-2-3', name: 'Task Functions', start: '2008-07-26', end: '2008-08-12', progress: 60, resource: 'Ilan', duration: '18 Days', parent: '1-2' },
+      { id: '1-3', name: 'Create HTML Shell', start: '2008-08-24', end: '2008-09-16', progress: 60, resource: 'Brian', duration: '16 Days', parent: '1' },
+      { id: '1-4', name: 'Code Javascript', start: '2008-07-25', end: '2008-12-09', progress: 30, resource: 'Brian', duration: '195 Days', parent: '1' },
+      { id: '1-5', name: 'Define Variables', start: '2008-07-25', end: '2008-07-28', progress: 40, resource: 'Brian', duration: '4 Days', parent: '1' },
+      { id: '1-6', name: 'Calculate Chart Size', start: '2008-08-15', end: '2008-08-24', progress: 40, resource: 'Shlomy', duration: '10 Days', parent: '1' },
+      { id: '1-7', name: 'Draw Tasks Items', start: '2008-08-06', end: '2008-08-22', progress: 60, resource: 'Someone', duration: '15 Days', parent: '1' },
+      { id: '1-8', name: 'Tasks Label Table', start: '2008-08-22', end: '2008-08-30', progress: 60, resource: 'Brian', duration: '6 Days', parent: '1' },
+      { id: '1-9', name: 'Task Scrolling Grid', start: '2008-08-11', end: '2008-08-25', progress: 60, resource: 'Brian', duration: '12 Days', parent: '1' },
+      { id: '1-10', name: 'Draw Task Bars', start: '2008-08-05', end: '2008-08-28', progress: 60, resource: 'Anybody', duration: '17 Days', parent: '1' },
+      { id: '1-11', name: 'Make Updates', start: '2008-09-30', end: '2008-12-17', progress: 30, resource: 'Brian', duration: '50 Days', parent: '1' }
+    ];
+
+    // 階層レベルを計算
+    const levels = {};
+    function getLevel(task) {
+      if (!task.parent) return 0;
+      if (levels[task.parent] !== undefined) return levels[task.parent] + 1;
+      const parentTask = tasks.find(t => t.id === task.parent);
+      levels[task.parent] = getLevel(parentTask);
+      return levels[task.parent] + 1;
+    }
+    tasks.forEach(task => { task.level = getLevel(task); });
+
+    // テーブル描画
+    const tbody = document.getElementById('grid-body');
+    tasks.forEach((task, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td class="indent" style="--level:${task.level};">
+          <span class="tree-toggle"></span>${task.name}
+        </td>
+        <td>${task.resource || ''}</td>
+        <td>${task.duration || ''}</td>
+        <td>${task.progress ?? ''}%</td>
+        <td>${task.start}</td>
+        <td>${task.end}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Gantt 描画（行高さを固定値で共有）
+    const gantt = new Gantt("#gantt", tasks, {
+      bar_height: BAR_HEIGHT,
+      padding: PADDING,
+      view_mode: 'Week',
+      date_format: 'YYYY-MM-DD',
+      language: 'en'
+    });
+
+    // 行の起点を揃える（レイアウトを崩さないよう transform でシフト）
+    function syncHeaderOffset() {
+      const rows = Array.from(document.querySelectorAll('#grid-body tr'));
+      const gridRows = Array.from(document.querySelectorAll('.gantt .grid-row'));
+      const tbody = document.getElementById('grid-body');
+      if (!rows.length || !gridRows.length || !tbody) return;
+      const gap = gridRows[0].getBoundingClientRect().top - rows[0].getBoundingClientRect().top;
+      tbody.style.transform = `translateY(${gap}px)`;
+    }
+    syncHeaderOffset();
+    window.addEventListener('resize', syncHeaderOffset);
+
+    // 配置計測をコンソールに出す（デバッグ用）
+    function logAlignment() {
+      const rows = Array.from(document.querySelectorAll('#grid-body tr'));
+      const gridRows = Array.from(document.querySelectorAll('.gantt .grid-row'));
+      const bars = Array.from(document.querySelectorAll('.gantt .bar-wrapper'));
+      const gridHeader = document.querySelector('.gantt .grid-header');
+      const upperHeader = document.querySelector('.gantt .upper-header');
+      console.group('Gantt alignment debug');
+      console.log('gridHeader:', gridHeader ? gridHeader.getBoundingClientRect().height : 'n/a',
+                  'upperHeader:', upperHeader ? upperHeader.getBoundingClientRect().height : 'n/a');
+      console.log('table rows:', rows.length, 'grid rows:', gridRows.length, 'bars:', bars.length);
+      if (rows.length && gridRows.length) {
+        const gap = gridRows[0].getBoundingClientRect().top - rows[0].getBoundingClientRect().top;
+        console.log('gap(first grid - table):', gap);
+      }
+      const len = Math.min(rows.length, gridRows.length, bars.length, 8); // 先頭8行まで確認
+      for (let i = 0; i < len; i++) {
+        const r = rows[i].getBoundingClientRect();
+        const g = gridRows[i].getBoundingClientRect();
+        const bRect = bars[i].getBoundingClientRect();
+        console.log(
+          `row ${i + 1}`,
+          {
+            tableTop: r.top,
+            gridTop: g.top,
+            barTop: bRect.top,
+            tableHeight: r.height,
+            gridHeight: g.height,
+            barHeight: bRect.height,
+            diffGridTable: g.top - r.top,
+            diffBarTable: bRect.top - r.top,
+            diffBarGrid: bRect.top - g.top
+          }
+        );
+      }
+      console.groupEnd();
+    }
+    // 初期描画後に少し待ってから計測
+    requestAnimationFrame(() => setTimeout(logAlignment, 50));
+    window.addEventListener('resize', () => requestAnimationFrame(logAlignment));
+  </script>
+</body>
+</html>
