@@ -1,0 +1,12 @@
+{
+  "is-main": true,
+  "import": [
+    "Kaida-Amethyst/sdl3"
+  ],
+  "link": {
+    "native": {
+      "cc-flags": "-I/opt/homebrew/include",
+      "cc-link-flags": "-L/opt/homebrew/lib -lSDL3"
+    }
+  }
+}

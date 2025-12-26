@@ -1,0 +1,10 @@
+{
+  "name": "username/bbs",
+  "version": "0.1.0",
+  "deps": {
+    "oboard/mocket": "0.6.2",
+    "moonbitlang/x": "0.4.38",
+    "myfreess/sqlite3": "0.1.1",
+    "Kaida-Amethyst/sdl3": "0.1.0"
+  }
+}

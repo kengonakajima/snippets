@@ -1,0 +1,7 @@
+{
+  "name": "username/sdl-rainbow",
+  "version": "0.1.0",
+  "deps": {
+    "Kaida-Amethyst/sdl3": "0.1.0"
+  }
+}
