@@ -76,9 +76,9 @@ static float cameraX = 0.0f;
 static float cameraY = 0.0f;
 static float zoom = 1.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input, 8: 削除)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input, 8: 削除, 9: 壁)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input", "Delete"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input", "Delete", "Wall"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -155,6 +155,20 @@ typedef struct {
 static UserSieve userSieves[MAX_USER_SIEVE];
 static int userSieveCount = 0;
 static float lastSieveAngle = SIEVE_ANGLE;  // 最後に置いたふるいの角度
+
+// 壁（静的な障害物）
+#define MAX_WALL 100
+#define WALL_LENGTH 60.0f
+#define WALL_THICKNESS 5.0f
+#define WALL_HANDLE_RADIUS 8.0f
+typedef struct {
+    cpBody *body;
+    cpShape *shape;
+    bool active;
+} Wall;
+static Wall walls[MAX_WALL];
+static int wallCount = 0;
+static float lastWallAngle = 0.0f;  // 最後に置いた壁の角度
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -1165,6 +1179,58 @@ static void drawConveyors(void) {
     }
 }
 
+// 壁を配置
+static void placeWall(float x, float y) {
+    int slot = -1;
+    for (int i = 0; i < wallCount; i++) {
+        if (!walls[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && wallCount < MAX_WALL) {
+        slot = wallCount++;
+    }
+    if (slot < 0) return;
+
+    // キネマティックボディ（回転できるように）
+    cpBody *body = cpBodyNewKinematic();
+    cpBodySetPosition(body, cpv(x, y));
+    cpBodySetAngle(body, lastWallAngle);
+    cpSpaceAddBody(space, body);
+
+    // 壁の形状
+    cpFloat hw = WALL_LENGTH / 2.0f;
+    cpFloat hh = WALL_THICKNESS / 2.0f;
+    cpVect verts[4] = {
+        cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
+    };
+
+    cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
+    cpShapeSetFriction(shape, 0.8f);
+    cpSpaceAddShape(space, shape);
+
+    walls[slot].body = body;
+    walls[slot].shape = shape;
+    walls[slot].active = true;
+}
+
+// 壁を描画
+static void drawWalls(void) {
+    for (int i = 0; i < wallCount; i++) {
+        if (!walls[i].active) continue;
+
+        cpVect pos = cpBodyGetPosition(walls[i].body);
+        float angle = (float)cpBodyGetAngle(walls[i].body);
+
+        // 壁本体
+        Rectangle rect = {(float)pos.x, (float)pos.y, WALL_LENGTH, WALL_THICKNESS};
+        Vector2 origin = {WALL_LENGTH / 2.0f, WALL_THICKNESS / 2.0f};
+        DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
+
+        // 中心に回転用の丸を描画
+        DrawCircle((int)pos.x, (int)pos.y, WALL_HANDLE_RADIUS, GRAY);
+        DrawCircleLines((int)pos.x, (int)pos.y, WALL_HANDLE_RADIUS, WHITE);
+    }
+}
+
 // Outputを配置
 static void placeOutput(float x, float y) {
     int slot = -1;
@@ -1687,6 +1753,10 @@ int main(void)
     int clickedSieve = -1;
     int draggingSieve = -1;
     cpVect sieveDragOffset = cpvzero;
+    // 壁操作用
+    int clickedWall = -1;
+    int draggingWall = -1;
+    cpVect wallDragOffset = cpvzero;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -1702,10 +1772,12 @@ int main(void)
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             clickedConveyor = -1;
             clickedSieve = -1;
+            clickedWall = -1;
             draggingConveyor = -1;
             draggingSieve = -1;
+            draggingWall = -1;
 
-            // モード4か6の場合、コンベアまたはふるいの中心ハンドルをクリックしたか確認
+            // モード4, 6, 9の場合、コンベア/ふるい/壁の中心ハンドルをクリックしたか確認
             if (actionMode == 4) {
                 for (int i = 0; i < conveyorCount; i++) {
                     if (!conveyors[i].active) continue;
@@ -1728,10 +1800,21 @@ int main(void)
                         break;
                     }
                 }
+            } else if (actionMode == 9) {
+                for (int i = 0; i < wallCount; i++) {
+                    if (!walls[i].active) continue;
+                    cpVect pos = cpBodyGetPosition(walls[i].body);
+                    float dist = sqrtf(powf(mouseWorldPos.x - (float)pos.x, 2) + powf(mouseWorldPos.y - (float)pos.y, 2));
+                    if (dist < WALL_HANDLE_RADIUS) {
+                        clickedWall = i;
+                        wallDragOffset = cpvsub(pos, cpv(mouseWorldPos.x, mouseWorldPos.y));
+                        break;
+                    }
+                }
             }
 
             // 操作対象がなければカメラドラッグモード
-            if (clickedConveyor < 0 && clickedSieve < 0) {
+            if (clickedConveyor < 0 && clickedSieve < 0 && clickedWall < 0) {
                 dragging = true;
                 dragStartX = GetMouseX();
                 dragStartY = GetMouseY();
@@ -1763,6 +1846,18 @@ int main(void)
                 cpBodySetPosition(userSieves[draggingSieve].body, targetPos);
             }
         }
+        // 壁のドラッグ移動（動かしたらドラッグ開始）
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && clickedWall >= 0) {
+            cpVect currentWallPos = cpBodyGetPosition(walls[clickedWall].body);
+            cpVect targetPos = cpvadd(cpv(mouseWorldPos.x, mouseWorldPos.y), wallDragOffset);
+            float moveDist = (float)cpvlength(cpvsub(targetPos, currentWallPos));
+            if (moveDist > 5.0f) {  // 5ピクセル以上動いたらドラッグ開始
+                draggingWall = clickedWall;
+            }
+            if (draggingWall >= 0) {
+                cpBodySetPosition(walls[draggingWall].body, targetPos);
+            }
+        }
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             // ドラッグしなかった場合のみ15度回転
             if (clickedConveyor >= 0 && draggingConveyor < 0) {
@@ -1775,11 +1870,19 @@ int main(void)
                 cpBodySetAngle(userSieves[clickedSieve].body, newAngle);
                 lastSieveAngle = (float)newAngle;  // 次に置くふるいも同じ角度にする
             }
+            if (clickedWall >= 0 && draggingWall < 0) {
+                cpFloat currentAngle = cpBodyGetAngle(walls[clickedWall].body);
+                cpFloat newAngle = currentAngle + 15.0f * PI / 180.0f;
+                cpBodySetAngle(walls[clickedWall].body, newAngle);
+                lastWallAngle = (float)newAngle;  // 次に置く壁も同じ角度にする
+            }
             dragging = false;
             clickedConveyor = -1;
             draggingConveyor = -1;
             clickedSieve = -1;
             draggingSieve = -1;
+            clickedWall = -1;
+            draggingWall = -1;
         }
         if (dragging) {
             float dx = GetMouseX() - dragStartX;
@@ -1821,6 +1924,7 @@ int main(void)
         if (IsKeyPressed(KEY_SIX)) actionMode = 6;
         if (IsKeyPressed(KEY_SEVEN)) actionMode = 7;
         if (IsKeyPressed(KEY_EIGHT)) actionMode = 8;
+        if (IsKeyPressed(KEY_NINE)) actionMode = 9;
 
         // 右クリック操作（カメラを考慮したワールド座標を取得）
         Camera2D cam = {0};
@@ -2005,7 +2109,26 @@ int main(void)
                             deleted = true;
                         }
                     }
+                    // 壁をチェック
+                    for (int i = 0; i < wallCount && !deleted; i++) {
+                        if (!walls[i].active) continue;
+                        cpVect pos = cpBodyGetPosition(walls[i].body);
+                        float dist = sqrtf(powf(worldX - (float)pos.x, 2) + powf(worldY - (float)pos.y, 2));
+                        if (dist < WALL_LENGTH / 2.0f) {
+                            cpSpaceRemoveShape(space, walls[i].shape);
+                            cpSpaceRemoveBody(space, walls[i].body);
+                            cpShapeFree(walls[i].shape);
+                            cpBodyFree(walls[i].body);
+                            walls[i].active = false;
+                            deleted = true;
+                        }
+                    }
                 }
+            }
+        } else if (actionMode == 9) {
+            // モード9: 壁配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeWall(worldX, worldY);
             }
         }
 
@@ -2050,6 +2173,7 @@ int main(void)
         }
         drawStickyJoints();
         drawConveyors();
+        drawWalls();
         drawOutputs();
         drawInputs();
 
@@ -2071,7 +2195,7 @@ int main(void)
         // キー操作一覧（右端）
         int helpX = SCREEN_WIDTH - 180;
         int helpY = 5;
-        DrawRectangle(helpX - 5, helpY, 180, 260, (Color){255, 255, 255, 200});
+        DrawRectangle(helpX - 5, helpY, 180, 300, (Color){255, 255, 255, 200});
         DrawText("-- Controls --", helpX, helpY + 5, 16, DARKGRAY);
         DrawText("1: Break mode", helpX, helpY + 25, 14, BLACK);
         DrawText("2: Drag mode", helpX, helpY + 45, 14, BLACK);
@@ -2080,10 +2204,12 @@ int main(void)
         DrawText("5: Output mode", helpX, helpY + 105, 14, BLACK);
         DrawText("6: Sieve mode", helpX, helpY + 125, 14, BLACK);
         DrawText("7: Input mode", helpX, helpY + 145, 14, BLACK);
-        DrawText("A/D: Scroll L/R", helpX, helpY + 170, 14, BLACK);
-        DrawText("W/S: Scroll U/D", helpX, helpY + 190, 14, BLACK);
-        DrawText("Wheel: Zoom", helpX, helpY + 210, 14, BLACK);
-        DrawText("L-Drag: Pan", helpX, helpY + 230, 14, BLACK);
+        DrawText("8: Delete mode", helpX, helpY + 165, 14, BLACK);
+        DrawText("9: Wall mode", helpX, helpY + 185, 14, BLACK);
+        DrawText("A/D: Scroll L/R", helpX, helpY + 210, 14, BLACK);
+        DrawText("W/S: Scroll U/D", helpX, helpY + 230, 14, BLACK);
+        DrawText("Wheel: Zoom", helpX, helpY + 250, 14, BLACK);
+        DrawText("L-Drag: Pan", helpX, helpY + 270, 14, BLACK);
 
         EndDrawing();
     }
