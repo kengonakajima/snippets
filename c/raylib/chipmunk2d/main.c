@@ -76,9 +76,9 @@ static float cameraX = 0.0f;
 static float cameraY = 0.0f;
 static float zoom = 1.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -128,6 +128,20 @@ typedef struct {
 } Output;
 static Output outputs[MAX_OUTPUT];
 static int outputCount = 0;
+
+// Input（投入口）
+#define MAX_INPUT_BOX 20
+#define INPUT_SIZE 200.0f
+#define INPUT_WALL_THICKNESS 10.0f
+typedef struct {
+    float x, y;
+    cpShape *leftWall;
+    cpShape *rightWall;
+    cpShape *topWall;
+    bool active;
+} Input;
+static Input inputs[MAX_INPUT_BOX];
+static int inputCount = 0;
 
 // ユーザー配置ふるい
 #define MAX_USER_SIEVE 50
@@ -755,7 +769,7 @@ static void processPendingSticky(void) {
     pendingStickyCount = 0;
 
     // 伸びすぎたジョイントを切る
-    float maxDist = 50.0f;
+    float maxDist = 20.0f;
     for (int i = 0; i < stickyJointCount; i++) {
         if (!stickyJoints[i].active) continue;
         int idxA = stickyJoints[i].debrisA;
@@ -1258,6 +1272,212 @@ static void checkAndClearOutputs(void) {
     }
 }
 
+// Inputを配置
+static void placeInput(float x, float y) {
+    int slot = -1;
+    for (int i = 0; i < inputCount; i++) {
+        if (!inputs[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && inputCount < MAX_INPUT_BOX) {
+        slot = inputCount++;
+    }
+    if (slot < 0) return;
+
+    float ix = x - INPUT_SIZE / 2.0f;
+    float iy = y - INPUT_SIZE / 2.0f;
+    inputs[slot].x = ix;
+    inputs[slot].y = iy;
+
+    cpBody *staticBody = cpSpaceGetStaticBody(space);
+    cpFloat hw = INPUT_WALL_THICKNESS / 2.0f;
+    cpFloat hh = INPUT_SIZE / 2.0f;
+
+    // 左壁
+    cpVect leftVerts[4] = {
+        cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
+    };
+    cpTransform leftT = cpTransformTranslate(cpv(ix, iy + INPUT_SIZE / 2.0f));
+    inputs[slot].leftWall = cpPolyShapeNew(staticBody, 4, leftVerts, leftT, 0.0f);
+    cpShapeSetFriction(inputs[slot].leftWall, 0.5f);
+    cpSpaceAddShape(space, inputs[slot].leftWall);
+
+    // 右壁
+    cpTransform rightT = cpTransformTranslate(cpv(ix + INPUT_SIZE, iy + INPUT_SIZE / 2.0f));
+    inputs[slot].rightWall = cpPolyShapeNew(staticBody, 4, leftVerts, rightT, 0.0f);
+    cpShapeSetFriction(inputs[slot].rightWall, 0.5f);
+    cpSpaceAddShape(space, inputs[slot].rightWall);
+
+    // 上壁
+    cpFloat thw = INPUT_SIZE / 2.0f;
+    cpFloat thh = INPUT_WALL_THICKNESS / 2.0f;
+    cpVect topVerts[4] = {
+        cpv(-thw, -thh), cpv(-thw, thh), cpv(thw, thh), cpv(thw, -thh)
+    };
+    cpTransform topT = cpTransformTranslate(cpv(ix + INPUT_SIZE / 2.0f, iy));
+    inputs[slot].topWall = cpPolyShapeNew(staticBody, 4, topVerts, topT, 0.0f);
+    cpShapeSetFriction(inputs[slot].topWall, 0.5f);
+    cpSpaceAddShape(space, inputs[slot].topWall);
+
+    inputs[slot].active = true;
+}
+
+// Inputを描画
+static void drawInputs(void) {
+    for (int i = 0; i < inputCount; i++) {
+        if (!inputs[i].active) continue;
+        float ix = inputs[i].x;
+        float iy = inputs[i].y;
+
+        // 背景（半透明）
+        DrawRectangle((int)ix, (int)iy, (int)INPUT_SIZE, (int)INPUT_SIZE,
+            (Color){100, 128, 100, 50});
+
+        // 左壁
+        DrawRectangle((int)(ix - INPUT_WALL_THICKNESS / 2.0f), (int)iy,
+            (int)INPUT_WALL_THICKNESS, (int)INPUT_SIZE, DARKGRAY);
+        // 右壁
+        DrawRectangle((int)(ix + INPUT_SIZE - INPUT_WALL_THICKNESS / 2.0f), (int)iy,
+            (int)INPUT_WALL_THICKNESS, (int)INPUT_SIZE, DARKGRAY);
+        // 上壁
+        DrawRectangle((int)ix, (int)(iy - INPUT_WALL_THICKNESS / 2.0f),
+            (int)INPUT_SIZE, (int)INPUT_WALL_THICKNESS, DARKGRAY);
+
+        DrawText("INPUT", (int)ix + 70, (int)iy + 90, 20, (Color){60, 80, 60, 200});
+    }
+}
+
+// Input内が空なら土砂を生成
+static void checkAndFillInputs(void) {
+    for (int inp = 0; inp < inputCount; inp++) {
+        if (!inputs[inp].active) continue;
+
+        float ix = inputs[inp].x;
+        float iy = inputs[inp].y;
+
+        // このInput内にデブリがあるかチェック
+        bool hasDebris = false;
+        for (int i = 0; i < debrisCount; i++) {
+            if (!debris[i].active) continue;
+
+            cpVect pos;
+            if (debris[i].isStatic) {
+                pos = debris[i].staticPos;
+            } else if (debris[i].body) {
+                pos = cpBodyGetPosition(debris[i].body);
+            } else {
+                continue;
+            }
+
+            // Input内にいるか
+            if (pos.x >= ix && pos.x <= ix + INPUT_SIZE &&
+                pos.y >= iy && pos.y <= iy + INPUT_SIZE) {
+                hasDebris = true;
+                break;
+            }
+        }
+
+        // 空なら土砂を生成（3個）
+        if (!hasDebris) {
+            for (int s = 0; s < 3; s++) {
+                float r = rand01();
+                float spawnX = ix + 20.0f + rand01() * (INPUT_SIZE - 40.0f);
+                float spawnY = iy + 20.0f + rand01() * (INPUT_SIZE - 40.0f);
+
+                // spawnDebris系の関数は固定位置に生成するので、ここで直接生成
+                int slot = findFreeSlot();
+                if (slot < 0) continue;
+
+                // サイズと種類を決定
+                float size;
+                DebrisType type;
+                float density;
+                if (r < 0.15f) {
+                    // 粘土
+                    size = 5.0f + rand01() * 15.0f;
+                    type = DEBRIS_CLAY;
+                    density = 1.8f;
+                } else if (r < 0.40f) {
+                    // 木
+                    size = 10.0f + rand01() * 50.0f;
+                    type = DEBRIS_WOOD;
+                    density = 0.7f;
+                } else {
+                    // 石
+                    size = 2.0f + powf(rand01(), 2.0f) * 28.0f;
+                    type = DEBRIS_STONE;
+                    density = 0.7f + rand01() * 2.0f;
+                }
+
+                int vertexCount;
+                cpVect points[MAX_VERTICES];
+
+                if (type == DEBRIS_WOOD) {
+                    // 木は長方形
+                    float aspectRatio = 3.0f + rand01() * 5.0f;
+                    float length = size;
+                    float width = size / aspectRatio;
+                    if (width < 1.5f) width = 1.5f;
+                    float hw = length / 2.0f;
+                    float hh = width / 2.0f;
+                    points[0] = cpv(-hw, -hh);
+                    points[1] = cpv(-hw, hh);
+                    points[2] = cpv(hw, hh);
+                    points[3] = cpv(hw, -hh);
+                    vertexCount = 4;
+                } else {
+                    // 石・粘土は多角形
+                    vertexCount = 3 + rand() % 5;
+                    float angles[MAX_VERTICES];
+                    for (int j = 0; j < vertexCount; j++) {
+                        angles[j] = ((float)j / vertexCount + rand01() * 0.1f) * 2.0f * PI;
+                    }
+                    qsort(angles, vertexCount, sizeof(float), compareFloats);
+                    for (int j = 0; j < vertexCount; j++) {
+                        float rad = size * (0.7f + rand01() * 0.3f);
+                        points[j] = cpv(rad * cosf(angles[j]), rad * sinf(angles[j]));
+                    }
+                }
+
+                float area = calcPolygonArea(points, vertexCount);
+                cpFloat mass = area * density;
+                cpFloat moment = cpMomentForPoly(mass, vertexCount, points, cpvzero, 0.0f);
+                cpBody *body = cpBodyNew(mass, moment);
+                cpBodySetPosition(body, cpv(spawnX, spawnY));
+                cpBodySetAngle(body, rand01() * 2.0f * PI);
+                cpSpaceAddBody(space, body);
+
+                cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
+                cpShapeSetFriction(shape, type == DEBRIS_CLAY ? 0.9f : (type == DEBRIS_WOOD ? 0.6f : 0.5f));
+                float elasticity = type == DEBRIS_CLAY ? 0.05f : (type == DEBRIS_WOOD ? 0.3f : 0.8f - (size - 2.0f) / 28.0f * 0.7f);
+                if (elasticity < 0.01f) elasticity = 0.01f;
+                if (elasticity > 1.0f) elasticity = 1.0f;
+                cpShapeSetElasticity(shape, elasticity);
+                cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+                cpShapeSetUserData(shape, (void*)(intptr_t)slot);
+                cpSpaceAddShape(space, shape);
+
+                debris[slot].body = body;
+                debris[slot].shape = shape;
+                debris[slot].vertexCount = vertexCount;
+                for (int j = 0; j < vertexCount; j++) {
+                    debris[slot].vertices[j] = points[j];
+                }
+                debris[slot].size = size;
+                debris[slot].density = density;
+                debris[slot].type = type;
+                debris[slot].active = true;
+                debris[slot].isStatic = false;
+                debris[slot].wakeUp = false;
+                debris[slot].shouldBreak = false;
+                debris[slot].breakFlash = 0;
+                debris[slot].idleTime = 0.0f;
+                debris[slot].lastPos = cpv(spawnX, spawnY);
+                if (slot >= debrisCount) debrisCount = slot + 1;
+            }
+        }
+    }
+}
+
 // ユーザーふるいを配置
 static void placeUserSieve(float x, float y) {
     int slot = -1;
@@ -1418,9 +1638,7 @@ int main(void)
     cpCollisionHandler *handler = cpSpaceAddDefaultCollisionHandler(space);
     handler->postSolveFunc = postSolveHandler;
 
-    float spawnTimer = 0.0f;
     float physicsTimeMs = 0.0f;
-    bool spawning = false;
 
     // カメラをフィールド中央に初期化
     cameraX = FIELD_WIDTH / 2.0f - SCREEN_WIDTH / 2.0f;
@@ -1437,6 +1655,9 @@ int main(void)
     int rotatingSieve = -1;
     int clickedConveyor = -1;  // クリック判定用
     float clickStartTime = 0.0f;
+    // コンベアドラッグ用
+    int draggingConveyor = -1;
+    cpVect conveyorDragOffset = cpvzero;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -1463,6 +1684,7 @@ int main(void)
                     float dist = sqrtf(powf(mouseWorldPos.x - (float)pos.x, 2) + powf(mouseWorldPos.y - (float)pos.y, 2));
                     if (dist < CONVEYOR_HANDLE_RADIUS) {
                         clickedConveyor = i;
+                        conveyorDragOffset = cpvsub(pos, cpv(mouseWorldPos.x, mouseWorldPos.y));
                         break;
                     }
                 }
@@ -1487,22 +1709,29 @@ int main(void)
                 cameraStartY = cameraY;
             }
         }
-        // 長押しで回転開始（0.2秒後）
+        // コンベアのドラッグ移動（動かしたらドラッグ開始）
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && clickedConveyor >= 0) {
-            float holdTime = (float)GetTime() - clickStartTime;
-            if (holdTime > 0.2f) {
-                rotatingConveyor = clickedConveyor;
+            cpVect currentConvPos = cpBodyGetPosition(conveyors[clickedConveyor].body);
+            cpVect targetPos = cpvadd(cpv(mouseWorldPos.x, mouseWorldPos.y), conveyorDragOffset);
+            float moveDist = (float)cpvlength(cpvsub(targetPos, currentConvPos));
+            if (moveDist > 5.0f) {  // 5ピクセル以上動いたらドラッグ開始
+                draggingConveyor = clickedConveyor;
+            }
+            if (draggingConveyor >= 0) {
+                cpBodySetPosition(conveyors[draggingConveyor].body, targetPos);
             }
         }
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            // 短いクリック（0.2秒未満）でコンベアの方向を反転
-            if (clickedConveyor >= 0 && rotatingConveyor < 0) {
-                conveyors[clickedConveyor].reversed = !conveyors[clickedConveyor].reversed;
+            // ドラッグしなかった場合のみコンベアを15度回転
+            if (clickedConveyor >= 0 && draggingConveyor < 0) {
+                cpFloat currentAngle = cpBodyGetAngle(conveyors[clickedConveyor].body);
+                cpBodySetAngle(conveyors[clickedConveyor].body, currentAngle + 15.0f * PI / 180.0f);
             }
             dragging = false;
             rotatingConveyor = -1;
             rotatingSieve = -1;
             clickedConveyor = -1;
+            draggingConveyor = -1;
         }
         if (dragging) {
             float dx = GetMouseX() - dragStartX;
@@ -1510,11 +1739,7 @@ int main(void)
             cameraX = cameraStartX - dx / zoom;
             cameraY = cameraStartY - dy / zoom;
         }
-        // 回転処理
-        if (rotatingConveyor >= 0 && conveyors[rotatingConveyor].active) {
-            cpFloat currentAngle = cpBodyGetAngle(conveyors[rotatingConveyor].body);
-            cpBodySetAngle(conveyors[rotatingConveyor].body, currentAngle + ROTATE_SPEED);
-        }
+        // ふるい回転処理
         if (rotatingSieve >= 0 && userSieves[rotatingSieve].active) {
             cpFloat currentAngle = cpBodyGetAngle(userSieves[rotatingSieve].body);
             cpBodySetAngle(userSieves[rotatingSieve].body, currentAngle + ROTATE_SPEED);
@@ -1544,10 +1769,6 @@ int main(void)
             if (zoom > 3.0f) zoom = 3.0f;
         }
 
-        if (IsKeyPressed(KEY_SPACE)) {
-            spawning = !spawning;
-        }
-
         // 1-9キーで操作モード切替
         if (IsKeyPressed(KEY_ONE)) actionMode = 1;
         if (IsKeyPressed(KEY_TWO)) actionMode = 2;
@@ -1555,6 +1776,7 @@ int main(void)
         if (IsKeyPressed(KEY_FOUR)) actionMode = 4;
         if (IsKeyPressed(KEY_FIVE)) actionMode = 5;
         if (IsKeyPressed(KEY_SIX)) actionMode = 6;
+        if (IsKeyPressed(KEY_SEVEN)) actionMode = 7;
 
         // 右クリック操作（カメラを考慮したワールド座標を取得）
         Camera2D cam = {0};
@@ -1638,25 +1860,15 @@ int main(void)
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                 placeUserSieve(worldX, worldY);
             }
-        }
-
-        if (spawning) {
-            spawnTimer += dt;
-            if (spawnTimer > 0.128f) {
-                // 3個生成: 60%石、25%木、15%粘土
-                for (int i = 0; i < 3; i++) {
-                    float r = rand01();
-                    if (r < 0.15f) {
-                        spawnClay();
-                    } else if (r < 0.40f) {
-                        spawnWood();
-                    } else {
-                        spawnDebris();
-                    }
-                }
-                spawnTimer = 0.0f;
+        } else if (actionMode == 7) {
+            // モード7: Input配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeInput(worldX, worldY);
             }
         }
+
+        // Input箱が空なら土砂を生成
+        checkAndFillInputs();
 
         updateSieveVibration((float)GetTime());
 
@@ -1697,6 +1909,7 @@ int main(void)
         drawStickyJoints();
         drawConveyors();
         drawOutputs();
+        drawInputs();
 
         EndMode2D();
 
@@ -1718,13 +1931,13 @@ int main(void)
         int helpY = 5;
         DrawRectangle(helpX - 5, helpY, 180, 260, (Color){255, 255, 255, 200});
         DrawText("-- Controls --", helpX, helpY + 5, 16, DARKGRAY);
-        DrawText("Space: Spawn ON/OFF", helpX, helpY + 25, 14, BLACK);
-        DrawText("1: Break mode", helpX, helpY + 45, 14, BLACK);
-        DrawText("2: Drag mode", helpX, helpY + 65, 14, BLACK);
-        DrawText("3: Water mode", helpX, helpY + 85, 14, BLACK);
-        DrawText("4: Conveyor mode", helpX, helpY + 105, 14, BLACK);
-        DrawText("5: Output mode", helpX, helpY + 125, 14, BLACK);
-        DrawText("6: Sieve mode", helpX, helpY + 145, 14, BLACK);
+        DrawText("1: Break mode", helpX, helpY + 25, 14, BLACK);
+        DrawText("2: Drag mode", helpX, helpY + 45, 14, BLACK);
+        DrawText("3: Water mode", helpX, helpY + 65, 14, BLACK);
+        DrawText("4: Conveyor mode", helpX, helpY + 85, 14, BLACK);
+        DrawText("5: Output mode", helpX, helpY + 105, 14, BLACK);
+        DrawText("6: Sieve mode", helpX, helpY + 125, 14, BLACK);
+        DrawText("7: Input mode", helpX, helpY + 145, 14, BLACK);
         DrawText("A/D: Scroll L/R", helpX, helpY + 170, 14, BLACK);
         DrawText("W/S: Scroll U/D", helpX, helpY + 190, 14, BLACK);
         DrawText("Wheel: Zoom", helpX, helpY + 210, 14, BLACK);
