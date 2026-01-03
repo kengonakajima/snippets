@@ -94,6 +94,12 @@ typedef struct {
 static Water waters[MAX_WATER];
 static int waterCount = 0;
 
+// 配置用グリッド
+#define GRID_UNIT 10.0f
+static float snapToGrid(float v) {
+    return roundf(v / GRID_UNIT) * GRID_UNIT;
+}
+
 // コンベア
 #define MAX_CONVEYOR 50
 #define CONVEYOR_LENGTH 300.0f
@@ -1098,6 +1104,9 @@ static void placeWater(float x, float y) {
 
 // コンベアを配置
 static void placeConveyor(float x, float y) {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+
     // 空きスロットを探す
     int slot = -1;
     for (int i = 0; i < conveyorCount; i++) {
@@ -1181,6 +1190,9 @@ static void drawConveyors(void) {
 
 // 壁を配置
 static void placeWall(float x, float y) {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+
     int slot = -1;
     for (int i = 0; i < wallCount; i++) {
         if (!walls[i].active) { slot = i; break; }
@@ -1233,6 +1245,9 @@ static void drawWalls(void) {
 
 // Outputを配置
 static void placeOutput(float x, float y) {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+
     int slot = -1;
     for (int i = 0; i < outputCount; i++) {
         if (!outputs[i].active) { slot = i; break; }
@@ -1366,6 +1381,9 @@ static void checkAndClearOutputs(void) {
 
 // Inputを配置
 static void placeInput(float x, float y) {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+
     int slot = -1;
     for (int i = 0; i < inputCount; i++) {
         if (!inputs[i].active) { slot = i; break; }
@@ -1572,6 +1590,9 @@ static void checkAndFillInputs(void) {
 
 // ユーザーふるいを配置
 static void placeUserSieve(float x, float y) {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+
     int slot = -1;
     for (int i = 0; i < userSieveCount; i++) {
         if (!userSieves[i].active) { slot = i; break; }
@@ -1709,6 +1730,33 @@ static void createGround(void) {
 
 static void drawGround(void) {
     DrawRectangle(0, SCREEN_HEIGHT - 20, FIELD_WIDTH, 20, DARKGRAY);
+}
+
+// 背景グリッドを描画
+static void drawGrid(float camX, float camY, float camZoom) {
+    Color gridColor = (Color){200, 200, 200, 40};
+
+    // 可視範囲を計算
+    float halfW = (SCREEN_WIDTH / 2.0f) / camZoom;
+    float halfH = (SCREEN_HEIGHT / 2.0f) / camZoom;
+    float centerX = camX + SCREEN_WIDTH / 2.0f;
+    float centerY = camY + SCREEN_HEIGHT / 2.0f;
+
+    int minX = (int)((centerX - halfW) / GRID_UNIT) - 1;
+    int maxX = (int)((centerX + halfW) / GRID_UNIT) + 1;
+    int minY = (int)((centerY - halfH) / GRID_UNIT) - 1;
+    int maxY = (int)((centerY + halfH) / GRID_UNIT) + 1;
+
+    // 縦線
+    for (int x = minX; x <= maxX; x++) {
+        float wx = x * GRID_UNIT;
+        DrawLine((int)wx, minY * (int)GRID_UNIT, (int)wx, maxY * (int)GRID_UNIT, gridColor);
+    }
+    // 横線
+    for (int y = minY; y <= maxY; y++) {
+        float wy = y * GRID_UNIT;
+        DrawLine(minX * (int)GRID_UNIT, (int)wy, maxX * (int)GRID_UNIT, (int)wy, gridColor);
+    }
 }
 
 int main(void)
@@ -2163,6 +2211,7 @@ int main(void)
 
         BeginMode2D(camera);
 
+        drawGrid(cameraX, cameraY, zoom);
         drawWater();
         drawGround();
         drawSieve();
