@@ -145,6 +145,7 @@ static int inputCount = 0;
 
 // ユーザー配置ふるい
 #define MAX_USER_SIEVE 50
+#define SIEVE_HANDLE_RADIUS 5.0f  // ふるいのハンドル半径（コンベアの1/3）
 typedef struct {
     cpBody *body;
     cpShape *shape;
@@ -153,6 +154,7 @@ typedef struct {
 } UserSieve;
 static UserSieve userSieves[MAX_USER_SIEVE];
 static int userSieveCount = 0;
+static float lastSieveAngle = SIEVE_ANGLE;  // 最後に置いたふるいの角度
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -1493,7 +1495,7 @@ static void placeUserSieve(float x, float y) {
 
     cpBody *body = cpBodyNewKinematic();
     cpBodySetPosition(body, cpv(x, y));
-    cpBodySetAngle(body, SIEVE_ANGLE);
+    cpBodySetAngle(body, lastSieveAngle);  // 最後に置いたふるいと同じ角度
     cpSpaceAddBody(space, body);
 
     cpFloat hw = SIEVE_LENGTH / 2.0f;
@@ -1521,6 +1523,10 @@ static void drawUserSieves(void) {
         Rectangle rect = {(float)pos.x, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
         Vector2 origin = {SIEVE_LENGTH / 2.0f, SIEVE_THICKNESS / 2.0f};
         DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
+
+        // 中心ハンドル
+        DrawCircle((int)pos.x, (int)pos.y, SIEVE_HANDLE_RADIUS, DARKGRAY);
+        DrawCircleLines((int)pos.x, (int)pos.y, SIEVE_HANDLE_RADIUS, WHITE);
     }
 }
 
@@ -1560,15 +1566,14 @@ static void updateSieveVibration(float time) {
     float velocityPhase = cosf(time * omega);
     float speed = SIEVE_AMP * omega * velocityPhase;
 
-    float normalAngle = SIEVE_ANGLE + PI / 2.0f;
-    float vx = speed * cosf(normalAngle);
-    float vy = speed * sinf(normalAngle);
-
-    cpVect velocity = cpv(vx, vy);
-    // ユーザー配置ふるいを振動
+    // ユーザー配置ふるいを振動（各ふるいの面に垂直な方向）
     for (int i = 0; i < userSieveCount; i++) {
         if (!userSieves[i].active) continue;
-        cpBodySetVelocity(userSieves[i].body, velocity);
+        float sieveAngle = (float)cpBodyGetAngle(userSieves[i].body);
+        float normalAngle = sieveAngle + PI / 2.0f;  // 面に垂直な方向
+        float vx = speed * cosf(normalAngle);
+        float vy = speed * sinf(normalAngle);
+        cpBodySetVelocity(userSieves[i].body, cpv(vx, vy));
     }
 }
 
@@ -1650,14 +1655,14 @@ int main(void)
     float cameraStartX = 0.0f;
     float cameraStartY = 0.0f;
 
-    // 回転用
-    int rotatingConveyor = -1;
-    int rotatingSieve = -1;
-    int clickedConveyor = -1;  // クリック判定用
-    float clickStartTime = 0.0f;
-    // コンベアドラッグ用
+    // コンベア操作用
+    int clickedConveyor = -1;
     int draggingConveyor = -1;
     cpVect conveyorDragOffset = cpvzero;
+    // ふるい操作用
+    int clickedSieve = -1;
+    int draggingSieve = -1;
+    cpVect sieveDragOffset = cpvzero;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -1669,12 +1674,12 @@ int main(void)
         camForRotate.zoom = zoom;
         Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camForRotate);
 
-        // マウスドラッグでスクロール または 回転/反転
+        // マウスドラッグでスクロール または 回転/移動
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            rotatingConveyor = -1;
-            rotatingSieve = -1;
             clickedConveyor = -1;
-            clickStartTime = (float)GetTime();
+            clickedSieve = -1;
+            draggingConveyor = -1;
+            draggingSieve = -1;
 
             // モード4か6の場合、コンベアまたはふるいの中心ハンドルをクリックしたか確認
             if (actionMode == 4) {
@@ -1693,15 +1698,16 @@ int main(void)
                     if (!userSieves[i].active) continue;
                     cpVect pos = cpBodyGetPosition(userSieves[i].body);
                     float dist = sqrtf(powf(mouseWorldPos.x - (float)pos.x, 2) + powf(mouseWorldPos.y - (float)pos.y, 2));
-                    if (dist < SIEVE_LENGTH / 2.0f) {
-                        rotatingSieve = i;
+                    if (dist < SIEVE_HANDLE_RADIUS) {
+                        clickedSieve = i;
+                        sieveDragOffset = cpvsub(pos, cpv(mouseWorldPos.x, mouseWorldPos.y));
                         break;
                     }
                 }
             }
 
-            // 回転対象がなければドラッグモード
-            if (clickedConveyor < 0 && rotatingSieve < 0) {
+            // 操作対象がなければカメラドラッグモード
+            if (clickedConveyor < 0 && clickedSieve < 0) {
                 dragging = true;
                 dragStartX = GetMouseX();
                 dragStartY = GetMouseY();
@@ -1721,28 +1727,41 @@ int main(void)
                 cpBodySetPosition(conveyors[draggingConveyor].body, targetPos);
             }
         }
+        // ふるいのドラッグ移動（動かしたらドラッグ開始）
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && clickedSieve >= 0) {
+            cpVect currentSievePos = cpBodyGetPosition(userSieves[clickedSieve].body);
+            cpVect targetPos = cpvadd(cpv(mouseWorldPos.x, mouseWorldPos.y), sieveDragOffset);
+            float moveDist = (float)cpvlength(cpvsub(targetPos, currentSievePos));
+            if (moveDist > 5.0f) {  // 5ピクセル以上動いたらドラッグ開始
+                draggingSieve = clickedSieve;
+            }
+            if (draggingSieve >= 0) {
+                cpBodySetPosition(userSieves[draggingSieve].body, targetPos);
+            }
+        }
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            // ドラッグしなかった場合のみコンベアを15度回転
+            // ドラッグしなかった場合のみ15度回転
             if (clickedConveyor >= 0 && draggingConveyor < 0) {
                 cpFloat currentAngle = cpBodyGetAngle(conveyors[clickedConveyor].body);
                 cpBodySetAngle(conveyors[clickedConveyor].body, currentAngle + 15.0f * PI / 180.0f);
             }
+            if (clickedSieve >= 0 && draggingSieve < 0) {
+                cpFloat currentAngle = cpBodyGetAngle(userSieves[clickedSieve].body);
+                cpFloat newAngle = currentAngle + 15.0f * PI / 180.0f;
+                cpBodySetAngle(userSieves[clickedSieve].body, newAngle);
+                lastSieveAngle = (float)newAngle;  // 次に置くふるいも同じ角度にする
+            }
             dragging = false;
-            rotatingConveyor = -1;
-            rotatingSieve = -1;
             clickedConveyor = -1;
             draggingConveyor = -1;
+            clickedSieve = -1;
+            draggingSieve = -1;
         }
         if (dragging) {
             float dx = GetMouseX() - dragStartX;
             float dy = GetMouseY() - dragStartY;
             cameraX = cameraStartX - dx / zoom;
             cameraY = cameraStartY - dy / zoom;
-        }
-        // ふるい回転処理
-        if (rotatingSieve >= 0 && userSieves[rotatingSieve].active) {
-            cpFloat currentAngle = cpBodyGetAngle(userSieves[rotatingSieve].body);
-            cpBodySetAngle(userSieves[rotatingSieve].body, currentAngle + ROTATE_SPEED);
         }
 
         // A/Dキーでスクロール
