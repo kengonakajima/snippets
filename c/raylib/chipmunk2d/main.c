@@ -76,9 +76,9 @@ static float cameraX = 0.0f;
 static float cameraY = 0.0f;
 static float zoom = 1.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -98,14 +98,18 @@ static int waterCount = 0;
 #define MAX_CONVEYOR 50
 #define CONVEYOR_LENGTH 300.0f
 #define CONVEYOR_THICKNESS 10.0f
-#define CONVEYOR_ANGLE (-30.0f * PI / 180.0f)  // 30度斜め上向き
-#define CONVEYOR_SPEED 200.0f  // 表面速度
-#define CONVEYOR_FORCE 50000.0f  // コンベアが物体に加える力
+#define CONVEYOR_DEFAULT_ANGLE (-30.0f * PI / 180.0f)  // デフォルト30度斜め上向き
+#define CONVEYOR_FORCE 500000.0f  // コンベアが物体に加える力
+#define CONVEYOR_MAX_SPEED 150.0f  // コンベア上の最大速度
+#define CONVEYOR_HANDLE_RADIUS 15.0f  // 回転用ハンドルの半径
+#define ROTATE_SPEED 0.02f  // 回転速度
 typedef struct {
     cpBody *body;
     cpShape *shape;
     float x, y;
+    float angle;
     bool active;
+    bool reversed;  // 力の方向を反転
 } Conveyor;
 static Conveyor conveyors[MAX_CONVEYOR];
 static int conveyorCount = 0;
@@ -124,6 +128,17 @@ typedef struct {
 } Output;
 static Output outputs[MAX_OUTPUT];
 static int outputCount = 0;
+
+// ユーザー配置ふるい
+#define MAX_USER_SIEVE 50
+typedef struct {
+    cpBody *body;
+    cpShape *shape;
+    cpVect basePos;
+    bool active;
+} UserSieve;
+static UserSieve userSieves[MAX_USER_SIEVE];
+static int userSieveCount = 0;
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -527,15 +542,11 @@ static void checkGroundOrStaticContact(cpBody *body, cpArbiter *arb, void *data)
     cpBody *bodyA = cpShapeGetBody(a);
     cpBody *bodyB = cpShapeGetBody(b);
 
-    // 相手がスタティックボディか確認
+    // 相手がスタティックボディか確認（キネマティックボディ=コンベア/ふるいは除外）
+    if (cpBodyGetType(bodyA) == CP_BODY_TYPE_KINEMATIC || cpBodyGetType(bodyB) == CP_BODY_TYPE_KINEMATIC) {
+        return;  // コンベアやふるいの上ではスタティック化しない
+    }
     if (cpBodyGetType(bodyA) == CP_BODY_TYPE_STATIC || cpBodyGetType(bodyB) == CP_BODY_TYPE_STATIC) {
-        // コンベアは除外（コンベアはスタティックだが、その上ではスタティック化しない）
-        // コンベアかどうかは表面速度で判定
-        cpVect surfVelA = cpShapeGetSurfaceVelocity(a);
-        cpVect surfVelB = cpShapeGetSurfaceVelocity(b);
-        if (cpvlength(surfVelA) > 0.1f || cpvlength(surfVelB) > 0.1f) {
-            return;  // コンベア上なのでスキップ
-        }
         touchingGroundOrStatic = true;
         return;
     }
@@ -976,41 +987,40 @@ static void applyBuoyancy(void) {
     }
 }
 
-// コンベアに接触しているかチェック用コールバック
-static bool onConveyor;
-static void checkConveyorContact(cpBody *body, cpArbiter *arb, void *data) {
-    (void)body;
-    (void)data;
-
-    cpShape *a, *b;
-    cpArbiterGetShapes(arb, &a, &b);
-
-    // 表面速度があるシェイプ（コンベア）に接触しているか
-    cpVect surfVelA = cpShapeGetSurfaceVelocity(a);
-    cpVect surfVelB = cpShapeGetSurfaceVelocity(b);
-    if (cpvlength(surfVelA) > 0.1f || cpvlength(surfVelB) > 0.1f) {
-        onConveyor = true;
-    }
-}
-
 // コンベアの力を適用
 static void applyConveyorForce(void) {
-    // コンベアの進行方向
-    cpVect conveyorDir = cpv(cosf(CONVEYOR_ANGLE), sinf(CONVEYOR_ANGLE));
-
     for (int i = 0; i < debrisCount; i++) {
         if (!debris[i].active || debris[i].isStatic || !debris[i].body) continue;
 
-        // コンベアに接触しているかチェック
-        onConveyor = false;
-        cpBodyEachArbiter(debris[i].body, checkConveyorContact, NULL);
+        // 各コンベアとの接触をチェック
+        for (int c = 0; c < conveyorCount; c++) {
+            if (!conveyors[c].active) continue;
 
-        if (onConveyor) {
-            // コンベア方向に力を加える（質量に比例）
-            cpFloat mass = cpBodyGetMass(debris[i].body);
-            cpVect force = cpvmult(conveyorDir, CONVEYOR_FORCE * mass / 100.0f);
-            cpVect currentForce = cpBodyGetForce(debris[i].body);
-            cpBodySetForce(debris[i].body, cpvadd(currentForce, force));
+            // コンベアとの衝突判定
+            cpContactPointSet contacts = cpShapesCollide(debris[i].shape, conveyors[c].shape);
+            if (contacts.count > 0) {
+                float angle = (float)cpBodyGetAngle(conveyors[c].body);
+                cpVect conveyorDir = cpv(cosf(angle), sinf(angle));
+
+                // 反転フラグで方向を決定
+                if (conveyors[c].reversed) {
+                    conveyorDir = cpvneg(conveyorDir);
+                }
+
+                // 接触点の速度をチェック（回転による速度も含む）
+                cpVect contactPoint = contacts.points[0].pointA;
+                cpVect velAtContact = cpBodyGetVelocityAtWorldPoint(debris[i].body, contactPoint);
+                float speedInDir = (float)cpvdot(velAtContact, conveyorDir);
+
+                // 最大速度未満なら力を加える
+                if (speedInDir < CONVEYOR_MAX_SPEED) {
+                    cpFloat mass = cpBodyGetMass(debris[i].body);
+                    cpVect force = cpvmult(conveyorDir, CONVEYOR_FORCE * mass / 100.0f);
+                    // 接触点に力を加える（回転も発生する）
+                    cpBodyApplyForceAtWorldPoint(debris[i].body, force, contactPoint);
+                }
+                break;  // 1つのコンベアからのみ力を受ける
+            }
         }
     }
 }
@@ -1044,31 +1054,32 @@ static void placeConveyor(float x, float y) {
     }
     if (slot < 0) return;
 
-    // スタティックボディを使用
-    cpBody *staticBody = cpSpaceGetStaticBody(space);
+    // キネマティックボディを使用（回転できるように）
+    cpBody *body = cpBodyNewKinematic();
+    cpBodySetPosition(body, cpv(x, y));
+    cpBodySetAngle(body, CONVEYOR_DEFAULT_ANGLE);
+    cpSpaceAddBody(space, body);
 
-    // コンベアの形状（回転した長方形）
+    // コンベアの形状
     cpFloat hw = CONVEYOR_LENGTH / 2.0f;
     cpFloat hh = CONVEYOR_THICKNESS / 2.0f;
     cpVect verts[4] = {
         cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
     };
 
-    // 位置と回転を適用
-    cpTransform t = cpTransformRigid(cpv(x, y), CONVEYOR_ANGLE);
-    cpShape *shape = cpPolyShapeNew(staticBody, 4, verts, t, 0.0f);
+    cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 1.0f);  // 高摩擦
-
-    // 表面速度を設定（ベルトの進行方向）
-    cpShapeSetSurfaceVelocity(shape, cpv(CONVEYOR_SPEED, 0.0f));
+    // 表面速度は使わず、力だけで動かす（回転に正しく追従させるため）
 
     cpSpaceAddShape(space, shape);
 
-    conveyors[slot].body = staticBody;
+    conveyors[slot].body = body;
     conveyors[slot].shape = shape;
     conveyors[slot].x = x;
     conveyors[slot].y = y;
+    conveyors[slot].angle = CONVEYOR_DEFAULT_ANGLE;
     conveyors[slot].active = true;
+    conveyors[slot].reversed = false;
 }
 
 // コンベアを描画
@@ -1076,20 +1087,28 @@ static void drawConveyors(void) {
     for (int i = 0; i < conveyorCount; i++) {
         if (!conveyors[i].active) continue;
 
-        float x = conveyors[i].x;
-        float y = conveyors[i].y;
+        cpVect pos = cpBodyGetPosition(conveyors[i].body);
+        float angle = (float)cpBodyGetAngle(conveyors[i].body);
 
         // コンベア本体
-        Rectangle rect = {x, y, CONVEYOR_LENGTH, CONVEYOR_THICKNESS};
+        Rectangle rect = {(float)pos.x, (float)pos.y, CONVEYOR_LENGTH, CONVEYOR_THICKNESS};
         Vector2 origin = {CONVEYOR_LENGTH / 2.0f, CONVEYOR_THICKNESS / 2.0f};
-        DrawRectanglePro(rect, origin, CONVEYOR_ANGLE * 180.0f / PI, BLACK);
+        DrawRectanglePro(rect, origin, angle * 180.0f / PI, BLACK);
+
+        // 中心に回転用の丸を描画
+        float cx = (float)pos.x;
+        float cy = (float)pos.y;
+        DrawCircle((int)cx, (int)cy, CONVEYOR_HANDLE_RADIUS, DARKGRAY);
+        DrawCircleLines((int)cx, (int)cy, CONVEYOR_HANDLE_RADIUS, WHITE);
 
         // 矢印を描画（進行方向を示す）
         float arrowLen = 30.0f;
-        float cx = x;
-        float cy = y;
-        float dx = cosf(CONVEYOR_ANGLE) * arrowLen;
-        float dy = sinf(CONVEYOR_ANGLE) * arrowLen;
+        float drawAngle = angle;
+        if (conveyors[i].reversed) {
+            drawAngle += PI;  // 反転時は矢印を逆向きに
+        }
+        float dx = cosf(drawAngle) * arrowLen;
+        float dy = sinf(drawAngle) * arrowLen;
         // 矢印の先端
         Vector2 tip = {cx + dx, cy + dy};
         // 矢印の根元
@@ -1097,9 +1116,9 @@ static void drawConveyors(void) {
         DrawLineEx(base, tip, 3.0f, WHITE);
         // 矢じり
         float arrowHead = 10.0f;
-        float headAngle = CONVEYOR_ANGLE + PI * 0.8f;
+        float headAngle = drawAngle + PI * 0.8f;
         Vector2 head1 = {tip.x + cosf(headAngle) * arrowHead, tip.y + sinf(headAngle) * arrowHead};
-        headAngle = CONVEYOR_ANGLE - PI * 0.8f;
+        headAngle = drawAngle - PI * 0.8f;
         Vector2 head2 = {tip.x + cosf(headAngle) * arrowHead, tip.y + sinf(headAngle) * arrowHead};
         DrawLineEx(tip, head1, 3.0f, WHITE);
         DrawLineEx(tip, head2, 3.0f, WHITE);
@@ -1239,6 +1258,52 @@ static void checkAndClearOutputs(void) {
     }
 }
 
+// ユーザーふるいを配置
+static void placeUserSieve(float x, float y) {
+    int slot = -1;
+    for (int i = 0; i < userSieveCount; i++) {
+        if (!userSieves[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && userSieveCount < MAX_USER_SIEVE) {
+        slot = userSieveCount++;
+    }
+    if (slot < 0) return;
+
+    userSieves[slot].basePos = cpv(x, y);
+
+    cpBody *body = cpBodyNewKinematic();
+    cpBodySetPosition(body, cpv(x, y));
+    cpBodySetAngle(body, SIEVE_ANGLE);
+    cpSpaceAddBody(space, body);
+
+    cpFloat hw = SIEVE_LENGTH / 2.0f;
+    cpFloat hh = SIEVE_THICKNESS / 2.0f;
+    cpVect verts[4] = {
+        cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
+    };
+    cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
+    cpShapeSetFriction(shape, 0.5f);
+    cpSpaceAddShape(space, shape);
+
+    userSieves[slot].body = body;
+    userSieves[slot].shape = shape;
+    userSieves[slot].active = true;
+}
+
+// ユーザーふるいを描画
+static void drawUserSieves(void) {
+    for (int i = 0; i < userSieveCount; i++) {
+        if (!userSieves[i].active) continue;
+
+        cpVect pos = cpBodyGetPosition(userSieves[i].body);
+        cpFloat angle = cpBodyGetAngle(userSieves[i].body);
+
+        Rectangle rect = {(float)pos.x, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
+        Vector2 origin = {SIEVE_LENGTH / 2.0f, SIEVE_THICKNESS / 2.0f};
+        DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
+    }
+}
+
 static void createSieve(void) {
     float spacing = SIEVE_LENGTH + SIEVE_GAP;
     // フィールド中央付近に配置
@@ -1280,20 +1345,16 @@ static void updateSieveVibration(float time) {
     float vy = speed * sinf(normalAngle);
 
     cpVect velocity = cpv(vx, vy);
-    for (int i = 0; i < SIEVE_COUNT; i++) {
-        cpBodySetVelocity(sieveBodies[i], velocity);
+    // ユーザー配置ふるいを振動
+    for (int i = 0; i < userSieveCount; i++) {
+        if (!userSieves[i].active) continue;
+        cpBodySetVelocity(userSieves[i].body, velocity);
     }
 }
 
 static void drawSieve(void) {
-    for (int i = 0; i < SIEVE_COUNT; i++) {
-        cpVect pos = cpBodyGetPosition(sieveBodies[i]);
-        cpFloat angle = cpBodyGetAngle(sieveBodies[i]);
-
-        Rectangle rect = {(float)pos.x, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
-        Vector2 origin = {SIEVE_LENGTH / 2.0f, SIEVE_THICKNESS / 2.0f};
-        DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
-    }
+    // 初期ふるいは削除されたので、ユーザー配置ふるいのみ描画
+    // (drawUserSieves()で描画されるので、この関数は空でOK)
 }
 
 static void createGround(void) {
@@ -1351,7 +1412,6 @@ int main(void)
     cpSpaceSetSleepTimeThreshold(space, 0.2f);
     cpSpaceSetIdleSpeedThreshold(space, 50.0f);
 
-    createSieve();
     createGround();
 
     // 衝突ハンドラを登録
@@ -1372,25 +1432,92 @@ int main(void)
     float cameraStartX = 0.0f;
     float cameraStartY = 0.0f;
 
+    // 回転用
+    int rotatingConveyor = -1;
+    int rotatingSieve = -1;
+    int clickedConveyor = -1;  // クリック判定用
+    float clickStartTime = 0.0f;
+
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
 
-        // マウスドラッグでスクロール
+        // カメラ用のワールド座標計算（回転判定用）
+        Camera2D camForRotate = {0};
+        camForRotate.target = (Vector2){cameraX + SCREEN_WIDTH / 2.0f, cameraY + SCREEN_HEIGHT / 2.0f};
+        camForRotate.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+        camForRotate.zoom = zoom;
+        Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camForRotate);
+
+        // マウスドラッグでスクロール または 回転/反転
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            dragging = true;
-            dragStartX = GetMouseX();
-            dragStartY = GetMouseY();
-            cameraStartX = cameraX;
-            cameraStartY = cameraY;
+            rotatingConveyor = -1;
+            rotatingSieve = -1;
+            clickedConveyor = -1;
+            clickStartTime = (float)GetTime();
+
+            // モード4か6の場合、コンベアまたはふるいの中心ハンドルをクリックしたか確認
+            if (actionMode == 4) {
+                for (int i = 0; i < conveyorCount; i++) {
+                    if (!conveyors[i].active) continue;
+                    cpVect pos = cpBodyGetPosition(conveyors[i].body);
+                    float dist = sqrtf(powf(mouseWorldPos.x - (float)pos.x, 2) + powf(mouseWorldPos.y - (float)pos.y, 2));
+                    if (dist < CONVEYOR_HANDLE_RADIUS) {
+                        clickedConveyor = i;
+                        break;
+                    }
+                }
+            } else if (actionMode == 6) {
+                for (int i = 0; i < userSieveCount; i++) {
+                    if (!userSieves[i].active) continue;
+                    cpVect pos = cpBodyGetPosition(userSieves[i].body);
+                    float dist = sqrtf(powf(mouseWorldPos.x - (float)pos.x, 2) + powf(mouseWorldPos.y - (float)pos.y, 2));
+                    if (dist < SIEVE_LENGTH / 2.0f) {
+                        rotatingSieve = i;
+                        break;
+                    }
+                }
+            }
+
+            // 回転対象がなければドラッグモード
+            if (clickedConveyor < 0 && rotatingSieve < 0) {
+                dragging = true;
+                dragStartX = GetMouseX();
+                dragStartY = GetMouseY();
+                cameraStartX = cameraX;
+                cameraStartY = cameraY;
+            }
+        }
+        // 長押しで回転開始（0.2秒後）
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && clickedConveyor >= 0) {
+            float holdTime = (float)GetTime() - clickStartTime;
+            if (holdTime > 0.2f) {
+                rotatingConveyor = clickedConveyor;
+            }
         }
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            // 短いクリック（0.2秒未満）でコンベアの方向を反転
+            if (clickedConveyor >= 0 && rotatingConveyor < 0) {
+                conveyors[clickedConveyor].reversed = !conveyors[clickedConveyor].reversed;
+            }
             dragging = false;
+            rotatingConveyor = -1;
+            rotatingSieve = -1;
+            clickedConveyor = -1;
         }
         if (dragging) {
             float dx = GetMouseX() - dragStartX;
             float dy = GetMouseY() - dragStartY;
             cameraX = cameraStartX - dx / zoom;
             cameraY = cameraStartY - dy / zoom;
+        }
+        // 回転処理
+        if (rotatingConveyor >= 0 && conveyors[rotatingConveyor].active) {
+            cpFloat currentAngle = cpBodyGetAngle(conveyors[rotatingConveyor].body);
+            cpBodySetAngle(conveyors[rotatingConveyor].body, currentAngle + ROTATE_SPEED);
+        }
+        if (rotatingSieve >= 0 && userSieves[rotatingSieve].active) {
+            cpFloat currentAngle = cpBodyGetAngle(userSieves[rotatingSieve].body);
+            cpBodySetAngle(userSieves[rotatingSieve].body, currentAngle + ROTATE_SPEED);
         }
 
         // A/Dキーでスクロール
@@ -1427,6 +1554,7 @@ int main(void)
         if (IsKeyPressed(KEY_THREE)) actionMode = 3;
         if (IsKeyPressed(KEY_FOUR)) actionMode = 4;
         if (IsKeyPressed(KEY_FIVE)) actionMode = 5;
+        if (IsKeyPressed(KEY_SIX)) actionMode = 6;
 
         // 右クリック操作（カメラを考慮したワールド座標を取得）
         Camera2D cam = {0};
@@ -1505,6 +1633,11 @@ int main(void)
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                 placeOutput(worldX, worldY);
             }
+        } else if (actionMode == 6) {
+            // モード6: ふるい配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeUserSieve(worldX, worldY);
+            }
         }
 
         if (spawning) {
@@ -1556,6 +1689,7 @@ int main(void)
         drawWater();
         drawGround();
         drawSieve();
+        drawUserSieves();
 
         for (int i = 0; i < debrisCount; i++) {
             drawDebris(i);
@@ -1582,7 +1716,7 @@ int main(void)
         // キー操作一覧（右端）
         int helpX = SCREEN_WIDTH - 180;
         int helpY = 5;
-        DrawRectangle(helpX - 5, helpY, 180, 240, (Color){255, 255, 255, 200});
+        DrawRectangle(helpX - 5, helpY, 180, 260, (Color){255, 255, 255, 200});
         DrawText("-- Controls --", helpX, helpY + 5, 16, DARKGRAY);
         DrawText("Space: Spawn ON/OFF", helpX, helpY + 25, 14, BLACK);
         DrawText("1: Break mode", helpX, helpY + 45, 14, BLACK);
@@ -1590,10 +1724,11 @@ int main(void)
         DrawText("3: Water mode", helpX, helpY + 85, 14, BLACK);
         DrawText("4: Conveyor mode", helpX, helpY + 105, 14, BLACK);
         DrawText("5: Output mode", helpX, helpY + 125, 14, BLACK);
-        DrawText("A/D: Scroll L/R", helpX, helpY + 150, 14, BLACK);
-        DrawText("W/S: Scroll U/D", helpX, helpY + 170, 14, BLACK);
-        DrawText("Wheel: Zoom", helpX, helpY + 190, 14, BLACK);
-        DrawText("L-Drag: Pan", helpX, helpY + 210, 14, BLACK);
+        DrawText("6: Sieve mode", helpX, helpY + 145, 14, BLACK);
+        DrawText("A/D: Scroll L/R", helpX, helpY + 170, 14, BLACK);
+        DrawText("W/S: Scroll U/D", helpX, helpY + 190, 14, BLACK);
+        DrawText("Wheel: Zoom", helpX, helpY + 210, 14, BLACK);
+        DrawText("L-Drag: Pan", helpX, helpY + 230, 14, BLACK);
 
         EndDrawing();
     }
@@ -1608,11 +1743,12 @@ int main(void)
             }
         }
     }
-    for (int i = 0; i < SIEVE_COUNT; i++) {
-        cpSpaceRemoveShape(space, sieveShapes[i]);
-        cpSpaceRemoveBody(space, sieveBodies[i]);
-        cpShapeFree(sieveShapes[i]);
-        cpBodyFree(sieveBodies[i]);
+    for (int i = 0; i < userSieveCount; i++) {
+        if (!userSieves[i].active) continue;
+        cpSpaceRemoveShape(space, userSieves[i].shape);
+        cpSpaceRemoveBody(space, userSieves[i].body);
+        cpShapeFree(userSieves[i].shape);
+        cpBodyFree(userSieves[i].body);
     }
     cpSpaceRemoveShape(space, groundShape);
     cpSpaceRemoveShape(space, leftWallShape);
