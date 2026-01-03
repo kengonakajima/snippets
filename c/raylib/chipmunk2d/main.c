@@ -33,6 +33,8 @@ typedef struct {
     bool active;
     bool isStatic;      // スタティック化されたか
     bool wakeUp;        // ダイナミックに戻すフラグ
+    bool shouldBreak;   // 衝撃で割れるフラグ
+    int breakFlash;     // 割れた直後の黄色表示フレーム数
     float idleTime;     // 静止している時間
     cpVect lastPos;     // 前フレームの位置
     cpVect staticPos;   // スタティック化時の位置
@@ -61,6 +63,17 @@ static int compareFloats(const void* a, const void* b) {
 
 static float rand01(void) {
     return (float)rand() / (float)RAND_MAX;
+}
+
+// ポリゴンの面積を計算（Shoelace formula）
+static float calcPolygonArea(cpVect *verts, int count) {
+    float area = 0.0f;
+    for (int i = 0; i < count; i++) {
+        int j = (i + 1) % count;
+        area += verts[i].x * verts[j].y;
+        area -= verts[j].x * verts[i].y;
+    }
+    return fabsf(area) * 0.5f;
 }
 
 static int findFreeSlot(void) {
@@ -122,6 +135,8 @@ static void spawnDebris(void) {
     debris[slot].active = true;
     debris[slot].isStatic = false;
     debris[slot].wakeUp = false;
+    debris[slot].shouldBreak = false;
+    debris[slot].breakFlash = 0;
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
     if (slot >= debrisCount) debrisCount = slot + 1;
@@ -178,6 +193,8 @@ static void spawnDebrisAt(float x, float y, float size) {
     debris[slot].active = true;
     debris[slot].isStatic = false;
     debris[slot].wakeUp = false;
+    debris[slot].shouldBreak = false;
+    debris[slot].breakFlash = 5;  // 破片は黄色で表示
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
     if (slot >= debrisCount) debrisCount = slot + 1;
@@ -189,8 +206,8 @@ static void breakDebris(int index) {
     if (debris[index].size < MIN_BREAK_SIZE) return;
 
     float originalSize = debris[index].size;
-    // 面積 ≈ size^2 として計算
-    float originalArea = originalSize * originalSize;
+    // 実際のポリゴン面積を計算
+    float originalArea = calcPolygonArea(debris[index].vertices, debris[index].vertexCount);
 
     // 元の位置を取得
     cpVect pos;
@@ -212,20 +229,22 @@ static void breakDebris(int index) {
     debris[index].shape = NULL;
 
     // 破片のサイズを決定（合計面積 = 元の面積）
+    // 平均的な多角形の面積 ≈ 2 * radius^2（3〜7角形の平均）
     float remainingArea = originalArea;
     float sizes[20];
     int numPieces = 0;
+    float areaFactor = 2.0f;  // 多角形面積係数
 
-    while (remainingArea > 4.0f && numPieces < 20) {  // 最小サイズ2の面積=4
+    while (remainingArea > 4.0f * areaFactor && numPieces < 20) {
         // 残り面積からランダムにサイズを決定
-        float maxSize = sqrtf(remainingArea);
+        float maxSize = sqrtf(remainingArea / areaFactor);
         if (maxSize > 30.0f) maxSize = 30.0f;
         float minSize = 2.0f;
 
         float pieceSize;
-        if (remainingArea < 8.0f) {
+        if (remainingArea < 8.0f * areaFactor) {
             // 残りが少なければ全部使う
-            pieceSize = sqrtf(remainingArea);
+            pieceSize = sqrtf(remainingArea / areaFactor);
             if (pieceSize < 2.0f) pieceSize = 2.0f;
         } else {
             // ランダムなサイズ（小さめに偏らせる）
@@ -233,7 +252,7 @@ static void breakDebris(int index) {
         }
 
         sizes[numPieces++] = pieceSize;
-        remainingArea -= pieceSize * pieceSize;
+        remainingArea -= pieceSize * pieceSize * areaFactor;
     }
 
     // 破片を生成
@@ -306,13 +325,16 @@ static void staticizeDebris(float dt) {
     }
 }
 
-// 衝突後のコールバック: スタティックな石に大きな衝撃があったら起こす
+// 衝突後のコールバック: スタティックな石に大きな衝撃があったら起こす＆衝撃で割れる
 static void postSolveHandler(cpArbiter *arb, cpSpace *space, void *data) {
     (void)space;
     (void)data;
 
     cpShape *a, *b;
     cpArbiterGetShapes(arb, &a, &b);
+
+    // 衝撃力を計算
+    cpFloat impulse = cpvlength(cpArbiterTotalImpulse(arb));
 
     // 両方のシェイプをチェック
     cpShape *shapes[2] = {a, b};
@@ -321,12 +343,26 @@ static void postSolveHandler(cpArbiter *arb, cpSpace *space, void *data) {
 
         int idx = (int)(intptr_t)cpShapeGetUserData(shapes[s]);
         if (idx < 0 || idx >= debrisCount) continue;
-        if (!debris[idx].active || !debris[idx].isStatic) continue;
+        if (!debris[idx].active) continue;
 
-        // 衝撃力を計算
-        cpFloat impulse = cpvlength(cpArbiterTotalImpulse(arb));
-        if (impulse > WAKE_UP_IMPULSE_THRESHOLD) {
+        // スタティックな石を起こす
+        if (debris[idx].isStatic && impulse > WAKE_UP_IMPULSE_THRESHOLD) {
             debris[idx].wakeUp = true;
+        }
+
+        // 衝撃で割れる判定（サイズ3より大きい石のみ）
+        float size = debris[idx].size;
+        if (size > 3.0f && !debris[idx].shouldBreak) {
+            // 小さい石ほど低い衝撃で割れる（サイズ30で閾値1500、サイズ4で閾値200）
+            float breakThreshold = size * 50.0f;
+            if (impulse > breakThreshold) {
+                // 確率で割れる（衝撃が閾値の2倍なら100%、閾値ギリギリなら低確率）
+                float breakChance = (impulse - breakThreshold) / breakThreshold;
+                if (breakChance > 1.0f) breakChance = 1.0f;
+                if (rand01() < breakChance) {
+                    debris[idx].shouldBreak = true;
+                }
+            }
         }
     }
 }
@@ -367,6 +403,24 @@ static void wakeUpStaticDebris(void) {
     }
 }
 
+// 衝撃で割れるフラグが立った石を処理
+static void processBreakingDebris(void) {
+    for (int i = 0; i < debrisCount; i++) {
+        if (!debris[i].active) continue;
+
+        // breakFlashを減らす
+        if (debris[i].breakFlash > 0) {
+            debris[i].breakFlash--;
+        }
+
+        // 割れる処理
+        if (debris[i].shouldBreak) {
+            debris[i].shouldBreak = false;
+            breakDebris(i);
+        }
+    }
+}
+
 static Color getDebrisColor(float size) {
     // サイズ 2〜30 を 0〜1 に正規化
     float t = (size - 2.0f) / 28.0f;
@@ -381,7 +435,9 @@ static void drawDebris(int index) {
     if (!debris[index].active) return;
 
     Color color;
-    if (debris[index].isStatic) {
+    if (debris[index].breakFlash > 0) {
+        color = (Color){255, 220, 50, 255};  // 割れた直後は黄色
+    } else if (debris[index].isStatic) {
         color = (Color){80, 80, 180, 255};  // スタティックは青
     } else if (cpBodyIsSleeping(debris[index].body)) {
         color = (Color){180, 80, 80, 255};  // スリープ中は赤
@@ -608,6 +664,7 @@ int main(void)
         cleanupDebris();
         staticizeDebris(dt);
         wakeUpStaticDebris();
+        processBreakingDebris();
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
