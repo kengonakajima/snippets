@@ -22,6 +22,7 @@
 #define MAX_VERTICES 8
 #define COLLISION_TYPE_DEBRIS 1
 #define WAKE_UP_IMPULSE_THRESHOLD 120.0f  // この衝撃を超えたら起こす
+#define MIN_BREAK_SIZE 10.0f  // この大きさ以上の石を砕ける
 
 typedef struct {
     cpBody *body;
@@ -73,8 +74,8 @@ static void spawnDebris(void) {
     int slot = findFreeSlot();
     if (slot < 0) return;
 
-    // サイズ: 3〜18 (小さいものが多い分布)
-    float size = 3.0f + powf(rand01(), 2.0f) * 15.0f;
+    // サイズ: 2〜30 (小さいものが多い分布)
+    float size = 2.0f + powf(rand01(), 2.0f) * 28.0f;
     // フィールド中央付近から生成
     float x = FIELD_WIDTH / 2.0f - 200.0f + rand01() * 300.0f;
     float y = -50.0f;
@@ -102,8 +103,10 @@ static void spawnDebris(void) {
 
     cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 0.5f);
-    // 小さいほど跳ねる: サイズ3で0.8、サイズ18で0.1
-    float elasticity = 0.8f - (size - 3.0f) / 15.0f * 0.7f;
+    // 小さいほど跳ねる: サイズ2で0.8、サイズ30で0.1
+    float elasticity = 0.8f - (size - 2.0f) / 28.0f * 0.7f;
+    if (elasticity < 0.01f) elasticity = 0.01f;
+    if (elasticity > 1.0f) elasticity = 1.0f;
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
@@ -122,6 +125,123 @@ static void spawnDebris(void) {
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
     if (slot >= debrisCount) debrisCount = slot + 1;
+}
+
+// 指定位置に指定サイズの破片を生成
+static void spawnDebrisAt(float x, float y, float size) {
+    int slot = findFreeSlot();
+    if (slot < 0) return;
+    if (size < 2.0f) size = 2.0f;  // 最小サイズ保証
+
+    int vertexCount = 3 + rand() % 5;
+    float angles[MAX_VERTICES];
+    cpVect points[MAX_VERTICES];
+
+    for (int i = 0; i < vertexCount; i++) {
+        angles[i] = ((float)i / vertexCount + rand01() * 0.1f) * 2.0f * PI;
+    }
+    qsort(angles, vertexCount, sizeof(float), compareFloats);
+
+    for (int i = 0; i < vertexCount; i++) {
+        float r = size * (0.7f + rand01() * 0.3f);
+        points[i] = cpv(r * cosf(angles[i]), r * sinf(angles[i]));
+    }
+
+    cpFloat mass = 1.0f;
+    cpFloat moment = cpMomentForPoly(mass, vertexCount, points, cpvzero, 0.0f);
+    cpBody *body = cpBodyNew(mass, moment);
+    cpBodySetPosition(body, cpv(x, y));
+    cpBodySetAngle(body, rand01() * 2.0f * PI);
+    // 破片に少し速度を与える
+    float angle = rand01() * 2.0f * PI;
+    float speed = 50.0f + rand01() * 100.0f;
+    cpBodySetVelocity(body, cpv(speed * cosf(angle), speed * sinf(angle) - 50.0f));
+    cpSpaceAddBody(space, body);
+
+    cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
+    cpShapeSetFriction(shape, 0.5f);
+    float elasticity = 0.8f - (size - 2.0f) / 28.0f * 0.7f;
+    if (elasticity < 0.01f) elasticity = 0.01f;
+    if (elasticity > 1.0f) elasticity = 1.0f;
+    cpShapeSetElasticity(shape, elasticity);
+    cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetUserData(shape, (void*)(intptr_t)slot);
+    cpSpaceAddShape(space, shape);
+
+    debris[slot].body = body;
+    debris[slot].shape = shape;
+    debris[slot].vertexCount = vertexCount;
+    for (int i = 0; i < vertexCount; i++) {
+        debris[slot].vertices[i] = points[i];
+    }
+    debris[slot].size = size;
+    debris[slot].active = true;
+    debris[slot].isStatic = false;
+    debris[slot].wakeUp = false;
+    debris[slot].idleTime = 0.0f;
+    debris[slot].lastPos = cpv(x, y);
+    if (slot >= debrisCount) debrisCount = slot + 1;
+}
+
+// 石を砕く（面積を保存）
+static void breakDebris(int index) {
+    if (!debris[index].active) return;
+    if (debris[index].size < MIN_BREAK_SIZE) return;
+
+    float originalSize = debris[index].size;
+    // 面積 ≈ size^2 として計算
+    float originalArea = originalSize * originalSize;
+
+    // 元の位置を取得
+    cpVect pos;
+    if (debris[index].isStatic) {
+        pos = debris[index].staticPos;
+    } else {
+        pos = cpBodyGetPosition(debris[index].body);
+    }
+
+    // 元の石を削除
+    cpSpaceRemoveShape(space, debris[index].shape);
+    cpShapeFree(debris[index].shape);
+    if (!debris[index].isStatic && debris[index].body) {
+        cpSpaceRemoveBody(space, debris[index].body);
+        cpBodyFree(debris[index].body);
+    }
+    debris[index].active = false;
+    debris[index].body = NULL;
+    debris[index].shape = NULL;
+
+    // 破片のサイズを決定（合計面積 = 元の面積）
+    float remainingArea = originalArea;
+    float sizes[20];
+    int numPieces = 0;
+
+    while (remainingArea > 4.0f && numPieces < 20) {  // 最小サイズ2の面積=4
+        // 残り面積からランダムにサイズを決定
+        float maxSize = sqrtf(remainingArea);
+        if (maxSize > 30.0f) maxSize = 30.0f;
+        float minSize = 2.0f;
+
+        float pieceSize;
+        if (remainingArea < 8.0f) {
+            // 残りが少なければ全部使う
+            pieceSize = sqrtf(remainingArea);
+            if (pieceSize < 2.0f) pieceSize = 2.0f;
+        } else {
+            // ランダムなサイズ（小さめに偏らせる）
+            pieceSize = minSize + powf(rand01(), 0.5f) * (maxSize - minSize);
+        }
+
+        sizes[numPieces++] = pieceSize;
+        remainingArea -= pieceSize * pieceSize;
+    }
+
+    // 破片を生成
+    for (int i = 0; i < numPieces; i++) {
+        float offsetX = (rand01() - 0.5f) * originalSize;
+        float offsetY = (rand01() - 0.5f) * originalSize;
+        spawnDebrisAt((float)pos.x + offsetX, (float)pos.y + offsetY, sizes[i]);
+    }
 }
 
 static void cleanupDebris(void) {
@@ -230,7 +350,9 @@ static void wakeUpStaticDebris(void) {
 
         cpShape *shape = cpPolyShapeNew(body, debris[i].vertexCount, debris[i].vertices, cpTransformIdentity, 0.0f);
         cpShapeSetFriction(shape, 0.5f);
-        float elasticity = 0.8f - (debris[i].size - 3.0f) / 15.0f * 0.7f;
+        float elasticity = 0.8f - (debris[i].size - 2.0f) / 28.0f * 0.7f;
+        if (elasticity < 0.01f) elasticity = 0.01f;
+        if (elasticity > 1.0f) elasticity = 1.0f;
         cpShapeSetElasticity(shape, elasticity);
         cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
         cpShapeSetUserData(shape, (void*)(intptr_t)i);
@@ -246,8 +368,8 @@ static void wakeUpStaticDebris(void) {
 }
 
 static Color getDebrisColor(float size) {
-    // サイズ 3〜18 を 0〜1 に正規化
-    float t = (size - 3.0f) / 15.0f;
+    // サイズ 2〜30 を 0〜1 に正規化
+    float t = (size - 2.0f) / 28.0f;
     if (t < 0.0f) t = 0.0f;
     if (t > 1.0f) t = 1.0f;
     // 小さい: 明るい灰色(180)、大きい: 暗い灰色(80)
@@ -450,6 +572,20 @@ int main(void)
 
         if (IsKeyPressed(KEY_SPACE)) {
             spawning = !spawning;
+        }
+
+        // 右クリックで石を砕く
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+            float worldX = GetMouseX() + cameraX;
+            float worldY = GetMouseY();
+            cpPointQueryInfo info;
+            cpShape *shape = cpSpacePointQueryNearest(space, cpv(worldX, worldY), 0.0f, CP_SHAPE_FILTER_ALL, &info);
+            if (shape && cpShapeGetCollisionType(shape) == COLLISION_TYPE_DEBRIS) {
+                int idx = (int)(intptr_t)cpShapeGetUserData(shape);
+                if (idx >= 0 && idx < debrisCount && debris[idx].active) {
+                    breakDebris(idx);
+                }
+            }
         }
 
         if (spawning) {
