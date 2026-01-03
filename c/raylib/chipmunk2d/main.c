@@ -76,9 +76,9 @@ static float cameraX = 0.0f;
 static float cameraY = 0.0f;
 static float zoom = 1.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input, 8: 削除)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input", "Delete"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -1777,6 +1777,7 @@ int main(void)
         if (IsKeyPressed(KEY_FIVE)) actionMode = 5;
         if (IsKeyPressed(KEY_SIX)) actionMode = 6;
         if (IsKeyPressed(KEY_SEVEN)) actionMode = 7;
+        if (IsKeyPressed(KEY_EIGHT)) actionMode = 8;
 
         // 右クリック操作（カメラを考慮したワールド座標を取得）
         Camera2D cam = {0};
@@ -1864,6 +1865,104 @@ int main(void)
             // モード7: Input配置
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                 placeInput(worldX, worldY);
+            }
+        } else if (actionMode == 8) {
+            // モード8: 削除
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                // まずdebrisをチェック
+                cpPointQueryInfo info;
+                cpShape *shape = cpSpacePointQueryNearest(space, cpv(worldX, worldY), 10.0f, CP_SHAPE_FILTER_ALL, &info);
+                bool deleted = false;
+                if (shape && cpShapeGetCollisionType(shape) == COLLISION_TYPE_DEBRIS) {
+                    int idx = (int)(intptr_t)cpShapeGetUserData(shape);
+                    if (idx >= 0 && idx < debrisCount && debris[idx].active) {
+                        cpSpaceRemoveShape(space, debris[idx].shape);
+                        cpShapeFree(debris[idx].shape);
+                        if (!debris[idx].isStatic && debris[idx].body) {
+                            cpSpaceRemoveBody(space, debris[idx].body);
+                            cpBodyFree(debris[idx].body);
+                        }
+                        debris[idx].active = false;
+                        debris[idx].body = NULL;
+                        debris[idx].shape = NULL;
+                        deleted = true;
+                    }
+                }
+                if (!deleted) {
+                    // コンベアをチェック
+                    for (int i = 0; i < conveyorCount && !deleted; i++) {
+                        if (!conveyors[i].active) continue;
+                        cpVect pos = cpBodyGetPosition(conveyors[i].body);
+                        float dist = sqrtf(powf(worldX - (float)pos.x, 2) + powf(worldY - (float)pos.y, 2));
+                        if (dist < CONVEYOR_LENGTH / 2.0f) {
+                            cpSpaceRemoveShape(space, conveyors[i].shape);
+                            cpSpaceRemoveBody(space, conveyors[i].body);
+                            cpShapeFree(conveyors[i].shape);
+                            cpBodyFree(conveyors[i].body);
+                            conveyors[i].active = false;
+                            deleted = true;
+                        }
+                    }
+                    // ふるいをチェック
+                    for (int i = 0; i < userSieveCount && !deleted; i++) {
+                        if (!userSieves[i].active) continue;
+                        cpVect pos = cpBodyGetPosition(userSieves[i].body);
+                        float dist = sqrtf(powf(worldX - (float)pos.x, 2) + powf(worldY - (float)pos.y, 2));
+                        if (dist < SIEVE_LENGTH / 2.0f) {
+                            cpSpaceRemoveShape(space, userSieves[i].shape);
+                            cpSpaceRemoveBody(space, userSieves[i].body);
+                            cpShapeFree(userSieves[i].shape);
+                            cpBodyFree(userSieves[i].body);
+                            userSieves[i].active = false;
+                            deleted = true;
+                        }
+                    }
+                    // Outputをチェック
+                    for (int i = 0; i < outputCount && !deleted; i++) {
+                        if (!outputs[i].active) continue;
+                        float ox = outputs[i].x;
+                        float oy = outputs[i].y;
+                        if (worldX >= ox && worldX <= ox + OUTPUT_SIZE &&
+                            worldY >= oy && worldY <= oy + OUTPUT_SIZE) {
+                            cpSpaceRemoveShape(space, outputs[i].leftWall);
+                            cpSpaceRemoveShape(space, outputs[i].rightWall);
+                            cpSpaceRemoveShape(space, outputs[i].bottomWall);
+                            cpShapeFree(outputs[i].leftWall);
+                            cpShapeFree(outputs[i].rightWall);
+                            cpShapeFree(outputs[i].bottomWall);
+                            outputs[i].active = false;
+                            deleted = true;
+                        }
+                    }
+                    // Inputをチェック
+                    for (int i = 0; i < inputCount && !deleted; i++) {
+                        if (!inputs[i].active) continue;
+                        float ix = inputs[i].x;
+                        float iy = inputs[i].y;
+                        if (worldX >= ix && worldX <= ix + INPUT_SIZE &&
+                            worldY >= iy && worldY <= iy + INPUT_SIZE) {
+                            cpSpaceRemoveShape(space, inputs[i].leftWall);
+                            cpSpaceRemoveShape(space, inputs[i].rightWall);
+                            cpSpaceRemoveShape(space, inputs[i].topWall);
+                            cpShapeFree(inputs[i].leftWall);
+                            cpShapeFree(inputs[i].rightWall);
+                            cpShapeFree(inputs[i].topWall);
+                            inputs[i].active = false;
+                            deleted = true;
+                        }
+                    }
+                    // 水をチェック
+                    for (int i = 0; i < waterCount && !deleted; i++) {
+                        if (!waters[i].active) continue;
+                        float wx = waters[i].x;
+                        float wy = waters[i].y;
+                        if (worldX >= wx && worldX <= wx + WATER_SIZE &&
+                            worldY >= wy && worldY <= wy + WATER_SIZE) {
+                            waters[i].active = false;
+                            deleted = true;
+                        }
+                    }
+                }
             }
         }
 
