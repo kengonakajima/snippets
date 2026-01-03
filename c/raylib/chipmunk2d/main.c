@@ -73,6 +73,8 @@ static cpSpace *space;
 
 // カメラオフセット（スクロール用）
 static float cameraX = 0.0f;
+static float cameraY = 0.0f;
+static float zoom = 1.0f;
 
 // 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置)
 static int actionMode = 1;
@@ -802,12 +804,12 @@ static void drawDebris(int index) {
             cpVect v = debris[index].vertices[i];
             cpVect rotated = cpv(v.x * c - v.y * s, v.x * s + v.y * c);
             cpVect worldPt = cpvadd(debris[index].staticPos, rotated);
-            screenPoints[i] = (Vector2){(float)worldPt.x - cameraX, (float)worldPt.y};
+            screenPoints[i] = (Vector2){(float)worldPt.x, (float)worldPt.y};
         }
     } else {
         for (int i = 0; i < debris[index].vertexCount; i++) {
             cpVect worldPt = cpBodyLocalToWorld(debris[index].body, debris[index].vertices[i]);
-            screenPoints[i] = (Vector2){(float)worldPt.x - cameraX, (float)worldPt.y};
+            screenPoints[i] = (Vector2){(float)worldPt.x, (float)worldPt.y};
         }
     }
 
@@ -833,8 +835,8 @@ static void drawStickyJoints(void) {
 
         cpVect posA = cpBodyGetPosition(debris[idxA].body);
         cpVect posB = cpBodyGetPosition(debris[idxB].body);
-        Vector2 screenA = {(float)posA.x - cameraX, (float)posA.y};
-        Vector2 screenB = {(float)posB.x - cameraX, (float)posB.y};
+        Vector2 screenA = {(float)posA.x, (float)posA.y};
+        Vector2 screenB = {(float)posB.x, (float)posB.y};
         DrawLineEx(screenA, screenB, 2.0f, (Color){255, 100, 100, 200});
     }
 }
@@ -843,10 +845,9 @@ static void drawStickyJoints(void) {
 static void drawWater(void) {
     for (int i = 0; i < waterCount; i++) {
         if (!waters[i].active) continue;
-        float screenX = waters[i].x - cameraX;
-        DrawRectangle((int)screenX, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
+        DrawRectangle((int)waters[i].x, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
             (Color){100, 150, 255, 120});
-        DrawRectangleLines((int)screenX, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
+        DrawRectangleLines((int)waters[i].x, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
             (Color){50, 100, 200, 200});
     }
 }
@@ -960,7 +961,7 @@ static void drawSieve(void) {
         cpVect pos = cpBodyGetPosition(sieveBodies[i]);
         cpFloat angle = cpBodyGetAngle(sieveBodies[i]);
 
-        Rectangle rect = {(float)pos.x - cameraX, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
+        Rectangle rect = {(float)pos.x, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
         Vector2 origin = {SIEVE_LENGTH / 2.0f, SIEVE_THICKNESS / 2.0f};
         DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
     }
@@ -1002,8 +1003,7 @@ static void createGround(void) {
 }
 
 static void drawGround(void) {
-    // カメラオフセットを適用して地面を描画
-    DrawRectangle((int)(0 - cameraX), SCREEN_HEIGHT - 20, FIELD_WIDTH, 20, DARKGRAY);
+    DrawRectangle(0, SCREEN_HEIGHT - 20, FIELD_WIDTH, 20, DARKGRAY);
 }
 
 int main(void)
@@ -1039,7 +1039,9 @@ int main(void)
     // マウスドラッグ用
     bool dragging = false;
     float dragStartX = 0.0f;
+    float dragStartY = 0.0f;
     float cameraStartX = 0.0f;
+    float cameraStartY = 0.0f;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -1048,27 +1050,42 @@ int main(void)
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             dragging = true;
             dragStartX = GetMouseX();
+            dragStartY = GetMouseY();
             cameraStartX = cameraX;
+            cameraStartY = cameraY;
         }
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             dragging = false;
         }
         if (dragging) {
             float dx = GetMouseX() - dragStartX;
-            cameraX = cameraStartX - dx;
-            // カメラ範囲制限
-            if (cameraX < 0) cameraX = 0;
-            if (cameraX > FIELD_WIDTH - SCREEN_WIDTH) cameraX = FIELD_WIDTH - SCREEN_WIDTH;
+            float dy = GetMouseY() - dragStartY;
+            cameraX = cameraStartX - dx / zoom;
+            cameraY = cameraStartY - dy / zoom;
         }
 
         // A/Dキーでスクロール
         if (IsKeyDown(KEY_A)) {
-            cameraX -= 10.0f;
-            if (cameraX < 0) cameraX = 0;
+            cameraX -= 10.0f / zoom;
         }
         if (IsKeyDown(KEY_D)) {
-            cameraX += 10.0f;
-            if (cameraX > FIELD_WIDTH - SCREEN_WIDTH) cameraX = FIELD_WIDTH - SCREEN_WIDTH;
+            cameraX += 10.0f / zoom;
+        }
+        // W/Sキーで縦スクロール
+        if (IsKeyDown(KEY_W)) {
+            cameraY -= 10.0f / zoom;
+        }
+        if (IsKeyDown(KEY_S)) {
+            cameraY += 10.0f / zoom;
+        }
+
+        // マウスホイールでズーム
+        float wheel = GetMouseWheelMove();
+        if (wheel != 0) {
+            float zoomDelta = wheel * 0.1f;
+            zoom += zoomDelta;
+            if (zoom < 0.1f) zoom = 0.1f;
+            if (zoom > 3.0f) zoom = 3.0f;
         }
 
         if (IsKeyPressed(KEY_SPACE)) {
@@ -1080,9 +1097,15 @@ int main(void)
         if (IsKeyPressed(KEY_TWO)) actionMode = 2;
         if (IsKeyPressed(KEY_THREE)) actionMode = 3;
 
-        // 右クリック操作
-        float worldX = GetMouseX() + cameraX;
-        float worldY = GetMouseY();
+        // 右クリック操作（カメラを考慮したワールド座標を取得）
+        Camera2D cam = {0};
+        cam.target = (Vector2){cameraX + SCREEN_WIDTH / 2.0f, cameraY + SCREEN_HEIGHT / 2.0f};
+        cam.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+        cam.rotation = 0.0f;
+        cam.zoom = zoom;
+        Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), cam);
+        float worldX = mouseWorld.x;
+        float worldY = mouseWorld.y;
 
         if (actionMode == 1) {
             // モード1: 破壊
@@ -1178,6 +1201,15 @@ int main(void)
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        // Camera2Dを設定（ズームとスクロール）
+        Camera2D camera = {0};
+        camera.target = (Vector2){cameraX + SCREEN_WIDTH / 2.0f, cameraY + SCREEN_HEIGHT / 2.0f};
+        camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+        camera.rotation = 0.0f;
+        camera.zoom = zoom;
+
+        BeginMode2D(camera);
+
         drawWater();
         drawGround();
         drawSieve();
@@ -1187,20 +1219,20 @@ int main(void)
         }
         drawStickyJoints();
 
+        EndMode2D();
+
         int activeCount = 0;
         for (int i = 0; i < debrisCount; i++) {
             if (debris[i].active) activeCount++;
         }
-        // ワールド座標でのマウス位置
-        float worldMouseX = GetMouseX() + cameraX;
-        float worldMouseY = GetMouseY();
 
-        DrawRectangle(5, 5, 220, 115, (Color){255, 255, 255, 200});
+        DrawRectangle(5, 5, 220, 135, (Color){255, 255, 255, 200});
         DrawFPS(10, 10);
         DrawText(TextFormat("Debris: %d", activeCount), 10, 35, 20, BLACK);
         DrawText(TextFormat("Physics: %.2f ms", physicsTimeMs), 10, 55, 20, BLACK);
-        DrawText(TextFormat("Mouse: %.0f, %.0f", worldMouseX, worldMouseY), 10, 75, 20, BLACK);
+        DrawText(TextFormat("Mouse: %.0f, %.0f", worldX, worldY), 10, 75, 20, BLACK);
         DrawText(TextFormat("Mode[1-9]: %d %s", actionMode, actionModeNames[actionMode]), 10, 95, 20, DARKBLUE);
+        DrawText(TextFormat("Zoom: %.1fx", zoom), 10, 115, 20, BLACK);
 
         EndDrawing();
     }
