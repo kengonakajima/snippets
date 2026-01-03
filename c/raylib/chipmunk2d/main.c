@@ -94,14 +94,21 @@ static cpVect dragOffset = {0, 0};
 #define MAX_WATER_PARTICLES 2000
 #define WATER_PARTICLE_RADIUS 5.0f
 #define COLLISION_TYPE_WATER 2
+#define WATER_MERGE_DISTANCE 8.0f   // この距離以内でマージ
+#define WATER_SPLIT_DISTANCE 60.0f  // この距離以上離れたら分割
 typedef struct {
     cpBody *body;
     cpShape *shape;
     bool active;
     bool isMud;  // 泥水かどうか
+    int valence; // 1, 2, 4, 8, 16（含む水量）
+    int mergeCooldown;  // マージ禁止カウンタ（0なら合体可能）
 } WaterParticle;
 static WaterParticle waterParticles[MAX_WATER_PARTICLES];
 static int waterParticleCount = 0;
+
+// 前方宣言
+static float getWaterRadius(int valence);
 
 // 配置用グリッド
 #define GRID_UNIT 10.0f
@@ -829,6 +836,20 @@ static void postSolveHandler(cpArbiter *arb, cpSpace *sp, void *data) {
             }
         }
     }
+
+    // 水パーティクルが壁（構造物）に触れたらマージ禁止
+    for (int s = 0; s < 2; s++) {
+        cpShape *waterShape = shapes[s];
+        cpShape *otherShape = shapes[1 - s];
+        if (cpShapeGetCollisionType(waterShape) != COLLISION_TYPE_WATER) continue;
+        // 相手が水以外（壁や構造物）ならクールダウン設定
+        if (cpShapeGetCollisionType(otherShape) == COLLISION_TYPE_WATER) continue;
+
+        int idx = (int)(intptr_t)cpShapeGetUserData(waterShape);
+        if (idx >= 0 && idx < waterParticleCount && waterParticles[idx].active) {
+            waterParticles[idx].mergeCooldown = 5;  // 壁接触中はマージ禁止
+        }
+    }
 }
 
 // 粘土のくっつきを処理
@@ -1046,13 +1067,14 @@ static void drawWaterParticles(void) {
     for (int i = 0; i < waterParticleCount; i++) {
         if (!waterParticles[i].active) continue;
         cpVect pos = cpBodyGetPosition(waterParticles[i].body);
+        float radius = getWaterRadius(waterParticles[i].valence);
         Color color;
         if (waterParticles[i].isMud) {
             color = (Color){180, 140, 100, 200};  // 泥水：明るい茶色
         } else {
             color = (Color){100, 180, 255, 200};  // 水：水色
         }
-        DrawCircle((int)pos.x, (int)pos.y, WATER_PARTICLE_RADIUS, color);
+        DrawCircle((int)pos.x, (int)pos.y, radius, color);
     }
 }
 
@@ -1195,6 +1217,156 @@ static void applyConveyorForce(void) {
     }
 }
 
+// valenceに応じた半径を計算（充填効率を考慮）
+static float getWaterRadius(int valence) {
+    return WATER_PARTICLE_RADIUS * powf((float)valence, 0.57f);
+}
+
+// 水パーティクルのシェイプを更新（valence変更後に呼ぶ）
+static void updateWaterParticleShape(int idx) {
+    WaterParticle *wp = &waterParticles[idx];
+    float newRadius = getWaterRadius(wp->valence);
+    cpFloat newMass = (cpFloat)wp->valence;
+    cpFloat newMoment = cpMomentForCircle(newMass, 0, newRadius, cpvzero);
+
+    cpBodySetMass(wp->body, newMass);
+    cpBodySetMoment(wp->body, newMoment);
+
+    // シェイプを再作成
+    cpSpaceRemoveShape(space, wp->shape);
+    cpShapeFree(wp->shape);
+
+    wp->shape = cpCircleShapeNew(wp->body, newRadius, cpvzero);
+    cpShapeSetFriction(wp->shape, 0.0f);
+    cpShapeSetElasticity(wp->shape, 0.1f);
+    cpShapeSetCollisionType(wp->shape, COLLISION_TYPE_WATER);
+    cpShapeSetFilter(wp->shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+    cpShapeSetUserData(wp->shape, (void*)(intptr_t)idx);
+    cpSpaceAddShape(space, wp->shape);
+}
+
+// 水パーティクルのマージ処理（同じvalence同士のみ）
+static void mergeWaterParticles(void) {
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) continue;
+        if (waterParticles[i].valence >= 16) continue;  // 最大valence
+        // クールダウン中はマージ禁止（減算も行う）
+        if (waterParticles[i].mergeCooldown > 0) {
+            waterParticles[i].mergeCooldown--;
+            continue;
+        }
+
+        cpVect posI = cpBodyGetPosition(waterParticles[i].body);
+        float radiusI = getWaterRadius(waterParticles[i].valence);
+
+        for (int j = i + 1; j < waterParticleCount; j++) {
+            if (!waterParticles[j].active) continue;
+            if (waterParticles[j].mergeCooldown > 0) continue;  // jもクールダウン中はスキップ
+            if (waterParticles[i].isMud != waterParticles[j].isMud) continue;
+            // 同じvalence同士のみマージ
+            if (waterParticles[j].valence != waterParticles[i].valence) continue;
+
+            cpVect posJ = cpBodyGetPosition(waterParticles[j].body);
+            float radiusJ = getWaterRadius(waterParticles[j].valence);
+            float dist = cpvlength(cpvsub(posI, posJ));
+            float mergeThresh = WATER_MERGE_DISTANCE + radiusI + radiusJ;
+
+            if (dist < mergeThresh) {
+                // jをiに吸収
+                waterParticles[i].valence *= 2;
+
+                // jを削除
+                cpSpaceRemoveShape(space, waterParticles[j].shape);
+                cpSpaceRemoveBody(space, waterParticles[j].body);
+                cpShapeFree(waterParticles[j].shape);
+                cpBodyFree(waterParticles[j].body);
+                waterParticles[j].active = false;
+
+                // iのシェイプを更新
+                updateWaterParticleShape(i);
+                break;
+            }
+        }
+    }
+}
+
+// 孤立した水パーティクルを分割
+static void splitWaterParticles(void) {
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) continue;
+        if (waterParticles[i].valence <= 1) continue;  // 最小valence
+
+        cpVect posI = cpBodyGetPosition(waterParticles[i].body);
+        float radiusI = getWaterRadius(waterParticles[i].valence);
+
+        // 近くに他の水パーティクルがいるかチェック
+        bool hasNeighbor = false;
+        for (int j = 0; j < waterParticleCount; j++) {
+            if (i == j || !waterParticles[j].active) continue;
+
+            cpVect posJ = cpBodyGetPosition(waterParticles[j].body);
+            float dist = cpvlength(cpvsub(posI, posJ));
+
+            if (dist < WATER_SPLIT_DISTANCE + radiusI) {
+                hasNeighbor = true;
+                break;
+            }
+        }
+
+        // 孤立時、または壁接触中は強制分裂（隙間を通れるように）
+        bool touchingWall = (waterParticles[i].mergeCooldown > 0);
+        bool forceSplit = touchingWall && (rand() % 100 < 20);  // 壁接触中は20%で強制分裂
+        if (!hasNeighbor || forceSplit) {
+            // 分割：valenceを半分にして、新しい粒子を生成
+            int newValence = waterParticles[i].valence / 2;
+            waterParticles[i].valence = newValence;
+            updateWaterParticleShape(i);
+            // 強制分裂時はクールダウン設定（約3秒間マージ禁止）
+            if (forceSplit) {
+                waterParticles[i].mergeCooldown = 30;
+            }
+
+            // 新しい粒子を少しずらして生成
+            cpVect vel = cpBodyGetVelocity(waterParticles[i].body);
+            float offsetX = (rand() % 20 - 10);
+            float offsetY = (rand() % 20 - 10);
+
+            // 空きスロットを探す
+            int slot = -1;
+            for (int k = 0; k < waterParticleCount; k++) {
+                if (!waterParticles[k].active) { slot = k; break; }
+            }
+            if (slot < 0 && waterParticleCount < MAX_WATER_PARTICLES) {
+                slot = waterParticleCount++;
+            }
+            if (slot >= 0) {
+                float radius = getWaterRadius(newValence);
+                cpFloat mass = (cpFloat)newValence;
+                cpFloat moment = cpMomentForCircle(mass, 0, radius, cpvzero);
+                cpBody *body = cpBodyNew(mass, moment);
+                cpBodySetPosition(body, cpv(posI.x + offsetX, posI.y + offsetY));
+                cpBodySetVelocity(body, vel);
+                cpSpaceAddBody(space, body);
+
+                cpShape *shape = cpCircleShapeNew(body, radius, cpvzero);
+                cpShapeSetFriction(shape, 0.0f);
+                cpShapeSetElasticity(shape, 0.1f);
+                cpShapeSetCollisionType(shape, COLLISION_TYPE_WATER);
+                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+                cpShapeSetUserData(shape, (void*)(intptr_t)slot);
+                cpSpaceAddShape(space, shape);
+
+                waterParticles[slot].body = body;
+                waterParticles[slot].shape = shape;
+                waterParticles[slot].active = true;
+                waterParticles[slot].isMud = waterParticles[i].isMud;
+                waterParticles[slot].valence = newValence;
+                waterParticles[slot].mergeCooldown = forceSplit ? 30 : 0;
+            }
+        }
+    }
+}
+
 // 水パーティクルを生成
 static void spawnWaterParticle(float x, float y) {
     // 空きスロットを探す
@@ -1220,12 +1392,15 @@ static void spawnWaterParticle(float x, float y) {
     cpShapeSetElasticity(shape, 0.1f);  // 少し弾んで広がる
     cpShapeSetCollisionType(shape, COLLISION_TYPE_WATER);
     cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+    cpShapeSetUserData(shape, (void*)(intptr_t)slot);  // インデックスを保存
     cpSpaceAddShape(space, shape);
 
     waterParticles[slot].body = body;
     waterParticles[slot].shape = shape;
     waterParticles[slot].active = true;
     waterParticles[slot].isMud = false;
+    waterParticles[slot].valence = 1;
+    waterParticles[slot].mergeCooldown = 0;
 }
 
 // コンベアを配置
@@ -2339,6 +2514,13 @@ int main(void)
         processBreakingDebris();
         processPendingSticky();
         updateWaterParticles();
+        // 10フレームごとにマージ/分割処理
+        static int waterFrameCount = 0;
+        if (++waterFrameCount >= 10) {
+            waterFrameCount = 0;
+            mergeWaterParticles();
+            splitWaterParticles();
+        }
         applyBuoyancy();
         applyConveyorForce();
         checkAndClearOutputs();
@@ -2444,13 +2626,25 @@ int main(void)
             if (debris[i].active) activeCount++;
         }
 
-        DrawRectangle(5, 5, 220, 135, (Color){255, 255, 255, 200});
+        int activeWaterCount = 0;
+        int maxValenceCount = 0;
+        int totalWaterVolume = 0;
+        for (int i = 0; i < waterParticleCount; i++) {
+            if (waterParticles[i].active) {
+                activeWaterCount++;
+                totalWaterVolume += waterParticles[i].valence;
+                if (waterParticles[i].valence >= 16) maxValenceCount++;
+            }
+        }
+
+        DrawRectangle(5, 5, 220, 155, (Color){255, 255, 255, 200});
         DrawFPS(10, 10);
         DrawText(TextFormat("Debris: %d", activeCount), 10, 35, 20, BLACK);
-        DrawText(TextFormat("Physics: %.2f ms", physicsTimeMs), 10, 55, 20, BLACK);
-        DrawText(TextFormat("Mouse: %.0f, %.0f", worldX, worldY), 10, 75, 20, BLACK);
-        DrawText(TextFormat("Mode[1-9]: %d %s", actionMode, actionModeNames[actionMode]), 10, 95, 20, DARKBLUE);
-        DrawText(TextFormat("Zoom: %.1fx", zoom), 10, 115, 20, BLACK);
+        DrawText(TextFormat("Water: %d (vol:%d)", activeWaterCount, totalWaterVolume), 10, 55, 20, BLUE);
+        DrawText(TextFormat("Physics: %.2f ms", physicsTimeMs), 10, 75, 20, BLACK);
+        DrawText(TextFormat("Mouse: %.0f, %.0f", worldX, worldY), 10, 95, 20, BLACK);
+        DrawText(TextFormat("Mode[1-9]: %d %s", actionMode, actionModeNames[actionMode]), 10, 115, 20, DARKBLUE);
+        DrawText(TextFormat("Zoom: %.1fx", zoom), 10, 135, 20, BLACK);
 
         // キー操作一覧（右端）
         int helpX = SCREEN_WIDTH - 180;
