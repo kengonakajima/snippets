@@ -1057,7 +1057,7 @@ static void updateWaterParticles(void) {
         cpBodyApplyForceAtWorldPoint(waterParticles[i].body, cpv(spreadX, 0), pos);
 
         // 速度が遅い場合は横にランダムに動く
-        if (fabsf(vel.x) < 10.0f) {
+        if (fabs(vel.x) < 10.0f) {
             float kick = (rand01() > 0.5f ? 1.0f : -1.0f) * 20.0f;
             cpBodySetVelocity(waterParticles[i].body, cpv(vel.x + kick, vel.y));
         }
