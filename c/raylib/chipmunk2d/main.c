@@ -21,6 +21,12 @@
 #define SIEVE_AMP 3.0f
 #define MAX_VERTICES 8
 #define COLLISION_TYPE_DEBRIS 1
+
+// 衝突カテゴリ（水とデブリは互いに素通りする）
+#define CATEGORY_DEBRIS 1
+#define CATEGORY_WATER 2
+#define CATEGORY_STRUCTURE 4  // 壁、地面、コンベア、ふるいなど
+
 #define WAKE_UP_IMPULSE_THRESHOLD 50000.0f  // この衝撃を超えたら起こす
 #define MIN_BREAK_SIZE 10.0f  // この大きさ以上の石を砕ける
 
@@ -84,15 +90,18 @@ static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor"
 static int draggedDebrisIdx = -1;
 static cpVect dragOffset = {0, 0};
 
-// 水
-#define MAX_WATER 100
-#define WATER_SIZE 200.0f
+// 水パーティクル
+#define MAX_WATER_PARTICLES 2000
+#define WATER_PARTICLE_RADIUS 5.0f
+#define COLLISION_TYPE_WATER 2
 typedef struct {
-    float x, y;
+    cpBody *body;
+    cpShape *shape;
     bool active;
-} Water;
-static Water waters[MAX_WATER];
-static int waterCount = 0;
+    bool isMud;  // 泥水かどうか
+} WaterParticle;
+static WaterParticle waterParticles[MAX_WATER_PARTICLES];
+static int waterParticleCount = 0;
 
 // 配置用グリッド
 #define GRID_UNIT 10.0f
@@ -246,6 +255,7 @@ static void spawnDebris(void) {
     if (elasticity > 1.0f) elasticity = 1.0f;
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -307,6 +317,7 @@ static void spawnWood(void) {
     cpShapeSetFriction(shape, 0.6f);
     cpShapeSetElasticity(shape, 0.3f);  // 木は跳ねにくい
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -367,6 +378,7 @@ static void spawnClay(void) {
     cpShapeSetFriction(shape, 0.9f);  // 高摩擦
     cpShapeSetElasticity(shape, 0.05f);  // ほとんど跳ねない
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -454,6 +466,7 @@ static void spawnDebrisAt(float x, float y, float size, float density, DebrisTyp
     if (elasticity > 1.0f) elasticity = 1.0f;
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -579,12 +592,31 @@ static void cleanupDebris(void) {
     }
 }
 
-// 位置が水中かチェック
+// 画面外の水パーティクルを削除
+static void cleanupWaterParticles(void) {
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) continue;
+        cpVect pos = cpBodyGetPosition(waterParticles[i].body);
+        if (pos.x > FIELD_WIDTH + 100 || pos.x < -100.0f || pos.y > SCREEN_HEIGHT + 100) {
+            cpSpaceRemoveShape(space, waterParticles[i].shape);
+            cpSpaceRemoveBody(space, waterParticles[i].body);
+            cpShapeFree(waterParticles[i].shape);
+            cpBodyFree(waterParticles[i].body);
+            waterParticles[i].active = false;
+        }
+    }
+}
+
+// 位置が水中かチェック（水パーティクルとの距離で判定）
 static bool isInWater(cpVect pos) {
-    for (int w = 0; w < waterCount; w++) {
-        if (!waters[w].active) continue;
-        if (pos.x >= waters[w].x && pos.x <= waters[w].x + WATER_SIZE &&
-            pos.y >= waters[w].y && pos.y <= waters[w].y + WATER_SIZE) {
+    for (int w = 0; w < waterParticleCount; w++) {
+        if (!waterParticles[w].active) continue;
+        cpVect waterPos = cpBodyGetPosition(waterParticles[w].body);
+        float dx = pos.x - waterPos.x;
+        float dy = pos.y - waterPos.y;
+        float dist = sqrtf(dx * dx + dy * dy);
+        // 水パーティクルの半径 + デブリが接触する距離
+        if (dist < WATER_PARTICLE_RADIUS * 2.0f) {
             return true;
         }
     }
@@ -689,6 +721,7 @@ static void staticizeDebris(float dt) {
                 debris[i].vertices, t, 0.0f);
             cpShapeSetFriction(debris[i].shape, 0.5f);
             cpShapeSetCollisionType(debris[i].shape, COLLISION_TYPE_DEBRIS);
+            cpShapeSetFilter(debris[i].shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
             cpShapeSetUserData(debris[i].shape, (void*)(intptr_t)i);
             cpSpaceAddShape(space, debris[i].shape);
 
@@ -869,6 +902,7 @@ static void wakeUpStaticDebris(void) {
         if (elasticity > 1.0f) elasticity = 1.0f;
         cpShapeSetElasticity(shape, elasticity);
         cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
         cpShapeSetUserData(shape, (void*)(intptr_t)i);
         cpSpaceAddShape(space, shape);
 
@@ -995,54 +1029,87 @@ static void drawStickyJoints(void) {
     }
 }
 
-// 水を描画
-static void drawWater(void) {
-    for (int i = 0; i < waterCount; i++) {
-        if (!waters[i].active) continue;
-        DrawRectangle((int)waters[i].x, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
-            (Color){100, 150, 255, 120});
-        DrawRectangleLines((int)waters[i].x, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
-            (Color){50, 100, 200, 200});
+// 水パーティクルを描画
+static void drawWaterParticles(void) {
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) continue;
+        cpVect pos = cpBodyGetPosition(waterParticles[i].body);
+        Color color;
+        if (waterParticles[i].isMud) {
+            color = (Color){180, 140, 100, 200};  // 泥水：明るい茶色
+        } else {
+            color = (Color){100, 180, 255, 200};  // 水：水色
+        }
+        DrawCircle((int)pos.x, (int)pos.y, WATER_PARTICLE_RADIUS, color);
     }
 }
 
-// 水にいるかチェックし、浮力を適用
+// 水パーティクルを振動させて平らにする
+static void updateWaterParticles(void) {
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) continue;
+
+        cpVect pos = cpBodyGetPosition(waterParticles[i].body);
+        cpVect vel = cpBodyGetVelocity(waterParticles[i].body);
+
+        // 横方向に広がる力（左右ランダム）
+        float spreadX = (rand01() - 0.5f) * 300.0f;
+        cpBodyApplyForceAtWorldPoint(waterParticles[i].body, cpv(spreadX, 0), pos);
+
+        // 速度が遅い場合は横にランダムに動く
+        if (fabsf(vel.x) < 10.0f) {
+            float kick = (rand01() > 0.5f ? 1.0f : -1.0f) * 20.0f;
+            cpBodySetVelocity(waterParticles[i].body, cpv(vel.x + kick, vel.y));
+        }
+    }
+}
+
+// 水パーティクルとの相互作用（浮力・粘土→石変換）
 static void applyBuoyancy(void) {
     for (int i = 0; i < debrisCount; i++) {
         if (!debris[i].active || debris[i].isStatic || !debris[i].body) continue;
 
         cpVect pos = cpBodyGetPosition(debris[i].body);
+        float debrisRadius = debris[i].size * 0.5f;  // 半径（サイズの半分）
 
-        // 全ての水をチェック
-        for (int w = 0; w < waterCount; w++) {
-            if (!waters[w].active) continue;
+        // 全ての水パーティクルをチェック
+        bool inWater = false;
+        for (int w = 0; w < waterParticleCount; w++) {
+            if (!waterParticles[w].active) continue;
 
-            // 水の範囲内にいるか
-            if (pos.x >= waters[w].x && pos.x <= waters[w].x + WATER_SIZE &&
-                pos.y >= waters[w].y && pos.y <= waters[w].y + WATER_SIZE) {
+            cpVect waterPos = cpBodyGetPosition(waterParticles[w].body);
+            float dx = pos.x - waterPos.x;
+            float dy = pos.y - waterPos.y;
+            float dist = sqrtf(dx * dx + dy * dy);
 
-                // 粘土は水に触れるとくっつかなくなる（石に変化）
+            // デブリと水パーティクルが実際に重なっているか（厳密に判定）
+            if (dist < WATER_PARTICLE_RADIUS + debrisRadius * 0.5f) {
+                inWater = true;
+
+                // 粘土は水に触れると石に変化し、水は泥水になる
                 if (debris[i].type == DEBRIS_CLAY) {
                     debris[i].type = DEBRIS_STONE;
-                    // 接続されているジョイントを削除
                     removeJointsForDebris(i);
-                }
-
-                // 密度1未満なら浮力を適用
-                if (debris[i].density < 1.0f) {
-                    float area = calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
-                    // 浮力 = (1 - 密度) * 面積 * 重力（上向き）
-                    float buoyancy = (1.0f - debris[i].density) * area * 9.8f * SCALE * 5.0f;
-                    // 現在の力に浮力を加算（回転させない）
-                    cpVect currentForce = cpBodyGetForce(debris[i].body);
-                    cpBodySetForce(debris[i].body, cpv(currentForce.x, currentForce.y - buoyancy));
-                    // 水の抵抗（強め）
-                    cpVect vel = cpBodyGetVelocity(debris[i].body);
-                    cpBodySetVelocity(debris[i].body, cpvmult(vel, 0.85f));
-                    // 回転も減衰
-                    cpBodySetAngularVelocity(debris[i].body, cpBodyGetAngularVelocity(debris[i].body) * 0.85f);
+                    waterParticles[w].isMud = true;
                 }
             }
+        }
+
+        // 水中にいる場合、浮力と抵抗を適用
+        if (inWater) {
+            // 密度1未満なら浮力を適用
+            if (debris[i].density < 1.0f) {
+                float area = calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
+                // 浮力 = (1 - 密度) * 面積 * 重力（上向き）
+                float buoyancy = (1.0f - debris[i].density) * area * 9.8f * SCALE * 5.0f;
+                cpVect currentForce = cpBodyGetForce(debris[i].body);
+                cpBodySetForce(debris[i].body, cpv(currentForce.x, currentForce.y - buoyancy));
+            }
+            // 水の抵抗（強め）
+            cpVect vel = cpBodyGetVelocity(debris[i].body);
+            cpBodySetVelocity(debris[i].body, cpvmult(vel, 0.85f));
+            // 回転も減衰
+            cpBodySetAngularVelocity(debris[i].body, cpBodyGetAngularVelocity(debris[i].body) * 0.85f);
         }
     }
 }
@@ -1083,23 +1150,70 @@ static void applyConveyorForce(void) {
             }
         }
     }
+
+    // 水パーティクルにもコンベアの力を適用
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) continue;
+
+        for (int c = 0; c < conveyorCount; c++) {
+            if (!conveyors[c].active) continue;
+
+            cpContactPointSet contacts = cpShapesCollide(waterParticles[i].shape, conveyors[c].shape);
+            if (contacts.count > 0) {
+                float angle = (float)cpBodyGetAngle(conveyors[c].body);
+                cpVect conveyorDir = cpv(cosf(angle), sinf(angle));
+                if (conveyors[c].reversed) {
+                    conveyorDir = cpvneg(conveyorDir);
+                }
+
+                cpVect vel = cpBodyGetVelocity(waterParticles[i].body);
+                float speedInDir = (float)cpvdot(vel, conveyorDir);
+
+                // 目標速度との差に応じて力を調整（水は軽いので弱めに）
+                if (speedInDir < CONVEYOR_MAX_SPEED * 0.5f) {
+                    float forceMag = (CONVEYOR_MAX_SPEED * 0.5f - speedInDir) * 50.0f;
+                    if (forceMag > 5000.0f) forceMag = 5000.0f;
+                    cpVect force = cpvmult(conveyorDir, forceMag);
+                    cpVect pos = cpBodyGetPosition(waterParticles[i].body);
+                    cpBodyApplyForceAtWorldPoint(waterParticles[i].body, force, pos);
+                }
+                break;
+            }
+        }
+    }
 }
 
-// 水を配置
-static void placeWater(float x, float y) {
+// 水パーティクルを生成
+static void spawnWaterParticle(float x, float y) {
     // 空きスロットを探す
     int slot = -1;
-    for (int i = 0; i < waterCount; i++) {
-        if (!waters[i].active) { slot = i; break; }
+    for (int i = 0; i < waterParticleCount; i++) {
+        if (!waterParticles[i].active) { slot = i; break; }
     }
-    if (slot < 0 && waterCount < MAX_WATER) {
-        slot = waterCount++;
+    if (slot < 0 && waterParticleCount < MAX_WATER_PARTICLES) {
+        slot = waterParticleCount++;
     }
     if (slot < 0) return;
 
-    waters[slot].x = x - WATER_SIZE / 2.0f;
-    waters[slot].y = y - WATER_SIZE / 2.0f;
-    waters[slot].active = true;
+    // ダイナミックボディを作成
+    cpFloat mass = 1.0f;
+    cpFloat moment = cpMomentForCircle(mass, 0, WATER_PARTICLE_RADIUS, cpvzero);
+    cpBody *body = cpBodyNew(mass, moment);
+    cpBodySetPosition(body, cpv(x, y));
+    cpSpaceAddBody(space, body);
+
+    // 円形シェイプ
+    cpShape *shape = cpCircleShapeNew(body, WATER_PARTICLE_RADIUS, cpvzero);
+    cpShapeSetFriction(shape, 0.0f);  // 摩擦ゼロで滑り落ちる
+    cpShapeSetElasticity(shape, 0.1f);  // 少し弾んで広がる
+    cpShapeSetCollisionType(shape, COLLISION_TYPE_WATER);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+    cpSpaceAddShape(space, shape);
+
+    waterParticles[slot].body = body;
+    waterParticles[slot].shape = shape;
+    waterParticles[slot].active = true;
+    waterParticles[slot].isMud = false;
 }
 
 // コンベアを配置
@@ -1132,6 +1246,7 @@ static void placeConveyor(float x, float y) {
 
     cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 1.0f);  // 高摩擦
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     // 表面速度は使わず、力だけで動かす（回転に正しく追従させるため）
 
     cpSpaceAddShape(space, shape);
@@ -1217,6 +1332,7 @@ static void placeWall(float x, float y) {
 
     cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 0.8f);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, shape);
 
     walls[slot].body = body;
@@ -1273,12 +1389,14 @@ static void placeOutput(float x, float y) {
     cpTransform leftT = cpTransformTranslate(cpv(ox, oy + OUTPUT_SIZE / 2.0f));
     outputs[slot].leftWall = cpPolyShapeNew(staticBody, 4, leftVerts, leftT, 0.0f);
     cpShapeSetFriction(outputs[slot].leftWall, 0.5f);
+    cpShapeSetFilter(outputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, outputs[slot].leftWall);
 
     // 右壁
     cpTransform rightT = cpTransformTranslate(cpv(ox + OUTPUT_SIZE, oy + OUTPUT_SIZE / 2.0f));
     outputs[slot].rightWall = cpPolyShapeNew(staticBody, 4, leftVerts, rightT, 0.0f);
     cpShapeSetFriction(outputs[slot].rightWall, 0.5f);
+    cpShapeSetFilter(outputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, outputs[slot].rightWall);
 
     // 底壁
@@ -1290,6 +1408,7 @@ static void placeOutput(float x, float y) {
     cpTransform bottomT = cpTransformTranslate(cpv(ox + OUTPUT_SIZE / 2.0f, oy + OUTPUT_SIZE));
     outputs[slot].bottomWall = cpPolyShapeNew(staticBody, 4, bottomVerts, bottomT, 0.0f);
     cpShapeSetFriction(outputs[slot].bottomWall, 0.5f);
+    cpShapeSetFilter(outputs[slot].bottomWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, outputs[slot].bottomWall);
 
     outputs[slot].active = true;
@@ -1409,12 +1528,14 @@ static void placeInput(float x, float y) {
     cpTransform leftT = cpTransformTranslate(cpv(ix, iy + INPUT_SIZE / 2.0f));
     inputs[slot].leftWall = cpPolyShapeNew(staticBody, 4, leftVerts, leftT, 0.0f);
     cpShapeSetFriction(inputs[slot].leftWall, 0.5f);
+    cpShapeSetFilter(inputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, inputs[slot].leftWall);
 
     // 右壁
     cpTransform rightT = cpTransformTranslate(cpv(ix + INPUT_SIZE, iy + INPUT_SIZE / 2.0f));
     inputs[slot].rightWall = cpPolyShapeNew(staticBody, 4, leftVerts, rightT, 0.0f);
     cpShapeSetFriction(inputs[slot].rightWall, 0.5f);
+    cpShapeSetFilter(inputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, inputs[slot].rightWall);
 
     // 上壁
@@ -1426,6 +1547,7 @@ static void placeInput(float x, float y) {
     cpTransform topT = cpTransformTranslate(cpv(ix + INPUT_SIZE / 2.0f, iy));
     inputs[slot].topWall = cpPolyShapeNew(staticBody, 4, topVerts, topT, 0.0f);
     cpShapeSetFriction(inputs[slot].topWall, 0.5f);
+    cpShapeSetFilter(inputs[slot].topWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, inputs[slot].topWall);
 
     inputs[slot].active = true;
@@ -1563,6 +1685,7 @@ static void checkAndFillInputs(void) {
                 if (elasticity > 1.0f) elasticity = 1.0f;
                 cpShapeSetElasticity(shape, elasticity);
                 cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
                 cpShapeSetUserData(shape, (void*)(intptr_t)slot);
                 cpSpaceAddShape(space, shape);
 
@@ -1616,6 +1739,7 @@ static void placeUserSieve(float x, float y) {
     };
     cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 0.5f);
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, shape);
 
     userSieves[slot].body = body;
@@ -1665,6 +1789,7 @@ static void createSieve(void) {
         };
         cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
         cpShapeSetFriction(shape, 0.5f);
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
         cpSpaceAddShape(space, shape);
 
         sieveBodies[i] = body;
@@ -1705,6 +1830,7 @@ static void createGround(void) {
     groundShape = cpPolyShapeNew(staticBody, 4, verts,
         cpTransformTranslate(cpv(FIELD_WIDTH / 2.0f, SCREEN_HEIGHT - 10.0f)), 0.0f);
     cpShapeSetFriction(groundShape, 1.0f);
+    cpShapeSetFilter(groundShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, groundShape);
 
     // 左壁
@@ -1716,6 +1842,7 @@ static void createGround(void) {
     leftWallShape = cpPolyShapeNew(staticBody, 4, leftVerts,
         cpTransformTranslate(cpv(-10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
     cpShapeSetFriction(leftWallShape, 0.5f);
+    cpShapeSetFilter(leftWallShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, leftWallShape);
 
     // 右壁（フィールド右端）
@@ -1725,6 +1852,7 @@ static void createGround(void) {
     rightWallShape = cpPolyShapeNew(staticBody, 4, rightVerts,
         cpTransformTranslate(cpv(FIELD_WIDTH + 10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
     cpShapeSetFriction(rightWallShape, 0.5f);
+    cpShapeSetFilter(rightWallShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, rightWallShape);
 }
 
@@ -2037,9 +2165,9 @@ int main(void)
                 draggedDebrisIdx = -1;
             }
         } else if (actionMode == 3) {
-            // モード3: 水配置
-            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-                placeWater(worldX, worldY);
+            // モード3: 水配置（右クリック押し続けで連続生成）
+            if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+                spawnWaterParticle(worldX, worldY);
             }
         } else if (actionMode == 4) {
             // モード4: コンベア配置
@@ -2146,14 +2274,17 @@ int main(void)
                             deleted = true;
                         }
                     }
-                    // 水をチェック
-                    for (int i = 0; i < waterCount && !deleted; i++) {
-                        if (!waters[i].active) continue;
-                        float wx = waters[i].x;
-                        float wy = waters[i].y;
-                        if (worldX >= wx && worldX <= wx + WATER_SIZE &&
-                            worldY >= wy && worldY <= wy + WATER_SIZE) {
-                            waters[i].active = false;
+                    // 水パーティクルをチェック
+                    for (int i = 0; i < waterParticleCount && !deleted; i++) {
+                        if (!waterParticles[i].active) continue;
+                        cpVect wpos = cpBodyGetPosition(waterParticles[i].body);
+                        float dist = sqrtf(powf(worldX - (float)wpos.x, 2) + powf(worldY - (float)wpos.y, 2));
+                        if (dist < WATER_PARTICLE_RADIUS * 2.0f) {
+                            cpSpaceRemoveShape(space, waterParticles[i].shape);
+                            cpSpaceRemoveBody(space, waterParticles[i].body);
+                            cpShapeFree(waterParticles[i].shape);
+                            cpBodyFree(waterParticles[i].body);
+                            waterParticles[i].active = false;
                             deleted = true;
                         }
                     }
@@ -2191,10 +2322,12 @@ int main(void)
         physicsTimeMs = (float)((endTime - startTime) * 1000.0);
 
         cleanupDebris();
+        cleanupWaterParticles();
         staticizeDebris(dt);
         wakeUpStaticDebris();
         processBreakingDebris();
         processPendingSticky();
+        updateWaterParticles();
         applyBuoyancy();
         applyConveyorForce();
         checkAndClearOutputs();
@@ -2212,7 +2345,6 @@ int main(void)
         BeginMode2D(camera);
 
         drawGrid(cameraX, cameraY, zoom);
-        drawWater();
         drawGround();
         drawSieve();
         drawUserSieves();
@@ -2221,6 +2353,7 @@ int main(void)
             drawDebris(i);
         }
         drawStickyJoints();
+        drawWaterParticles();  // デブリより前面に描画
         drawConveyors();
         drawWalls();
         drawOutputs();
