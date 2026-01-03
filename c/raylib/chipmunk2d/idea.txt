@@ -1,0 +1,8 @@
+
+../box2d のsieveデモがリリースビルドでも遅い(5000オブジェクトで20msぐらい)ので、
+
+chipmunk2dに移植して比較したいです.
+
+参考:
+https://chipmunk-physics.net/release/ChipmunkLatest-Docs/?utm_source=chatgpt.com
+
