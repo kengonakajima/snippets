@@ -21,7 +21,7 @@
 #define SIEVE_AMP 3.0f
 #define MAX_VERTICES 8
 #define COLLISION_TYPE_DEBRIS 1
-#define WAKE_UP_IMPULSE_THRESHOLD 120.0f  // この衝撃を超えたら起こす
+#define WAKE_UP_IMPULSE_THRESHOLD 50000.0f  // この衝撃を超えたら起こす
 #define MIN_BREAK_SIZE 10.0f  // この大きさ以上の石を砕ける
 
 typedef struct {
@@ -30,6 +30,7 @@ typedef struct {
     cpVect vertices[MAX_VERTICES];
     int vertexCount;
     float size;
+    float density;      // 密度 (0.7〜2.7)
     bool active;
     bool isStatic;      // スタティック化されたか
     bool wakeUp;        // ダイナミックに戻すフラグ
@@ -107,7 +108,10 @@ static void spawnDebris(void) {
         points[i] = cpv(r * cosf(angles[i]), r * sinf(angles[i]));
     }
 
-    cpFloat mass = 1.0f;
+    // 密度と質量を計算
+    float density = 0.7f + rand01() * 2.0f;  // 0.7〜2.7
+    float area = calcPolygonArea(points, vertexCount);
+    cpFloat mass = area * density;
     cpFloat moment = cpMomentForPoly(mass, vertexCount, points, cpvzero, 0.0f);
     cpBody *body = cpBodyNew(mass, moment);
     cpBodySetPosition(body, cpv(x, y));
@@ -132,6 +136,7 @@ static void spawnDebris(void) {
         debris[slot].vertices[i] = points[i];
     }
     debris[slot].size = size;
+    debris[slot].density = density;
     debris[slot].active = true;
     debris[slot].isStatic = false;
     debris[slot].wakeUp = false;
@@ -142,8 +147,8 @@ static void spawnDebris(void) {
     if (slot >= debrisCount) debrisCount = slot + 1;
 }
 
-// 指定位置に指定サイズの破片を生成
-static void spawnDebrisAt(float x, float y, float size) {
+// 指定位置に指定サイズ・密度の破片を生成
+static void spawnDebrisAt(float x, float y, float size, float density) {
     int slot = findFreeSlot();
     if (slot < 0) return;
     if (size < 2.0f) size = 2.0f;  // 最小サイズ保証
@@ -162,7 +167,9 @@ static void spawnDebrisAt(float x, float y, float size) {
         points[i] = cpv(r * cosf(angles[i]), r * sinf(angles[i]));
     }
 
-    cpFloat mass = 1.0f;
+    // 面積と質量を計算
+    float area = calcPolygonArea(points, vertexCount);
+    cpFloat mass = area * density;
     cpFloat moment = cpMomentForPoly(mass, vertexCount, points, cpvzero, 0.0f);
     cpBody *body = cpBodyNew(mass, moment);
     cpBodySetPosition(body, cpv(x, y));
@@ -190,6 +197,7 @@ static void spawnDebrisAt(float x, float y, float size) {
         debris[slot].vertices[i] = points[i];
     }
     debris[slot].size = size;
+    debris[slot].density = density;
     debris[slot].active = true;
     debris[slot].isStatic = false;
     debris[slot].wakeUp = false;
@@ -255,11 +263,12 @@ static void breakDebris(int index) {
         remainingArea -= pieceSize * pieceSize * areaFactor;
     }
 
-    // 破片を生成
+    // 破片を生成（元の石の密度を継承）
+    float density = debris[index].density;
     for (int i = 0; i < numPieces; i++) {
         float offsetX = (rand01() - 0.5f) * originalSize;
         float offsetY = (rand01() - 0.5f) * originalSize;
-        spawnDebrisAt((float)pos.x + offsetX, (float)pos.y + offsetY, sizes[i]);
+        spawnDebrisAt((float)pos.x + offsetX, (float)pos.y + offsetY, sizes[i], density);
     }
 }
 
@@ -353,8 +362,8 @@ static void postSolveHandler(cpArbiter *arb, cpSpace *space, void *data) {
         // 衝撃で割れる判定（サイズ3より大きい石のみ）
         float size = debris[idx].size;
         if (size > 3.0f && !debris[idx].shouldBreak) {
-            // 小さい石ほど低い衝撃で割れる（サイズ30で閾値1500、サイズ4で閾値200）
-            float breakThreshold = size * 50.0f;
+            // 質量を考慮した閾値（質量 = 面積 × 密度 ≈ 2*size^2 * density）
+            float breakThreshold = size * size * size * 500.0f;
             if (impulse > breakThreshold) {
                 // 確率で割れる（衝撃が閾値の2倍なら100%、閾値ギリギリなら低確率）
                 float breakChance = (impulse - breakThreshold) / breakThreshold;
@@ -376,8 +385,9 @@ static void wakeUpStaticDebris(void) {
         cpSpaceRemoveShape(space, debris[i].shape);
         cpShapeFree(debris[i].shape);
 
-        // ダイナミックボディを再作成
-        cpFloat mass = 1.0f;
+        // ダイナミックボディを再作成（面積×密度で質量計算）
+        float area = calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
+        cpFloat mass = area * debris[i].density;
         cpFloat moment = cpMomentForPoly(mass, debris[i].vertexCount, debris[i].vertices, cpvzero, 0.0f);
         cpBody *body = cpBodyNew(mass, moment);
         cpBodySetPosition(body, debris[i].staticPos);
