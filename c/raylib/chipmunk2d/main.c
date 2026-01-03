@@ -24,13 +24,19 @@
 #define WAKE_UP_IMPULSE_THRESHOLD 50000.0f  // この衝撃を超えたら起こす
 #define MIN_BREAK_SIZE 10.0f  // この大きさ以上の石を砕ける
 
+typedef enum {
+    DEBRIS_STONE,
+    DEBRIS_WOOD
+} DebrisType;
+
 typedef struct {
     cpBody *body;
     cpShape *shape;
     cpVect vertices[MAX_VERTICES];
     int vertexCount;
     float size;
-    float density;      // 密度 (0.7〜2.7)
+    float density;      // 密度 (石:0.7〜2.7, 木:0.7)
+    DebrisType type;    // 石か木か
     bool active;
     bool isStatic;      // スタティック化されたか
     bool wakeUp;        // ダイナミックに戻すフラグ
@@ -137,6 +143,68 @@ static void spawnDebris(void) {
     }
     debris[slot].size = size;
     debris[slot].density = density;
+    debris[slot].type = DEBRIS_STONE;
+    debris[slot].active = true;
+    debris[slot].isStatic = false;
+    debris[slot].wakeUp = false;
+    debris[slot].shouldBreak = false;
+    debris[slot].breakFlash = 0;
+    debris[slot].idleTime = 0.0f;
+    debris[slot].lastPos = cpv(x, y);
+    if (slot >= debrisCount) debrisCount = slot + 1;
+}
+
+// 木片を生成（長方形、枝っぽい形状）
+static void spawnWood(void) {
+    int slot = findFreeSlot();
+    if (slot < 0) return;
+
+    // サイズ: 10〜60（大きめ）
+    float size = 10.0f + rand01() * 50.0f;
+    float x = FIELD_WIDTH / 2.0f - 200.0f + rand01() * 300.0f;
+    float y = -50.0f;
+
+    // 枝っぽい縦横比（長さ:幅 = 3:1 〜 8:1）
+    float aspectRatio = 3.0f + rand01() * 5.0f;
+    float length = size;
+    float width = size / aspectRatio;
+    if (width < 1.5f) width = 1.5f;
+
+    // 長方形の頂点
+    cpVect points[4];
+    float hw = length / 2.0f;
+    float hh = width / 2.0f;
+    points[0] = cpv(-hw, -hh);
+    points[1] = cpv(-hw, hh);
+    points[2] = cpv(hw, hh);
+    points[3] = cpv(hw, -hh);
+
+    // 密度と質量
+    float density = 0.7f;
+    float area = length * width;
+    cpFloat mass = area * density;
+    cpFloat moment = cpMomentForPoly(mass, 4, points, cpvzero, 0.0f);
+    cpBody *body = cpBodyNew(mass, moment);
+    cpBodySetPosition(body, cpv(x, y));
+    cpBodySetAngle(body, rand01() * 2.0f * PI);
+    cpSpaceAddBody(space, body);
+
+    cpShape *shape = cpPolyShapeNew(body, 4, points, cpTransformIdentity, 0.0f);
+    cpShapeSetFriction(shape, 0.6f);
+    cpShapeSetElasticity(shape, 0.3f);  // 木は跳ねにくい
+    cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetUserData(shape, (void*)(intptr_t)slot);
+    cpSpaceAddShape(space, shape);
+
+    debris[slot].body = body;
+    debris[slot].shape = shape;
+    debris[slot].vertexCount = 4;
+    for (int i = 0; i < 4; i++) {
+        debris[slot].vertices[i] = points[i];
+    }
+    debris[slot].size = size;
+    debris[slot].density = density;
+    debris[slot].type = DEBRIS_WOOD;
     debris[slot].active = true;
     debris[slot].isStatic = false;
     debris[slot].wakeUp = false;
@@ -198,6 +266,7 @@ static void spawnDebrisAt(float x, float y, float size, float density) {
     }
     debris[slot].size = size;
     debris[slot].density = density;
+    debris[slot].type = DEBRIS_STONE;
     debris[slot].active = true;
     debris[slot].isStatic = false;
     debris[slot].wakeUp = false;
@@ -211,6 +280,7 @@ static void spawnDebrisAt(float x, float y, float size, float density) {
 // 石を砕く（面積を保存）
 static void breakDebris(int index) {
     if (!debris[index].active) return;
+    if (debris[index].type != DEBRIS_STONE) return;  // 木片は割れない
     if (debris[index].size < MIN_BREAK_SIZE) return;
 
     float originalSize = debris[index].size;
@@ -359,9 +429,9 @@ static void postSolveHandler(cpArbiter *arb, cpSpace *space, void *data) {
             debris[idx].wakeUp = true;
         }
 
-        // 衝撃で割れる判定（サイズ3より大きい石のみ）
+        // 衝撃で割れる判定（サイズ3より大きい石のみ、木片は割れない）
         float size = debris[idx].size;
-        if (size > 3.0f && !debris[idx].shouldBreak) {
+        if (size > 3.0f && !debris[idx].shouldBreak && debris[idx].type == DEBRIS_STONE) {
             // 質量を考慮した閾値（質量 = 面積 × 密度 ≈ 2*size^2 * density）
             float breakThreshold = size * size * size * 500.0f;
             if (impulse > breakThreshold) {
@@ -431,7 +501,7 @@ static void processBreakingDebris(void) {
     }
 }
 
-static Color getDebrisColor(float size) {
+static Color getStoneColor(float size) {
     // サイズ 2〜30 を 0〜1 に正規化
     float t = (size - 2.0f) / 28.0f;
     if (t < 0.0f) t = 0.0f;
@@ -439,6 +509,20 @@ static Color getDebrisColor(float size) {
     // 小さい: 明るい灰色(180)、大きい: 暗い灰色(80)
     unsigned char gray = (unsigned char)(180 - t * 100);
     return (Color){gray, gray, gray, 255};
+}
+
+static Color getWoodColor(float size) {
+    // サイズに応じて茶色の濃さを変える (10〜60)
+    float t = (size - 10.0f) / 50.0f;
+    if (t < 0.0f) t = 0.0f;
+    if (t > 1.0f) t = 1.0f;
+    // 明るい茶色(180,130,70)〜暗い茶色(100,60,30)
+    return (Color){
+        (unsigned char)(180 - t * 80),
+        (unsigned char)(130 - t * 70),
+        (unsigned char)(70 - t * 40),
+        255
+    };
 }
 
 static void drawDebris(int index) {
@@ -451,8 +535,10 @@ static void drawDebris(int index) {
         color = (Color){80, 80, 180, 255};  // スタティックは青
     } else if (cpBodyIsSleeping(debris[index].body)) {
         color = (Color){180, 80, 80, 255};  // スリープ中は赤
+    } else if (debris[index].type == DEBRIS_WOOD) {
+        color = getWoodColor(debris[index].size);
     } else {
-        color = getDebrisColor(debris[index].size);
+        color = getStoneColor(debris[index].size);
     }
 
     Vector2 screenPoints[MAX_VERTICES];
@@ -657,9 +743,14 @@ int main(void)
         if (spawning) {
             spawnTimer += dt;
             if (spawnTimer > 0.016f) {
-                spawnDebris();
-                spawnDebris();
-                spawnDebris();
+                // 3個生成、25%の確率で木片
+                for (int i = 0; i < 3; i++) {
+                    if (rand01() < 0.25f) {
+                        spawnWood();
+                    } else {
+                        spawnDebris();
+                    }
+                }
                 spawnTimer = 0.0f;
             }
         }
