@@ -2226,6 +2226,73 @@ int main(void)
         drawOutputs();
         drawInputs();
 
+        // 配置プレビュー（ワイヤフレーム）
+        float previewX = snapToGrid(worldX);
+        float previewY = snapToGrid(worldY);
+        Color previewColor = (Color){100, 200, 100, 180};
+
+        if (actionMode == 4) {
+            // コンベア プレビュー
+            Rectangle rect = {previewX, previewY, CONVEYOR_LENGTH, CONVEYOR_THICKNESS};
+            Vector2 origin = {CONVEYOR_LENGTH / 2.0f, CONVEYOR_THICKNESS / 2.0f};
+            DrawRectanglePro(rect, origin, CONVEYOR_DEFAULT_ANGLE * 180.0f / PI, (Color){0, 0, 0, 0});
+            DrawRectangleLinesEx((Rectangle){previewX - CONVEYOR_LENGTH/2, previewY - CONVEYOR_THICKNESS/2, CONVEYOR_LENGTH, CONVEYOR_THICKNESS}, 2, previewColor);
+            // 回転を考慮した線で描画
+            float angle = CONVEYOR_DEFAULT_ANGLE;
+            float hw = CONVEYOR_LENGTH / 2.0f;
+            float hh = CONVEYOR_THICKNESS / 2.0f;
+            float cosA = cosf(angle), sinA = sinf(angle);
+            Vector2 corners[4] = {
+                {previewX + (-hw)*cosA - (-hh)*sinA, previewY + (-hw)*sinA + (-hh)*cosA},
+                {previewX + ( hw)*cosA - (-hh)*sinA, previewY + ( hw)*sinA + (-hh)*cosA},
+                {previewX + ( hw)*cosA - ( hh)*sinA, previewY + ( hw)*sinA + ( hh)*cosA},
+                {previewX + (-hw)*cosA - ( hh)*sinA, previewY + (-hw)*sinA + ( hh)*cosA}
+            };
+            for (int i = 0; i < 4; i++) {
+                DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+            }
+        } else if (actionMode == 5) {
+            // Output プレビュー
+            float ox = previewX - OUTPUT_SIZE / 2.0f;
+            float oy = previewY - OUTPUT_SIZE / 2.0f;
+            DrawRectangleLines((int)ox, (int)oy, (int)OUTPUT_SIZE, (int)OUTPUT_SIZE, previewColor);
+        } else if (actionMode == 6) {
+            // ふるい プレビュー
+            float angle = lastSieveAngle;
+            float hw = SIEVE_LENGTH / 2.0f;
+            float hh = SIEVE_THICKNESS / 2.0f;
+            float cosA = cosf(angle), sinA = sinf(angle);
+            Vector2 corners[4] = {
+                {previewX + (-hw)*cosA - (-hh)*sinA, previewY + (-hw)*sinA + (-hh)*cosA},
+                {previewX + ( hw)*cosA - (-hh)*sinA, previewY + ( hw)*sinA + (-hh)*cosA},
+                {previewX + ( hw)*cosA - ( hh)*sinA, previewY + ( hw)*sinA + ( hh)*cosA},
+                {previewX + (-hw)*cosA - ( hh)*sinA, previewY + (-hw)*sinA + ( hh)*cosA}
+            };
+            for (int i = 0; i < 4; i++) {
+                DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+            }
+        } else if (actionMode == 7) {
+            // Input プレビュー
+            float ix = previewX - INPUT_SIZE / 2.0f;
+            float iy = previewY - INPUT_SIZE / 2.0f;
+            DrawRectangleLines((int)ix, (int)iy, (int)INPUT_SIZE, (int)INPUT_SIZE, previewColor);
+        } else if (actionMode == 9) {
+            // 壁 プレビュー
+            float angle = lastWallAngle;
+            float hw = WALL_LENGTH / 2.0f;
+            float hh = WALL_THICKNESS / 2.0f;
+            float cosA = cosf(angle), sinA = sinf(angle);
+            Vector2 corners[4] = {
+                {previewX + (-hw)*cosA - (-hh)*sinA, previewY + (-hw)*sinA + (-hh)*cosA},
+                {previewX + ( hw)*cosA - (-hh)*sinA, previewY + ( hw)*sinA + (-hh)*cosA},
+                {previewX + ( hw)*cosA - ( hh)*sinA, previewY + ( hw)*sinA + ( hh)*cosA},
+                {previewX + (-hw)*cosA - ( hh)*sinA, previewY + (-hw)*sinA + ( hh)*cosA}
+            };
+            for (int i = 0; i < 4; i++) {
+                DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+            }
+        }
+
         EndMode2D();
 
         int activeCount = 0;
