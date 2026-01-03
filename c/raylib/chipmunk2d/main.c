@@ -1423,6 +1423,21 @@ int main(void)
         DrawText(TextFormat("Mode[1-9]: %d %s", actionMode, actionModeNames[actionMode]), 10, 95, 20, DARKBLUE);
         DrawText(TextFormat("Zoom: %.1fx", zoom), 10, 115, 20, BLACK);
 
+        // キー操作一覧（右端）
+        int helpX = SCREEN_WIDTH - 180;
+        int helpY = 5;
+        DrawRectangle(helpX - 5, helpY, 180, 220, (Color){255, 255, 255, 200});
+        DrawText("-- Controls --", helpX, helpY + 5, 16, DARKGRAY);
+        DrawText("Space: Spawn ON/OFF", helpX, helpY + 25, 14, BLACK);
+        DrawText("1: Break mode", helpX, helpY + 45, 14, BLACK);
+        DrawText("2: Drag mode", helpX, helpY + 65, 14, BLACK);
+        DrawText("3: Water mode", helpX, helpY + 85, 14, BLACK);
+        DrawText("4: Conveyor mode", helpX, helpY + 105, 14, BLACK);
+        DrawText("A/D: Scroll L/R", helpX, helpY + 130, 14, BLACK);
+        DrawText("W/S: Scroll U/D", helpX, helpY + 150, 14, BLACK);
+        DrawText("Wheel: Zoom", helpX, helpY + 170, 14, BLACK);
+        DrawText("L-Drag: Pan", helpX, helpY + 190, 14, BLACK);
+
         EndDrawing();
     }
 
