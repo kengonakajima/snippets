@@ -74,13 +74,23 @@ static cpSpace *space;
 // カメラオフセット（スクロール用）
 static float cameraX = 0.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
 static cpVect dragOffset = {0, 0};
+
+// 水
+#define MAX_WATER 100
+#define WATER_SIZE 200.0f
+typedef struct {
+    float x, y;
+    bool active;
+} Water;
+static Water waters[MAX_WATER];
+static int waterCount = 0;
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -459,6 +469,18 @@ static void cleanupDebris(void) {
     }
 }
 
+// 位置が水中かチェック
+static bool isInWater(cpVect pos) {
+    for (int w = 0; w < waterCount; w++) {
+        if (!waters[w].active) continue;
+        if (pos.x >= waters[w].x && pos.x <= waters[w].x + WATER_SIZE &&
+            pos.y >= waters[w].y && pos.y <= waters[w].y + WATER_SIZE) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // 安定した石をスタティック化
 static void staticizeDebris(float dt) {
     cpBody *staticBody = cpSpaceGetStaticBody(space);
@@ -467,10 +489,18 @@ static void staticizeDebris(float dt) {
         if (i == draggedDebrisIdx) continue;  // ドラッグ中はスキップ
 
         cpVect pos = cpBodyGetPosition(debris[i].body);
+
+        // 水中の石はスタティック化しない
+        if (isInWater(pos)) {
+            debris[i].idleTime = 0.0f;
+            debris[i].lastPos = pos;
+            continue;
+        }
+
         cpVect diff = cpvsub(pos, debris[i].lastPos);
         float moved = cpvlength(diff);
 
-        // ほとんど動いていない場合（高さ制限なし）
+        // ほとんど動いていない場合
         if (moved < 1.0f) {
             debris[i].idleTime += dt;
         } else {
@@ -809,6 +839,76 @@ static void drawStickyJoints(void) {
     }
 }
 
+// 水を描画
+static void drawWater(void) {
+    for (int i = 0; i < waterCount; i++) {
+        if (!waters[i].active) continue;
+        float screenX = waters[i].x - cameraX;
+        DrawRectangle((int)screenX, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
+            (Color){100, 150, 255, 120});
+        DrawRectangleLines((int)screenX, (int)waters[i].y, (int)WATER_SIZE, (int)WATER_SIZE,
+            (Color){50, 100, 200, 200});
+    }
+}
+
+// 水にいるかチェックし、浮力を適用
+static void applyBuoyancy(void) {
+    for (int i = 0; i < debrisCount; i++) {
+        if (!debris[i].active || debris[i].isStatic || !debris[i].body) continue;
+
+        cpVect pos = cpBodyGetPosition(debris[i].body);
+
+        // 全ての水をチェック
+        for (int w = 0; w < waterCount; w++) {
+            if (!waters[w].active) continue;
+
+            // 水の範囲内にいるか
+            if (pos.x >= waters[w].x && pos.x <= waters[w].x + WATER_SIZE &&
+                pos.y >= waters[w].y && pos.y <= waters[w].y + WATER_SIZE) {
+
+                // 粘土は水に触れるとくっつかなくなる（石に変化）
+                if (debris[i].type == DEBRIS_CLAY) {
+                    debris[i].type = DEBRIS_STONE;
+                    // 接続されているジョイントを削除
+                    removeJointsForDebris(i);
+                }
+
+                // 密度1未満なら浮力を適用
+                if (debris[i].density < 1.0f) {
+                    float area = calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
+                    // 浮力 = (1 - 密度) * 面積 * 重力（上向き）
+                    float buoyancy = (1.0f - debris[i].density) * area * 9.8f * SCALE * 5.0f;
+                    // 現在の力に浮力を加算（回転させない）
+                    cpVect currentForce = cpBodyGetForce(debris[i].body);
+                    cpBodySetForce(debris[i].body, cpv(currentForce.x, currentForce.y - buoyancy));
+                    // 水の抵抗（強め）
+                    cpVect vel = cpBodyGetVelocity(debris[i].body);
+                    cpBodySetVelocity(debris[i].body, cpvmult(vel, 0.85f));
+                    // 回転も減衰
+                    cpBodySetAngularVelocity(debris[i].body, cpBodyGetAngularVelocity(debris[i].body) * 0.85f);
+                }
+            }
+        }
+    }
+}
+
+// 水を配置
+static void placeWater(float x, float y) {
+    // 空きスロットを探す
+    int slot = -1;
+    for (int i = 0; i < waterCount; i++) {
+        if (!waters[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && waterCount < MAX_WATER) {
+        slot = waterCount++;
+    }
+    if (slot < 0) return;
+
+    waters[slot].x = x - WATER_SIZE / 2.0f;
+    waters[slot].y = y - WATER_SIZE / 2.0f;
+    waters[slot].active = true;
+}
+
 static void createSieve(void) {
     float spacing = SIEVE_LENGTH + SIEVE_GAP;
     // フィールド中央付近に配置
@@ -961,6 +1061,16 @@ int main(void)
             if (cameraX > FIELD_WIDTH - SCREEN_WIDTH) cameraX = FIELD_WIDTH - SCREEN_WIDTH;
         }
 
+        // A/Dキーでスクロール
+        if (IsKeyDown(KEY_A)) {
+            cameraX -= 10.0f;
+            if (cameraX < 0) cameraX = 0;
+        }
+        if (IsKeyDown(KEY_D)) {
+            cameraX += 10.0f;
+            if (cameraX > FIELD_WIDTH - SCREEN_WIDTH) cameraX = FIELD_WIDTH - SCREEN_WIDTH;
+        }
+
         if (IsKeyPressed(KEY_SPACE)) {
             spawning = !spawning;
         }
@@ -968,6 +1078,7 @@ int main(void)
         // 1-9キーで操作モード切替
         if (IsKeyPressed(KEY_ONE)) actionMode = 1;
         if (IsKeyPressed(KEY_TWO)) actionMode = 2;
+        if (IsKeyPressed(KEY_THREE)) actionMode = 3;
 
         // 右クリック操作
         float worldX = GetMouseX() + cameraX;
@@ -1025,11 +1136,16 @@ int main(void)
             if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) {
                 draggedDebrisIdx = -1;
             }
+        } else if (actionMode == 3) {
+            // モード3: 水配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeWater(worldX, worldY);
+            }
         }
 
         if (spawning) {
             spawnTimer += dt;
-            if (spawnTimer > 0.016f) {
+            if (spawnTimer > 0.128f) {
                 // 3個生成: 60%石、25%木、15%粘土
                 for (int i = 0; i < 3; i++) {
                     float r = rand01();
@@ -1057,10 +1173,12 @@ int main(void)
         wakeUpStaticDebris();
         processBreakingDebris();
         processPendingSticky();
+        applyBuoyancy();
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        drawWater();
         drawGround();
         drawSieve();
 
