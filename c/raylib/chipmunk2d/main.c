@@ -76,9 +76,9 @@ static float cameraX = 0.0f;
 static float cameraY = 0.0f;
 static float zoom = 1.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -109,6 +109,21 @@ typedef struct {
 } Conveyor;
 static Conveyor conveyors[MAX_CONVEYOR];
 static int conveyorCount = 0;
+
+// Output（排出口）
+#define MAX_OUTPUT 20
+#define OUTPUT_SIZE 200.0f
+#define OUTPUT_WALL_THICKNESS 10.0f
+#define OUTPUT_FILL_THRESHOLD 0.5f  // 50%で排出
+typedef struct {
+    float x, y;
+    cpShape *leftWall;
+    cpShape *rightWall;
+    cpShape *bottomWall;
+    bool active;
+} Output;
+static Output outputs[MAX_OUTPUT];
+static int outputCount = 0;
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -1091,6 +1106,139 @@ static void drawConveyors(void) {
     }
 }
 
+// Outputを配置
+static void placeOutput(float x, float y) {
+    int slot = -1;
+    for (int i = 0; i < outputCount; i++) {
+        if (!outputs[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && outputCount < MAX_OUTPUT) {
+        slot = outputCount++;
+    }
+    if (slot < 0) return;
+
+    float ox = x - OUTPUT_SIZE / 2.0f;
+    float oy = y - OUTPUT_SIZE / 2.0f;
+    outputs[slot].x = ox;
+    outputs[slot].y = oy;
+
+    cpBody *staticBody = cpSpaceGetStaticBody(space);
+    cpFloat hw = OUTPUT_WALL_THICKNESS / 2.0f;
+    cpFloat hh = OUTPUT_SIZE / 2.0f;
+
+    // 左壁
+    cpVect leftVerts[4] = {
+        cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
+    };
+    cpTransform leftT = cpTransformTranslate(cpv(ox, oy + OUTPUT_SIZE / 2.0f));
+    outputs[slot].leftWall = cpPolyShapeNew(staticBody, 4, leftVerts, leftT, 0.0f);
+    cpShapeSetFriction(outputs[slot].leftWall, 0.5f);
+    cpSpaceAddShape(space, outputs[slot].leftWall);
+
+    // 右壁
+    cpTransform rightT = cpTransformTranslate(cpv(ox + OUTPUT_SIZE, oy + OUTPUT_SIZE / 2.0f));
+    outputs[slot].rightWall = cpPolyShapeNew(staticBody, 4, leftVerts, rightT, 0.0f);
+    cpShapeSetFriction(outputs[slot].rightWall, 0.5f);
+    cpSpaceAddShape(space, outputs[slot].rightWall);
+
+    // 底壁
+    cpFloat bhw = OUTPUT_SIZE / 2.0f;
+    cpFloat bhh = OUTPUT_WALL_THICKNESS / 2.0f;
+    cpVect bottomVerts[4] = {
+        cpv(-bhw, -bhh), cpv(-bhw, bhh), cpv(bhw, bhh), cpv(bhw, -bhh)
+    };
+    cpTransform bottomT = cpTransformTranslate(cpv(ox + OUTPUT_SIZE / 2.0f, oy + OUTPUT_SIZE));
+    outputs[slot].bottomWall = cpPolyShapeNew(staticBody, 4, bottomVerts, bottomT, 0.0f);
+    cpShapeSetFriction(outputs[slot].bottomWall, 0.5f);
+    cpSpaceAddShape(space, outputs[slot].bottomWall);
+
+    outputs[slot].active = true;
+}
+
+// Outputを描画
+static void drawOutputs(void) {
+    for (int i = 0; i < outputCount; i++) {
+        if (!outputs[i].active) continue;
+        float ox = outputs[i].x;
+        float oy = outputs[i].y;
+
+        // 背景（半透明）
+        DrawRectangle((int)ox, (int)oy, (int)OUTPUT_SIZE, (int)OUTPUT_SIZE,
+            (Color){128, 128, 128, 50});
+
+        // 左壁
+        DrawRectangle((int)(ox - OUTPUT_WALL_THICKNESS / 2.0f), (int)oy,
+            (int)OUTPUT_WALL_THICKNESS, (int)OUTPUT_SIZE, DARKGRAY);
+        // 右壁
+        DrawRectangle((int)(ox + OUTPUT_SIZE - OUTPUT_WALL_THICKNESS / 2.0f), (int)oy,
+            (int)OUTPUT_WALL_THICKNESS, (int)OUTPUT_SIZE, DARKGRAY);
+        // 底壁
+        DrawRectangle((int)ox, (int)(oy + OUTPUT_SIZE - OUTPUT_WALL_THICKNESS / 2.0f),
+            (int)OUTPUT_SIZE, (int)OUTPUT_WALL_THICKNESS, DARKGRAY);
+
+        DrawText("OUTPUT", (int)ox + 60, (int)oy + 90, 20, (Color){60, 60, 60, 200});
+    }
+}
+
+// Output内のデブリをチェックして排出
+static void checkAndClearOutputs(void) {
+    float outputArea = OUTPUT_SIZE * OUTPUT_SIZE;
+
+    for (int o = 0; o < outputCount; o++) {
+        if (!outputs[o].active) continue;
+
+        float ox = outputs[o].x;
+        float oy = outputs[o].y;
+
+        // このOutput内のデブリを集める
+        int insideIndices[MAX_DEBRIS];
+        int insideCount = 0;
+        float totalArea = 0.0f;
+
+        for (int i = 0; i < debrisCount; i++) {
+            if (!debris[i].active) continue;
+
+            cpVect pos;
+            if (debris[i].isStatic) {
+                pos = debris[i].staticPos;
+            } else if (debris[i].body) {
+                pos = cpBodyGetPosition(debris[i].body);
+            } else {
+                continue;
+            }
+
+            // Output内にいるか
+            if (pos.x >= ox && pos.x <= ox + OUTPUT_SIZE &&
+                pos.y >= oy && pos.y <= oy + OUTPUT_SIZE) {
+                insideIndices[insideCount++] = i;
+                totalArea += calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
+            }
+        }
+
+        // 面積比が閾値を超えたら全部消す
+        if (totalArea / outputArea >= OUTPUT_FILL_THRESHOLD && insideCount > 0) {
+            for (int j = 0; j < insideCount; j++) {
+                int idx = insideIndices[j];
+                if (!debris[idx].active) continue;
+
+                // ジョイントを削除
+                removeJointsForDebris(idx);
+
+                // シェイプとボディを削除
+                cpSpaceRemoveShape(space, debris[idx].shape);
+                cpShapeFree(debris[idx].shape);
+                if (!debris[idx].isStatic && debris[idx].body) {
+                    cpSpaceRemoveBody(space, debris[idx].body);
+                    cpBodyFree(debris[idx].body);
+                }
+                debris[idx].active = false;
+                debris[idx].body = NULL;
+                debris[idx].shape = NULL;
+            }
+        }
+    }
+}
+
 static void createSieve(void) {
     float spacing = SIEVE_LENGTH + SIEVE_GAP;
     // フィールド中央付近に配置
@@ -1278,6 +1426,7 @@ int main(void)
         if (IsKeyPressed(KEY_TWO)) actionMode = 2;
         if (IsKeyPressed(KEY_THREE)) actionMode = 3;
         if (IsKeyPressed(KEY_FOUR)) actionMode = 4;
+        if (IsKeyPressed(KEY_FIVE)) actionMode = 5;
 
         // 右クリック操作（カメラを考慮したワールド座標を取得）
         Camera2D cam = {0};
@@ -1351,6 +1500,11 @@ int main(void)
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                 placeConveyor(worldX, worldY);
             }
+        } else if (actionMode == 5) {
+            // モード5: Output配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeOutput(worldX, worldY);
+            }
         }
 
         if (spawning) {
@@ -1385,6 +1539,7 @@ int main(void)
         processPendingSticky();
         applyBuoyancy();
         applyConveyorForce();
+        checkAndClearOutputs();
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -1407,6 +1562,7 @@ int main(void)
         }
         drawStickyJoints();
         drawConveyors();
+        drawOutputs();
 
         EndMode2D();
 
@@ -1426,17 +1582,18 @@ int main(void)
         // キー操作一覧（右端）
         int helpX = SCREEN_WIDTH - 180;
         int helpY = 5;
-        DrawRectangle(helpX - 5, helpY, 180, 220, (Color){255, 255, 255, 200});
+        DrawRectangle(helpX - 5, helpY, 180, 240, (Color){255, 255, 255, 200});
         DrawText("-- Controls --", helpX, helpY + 5, 16, DARKGRAY);
         DrawText("Space: Spawn ON/OFF", helpX, helpY + 25, 14, BLACK);
         DrawText("1: Break mode", helpX, helpY + 45, 14, BLACK);
         DrawText("2: Drag mode", helpX, helpY + 65, 14, BLACK);
         DrawText("3: Water mode", helpX, helpY + 85, 14, BLACK);
         DrawText("4: Conveyor mode", helpX, helpY + 105, 14, BLACK);
-        DrawText("A/D: Scroll L/R", helpX, helpY + 130, 14, BLACK);
-        DrawText("W/S: Scroll U/D", helpX, helpY + 150, 14, BLACK);
-        DrawText("Wheel: Zoom", helpX, helpY + 170, 14, BLACK);
-        DrawText("L-Drag: Pan", helpX, helpY + 190, 14, BLACK);
+        DrawText("5: Output mode", helpX, helpY + 125, 14, BLACK);
+        DrawText("A/D: Scroll L/R", helpX, helpY + 150, 14, BLACK);
+        DrawText("W/S: Scroll U/D", helpX, helpY + 170, 14, BLACK);
+        DrawText("Wheel: Zoom", helpX, helpY + 190, 14, BLACK);
+        DrawText("L-Drag: Pan", helpX, helpY + 210, 14, BLACK);
 
         EndDrawing();
     }
