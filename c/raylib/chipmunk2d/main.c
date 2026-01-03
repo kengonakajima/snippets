@@ -26,8 +26,20 @@
 
 typedef enum {
     DEBRIS_STONE,
-    DEBRIS_WOOD
+    DEBRIS_WOOD,
+    DEBRIS_CLAY
 } DebrisType;
+
+#define MAX_STICKY_JOINTS 10000
+typedef struct {
+    cpConstraint *joint;
+    int debrisA;
+    int debrisB;
+    bool active;
+} StickyJoint;
+
+static StickyJoint stickyJoints[MAX_STICKY_JOINTS];
+static int stickyJointCount = 0;
 
 typedef struct {
     cpBody *body;
@@ -223,6 +235,66 @@ static void spawnWood(void) {
     if (slot >= debrisCount) debrisCount = slot + 1;
 }
 
+// 粘土質の石を生成（他の石にくっつく）
+static void spawnClay(void) {
+    int slot = findFreeSlot();
+    if (slot < 0) return;
+
+    // サイズ: 5〜20（中くらい）
+    float size = 5.0f + rand01() * 15.0f;
+    float x = FIELD_WIDTH / 2.0f - 200.0f + rand01() * 300.0f;
+    float y = -50.0f;
+
+    int vertexCount = 3 + rand() % 5;
+    float angles[MAX_VERTICES];
+    cpVect points[MAX_VERTICES];
+
+    for (int i = 0; i < vertexCount; i++) {
+        angles[i] = ((float)i / vertexCount + rand01() * 0.1f) * 2.0f * PI;
+    }
+    qsort(angles, vertexCount, sizeof(float), compareFloats);
+
+    for (int i = 0; i < vertexCount; i++) {
+        float r = size * (0.7f + rand01() * 0.3f);
+        points[i] = cpv(r * cosf(angles[i]), r * sinf(angles[i]));
+    }
+
+    // 粘土は密度高め
+    float density = 1.8f;
+    float area = calcPolygonArea(points, vertexCount);
+    cpFloat mass = area * density;
+    cpFloat moment = cpMomentForPoly(mass, vertexCount, points, cpvzero, 0.0f);
+    cpBody *body = cpBodyNew(mass, moment);
+    cpBodySetPosition(body, cpv(x, y));
+    cpBodySetAngle(body, rand01() * 2.0f * PI);
+    cpSpaceAddBody(space, body);
+
+    cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
+    cpShapeSetFriction(shape, 0.9f);  // 高摩擦
+    cpShapeSetElasticity(shape, 0.05f);  // ほとんど跳ねない
+    cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+    cpShapeSetUserData(shape, (void*)(intptr_t)slot);
+    cpSpaceAddShape(space, shape);
+
+    debris[slot].body = body;
+    debris[slot].shape = shape;
+    debris[slot].vertexCount = vertexCount;
+    for (int i = 0; i < vertexCount; i++) {
+        debris[slot].vertices[i] = points[i];
+    }
+    debris[slot].size = size;
+    debris[slot].density = density;
+    debris[slot].type = DEBRIS_CLAY;
+    debris[slot].active = true;
+    debris[slot].isStatic = false;
+    debris[slot].wakeUp = false;
+    debris[slot].shouldBreak = false;
+    debris[slot].breakFlash = 0;
+    debris[slot].idleTime = 0.0f;
+    debris[slot].lastPos = cpv(x, y);
+    if (slot >= debrisCount) debrisCount = slot + 1;
+}
+
 // 指定位置に指定サイズ・密度の破片を生成
 static void spawnDebrisAt(float x, float y, float size, float density) {
     int slot = findFreeSlot();
@@ -303,6 +375,16 @@ static void breakDebris(int index) {
         pos = cpBodyGetPosition(debris[index].body);
     }
 
+    // 接続されているジョイントを削除
+    for (int j = 0; j < stickyJointCount; j++) {
+        if (!stickyJoints[j].active) continue;
+        if (stickyJoints[j].debrisA == index || stickyJoints[j].debrisB == index) {
+            cpSpaceRemoveConstraint(space, stickyJoints[j].joint);
+            cpConstraintFree(stickyJoints[j].joint);
+            stickyJoints[j].active = false;
+        }
+    }
+
     // 元の石を削除
     cpSpaceRemoveShape(space, debris[index].shape);
     cpShapeFree(debris[index].shape);
@@ -350,11 +432,24 @@ static void breakDebris(int index) {
     }
 }
 
+// 指定debrisに接続されているジョイントを全て削除
+static void removeJointsForDebris(int idx) {
+    for (int i = 0; i < stickyJointCount; i++) {
+        if (!stickyJoints[i].active) continue;
+        if (stickyJoints[i].debrisA == idx || stickyJoints[i].debrisB == idx) {
+            cpSpaceRemoveConstraint(space, stickyJoints[i].joint);
+            cpConstraintFree(stickyJoints[i].joint);
+            stickyJoints[i].active = false;
+        }
+    }
+}
+
 static void cleanupDebris(void) {
     for (int i = 0; i < debrisCount; i++) {
         if (!debris[i].active || debris[i].isStatic) continue;
         cpVect pos = cpBodyGetPosition(debris[i].body);
         if (pos.x > FIELD_WIDTH + 100 || pos.x < -100.0f || pos.y > SCREEN_HEIGHT + 100) {
+            removeJointsForDebris(i);
             cpSpaceRemoveShape(space, debris[i].shape);
             cpSpaceRemoveBody(space, debris[i].body);
             cpShapeFree(debris[i].shape);
@@ -391,6 +486,9 @@ static void staticizeDebris(float dt) {
             debris[i].staticPos = pos;
             debris[i].staticAngle = angle;
 
+            // 接続されているジョイントを削除（ボディ解放前に必須）
+            removeJointsForDebris(i);
+
             // 古いボディとシェイプを削除
             cpSpaceRemoveShape(space, debris[i].shape);
             cpSpaceRemoveBody(space, debris[i].body);
@@ -413,9 +511,26 @@ static void staticizeDebris(float dt) {
     }
 }
 
+// 粘土のくっつき予約用
+#define MAX_PENDING_STICKY 100
+static struct { int a; int b; cpVect point; } pendingSticky[MAX_PENDING_STICKY];
+static int pendingStickyCount = 0;
+
+// 既にジョイントがあるかチェック
+static bool hasJointBetween(int idxA, int idxB) {
+    for (int i = 0; i < stickyJointCount; i++) {
+        if (!stickyJoints[i].active) continue;
+        if ((stickyJoints[i].debrisA == idxA && stickyJoints[i].debrisB == idxB) ||
+            (stickyJoints[i].debrisA == idxB && stickyJoints[i].debrisB == idxA)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // 衝突後のコールバック: スタティックな石に大きな衝撃があったら起こす＆衝撃で割れる
-static void postSolveHandler(cpArbiter *arb, cpSpace *space, void *data) {
-    (void)space;
+static void postSolveHandler(cpArbiter *arb, cpSpace *sp, void *data) {
+    (void)sp;
     (void)data;
 
     cpShape *a, *b;
@@ -451,6 +566,88 @@ static void postSolveHandler(cpArbiter *arb, cpSpace *space, void *data) {
                     debris[idx].shouldBreak = true;
                 }
             }
+        }
+    }
+
+    // 粘土のくっつき判定
+    if (cpShapeGetCollisionType(a) == COLLISION_TYPE_DEBRIS &&
+        cpShapeGetCollisionType(b) == COLLISION_TYPE_DEBRIS) {
+        int idxA = (int)(intptr_t)cpShapeGetUserData(a);
+        int idxB = (int)(intptr_t)cpShapeGetUserData(b);
+        if (idxA >= 0 && idxA < debrisCount && idxB >= 0 && idxB < debrisCount) {
+            if (debris[idxA].active && debris[idxB].active &&
+                !debris[idxA].isStatic && !debris[idxB].isStatic) {
+                // どちらかが粘土ならくっつく
+                if (debris[idxA].type == DEBRIS_CLAY || debris[idxB].type == DEBRIS_CLAY) {
+                    if (!hasJointBetween(idxA, idxB) && pendingStickyCount < MAX_PENDING_STICKY) {
+                        cpContactPointSet contacts = cpArbiterGetContactPointSet(arb);
+                        if (contacts.count > 0) {
+                            pendingSticky[pendingStickyCount].a = idxA;
+                            pendingSticky[pendingStickyCount].b = idxB;
+                            pendingSticky[pendingStickyCount].point = contacts.points[0].pointA;
+                            pendingStickyCount++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 粘土のくっつきを処理
+static void processPendingSticky(void) {
+    for (int i = 0; i < pendingStickyCount; i++) {
+        int idxA = pendingSticky[i].a;
+        int idxB = pendingSticky[i].b;
+        if (!debris[idxA].active || !debris[idxB].active) continue;
+        if (debris[idxA].isStatic || debris[idxB].isStatic) continue;
+        if (!debris[idxA].body || !debris[idxB].body) continue;
+        if (hasJointBetween(idxA, idxB)) continue;
+
+        // 空きスロットを探す
+        int slot = -1;
+        for (int j = 0; j < stickyJointCount; j++) {
+            if (!stickyJoints[j].active) { slot = j; break; }
+        }
+        if (slot < 0 && stickyJointCount < MAX_STICKY_JOINTS) {
+            slot = stickyJointCount++;
+        }
+        if (slot < 0) continue;
+
+        // ピボットジョイントを作成
+        cpVect point = pendingSticky[i].point;
+        cpConstraint *joint = cpPivotJointNew(debris[idxA].body, debris[idxB].body, point);
+        cpConstraintSetMaxForce(joint, 500000.0f);  // 強めに接着
+        cpConstraintSetCollideBodies(joint, cpTrue);
+        cpSpaceAddConstraint(space, joint);
+
+        stickyJoints[slot].joint = joint;
+        stickyJoints[slot].debrisA = idxA;
+        stickyJoints[slot].debrisB = idxB;
+        stickyJoints[slot].active = true;
+    }
+    pendingStickyCount = 0;
+
+    // 伸びすぎたジョイントを切る
+    float maxDist = 50.0f;
+    for (int i = 0; i < stickyJointCount; i++) {
+        if (!stickyJoints[i].active) continue;
+        int idxA = stickyJoints[i].debrisA;
+        int idxB = stickyJoints[i].debrisB;
+        if (!debris[idxA].active || !debris[idxB].active ||
+            !debris[idxA].body || !debris[idxB].body) {
+            cpSpaceRemoveConstraint(space, stickyJoints[i].joint);
+            cpConstraintFree(stickyJoints[i].joint);
+            stickyJoints[i].active = false;
+            continue;
+        }
+        cpVect posA = cpBodyGetPosition(debris[idxA].body);
+        cpVect posB = cpBodyGetPosition(debris[idxB].body);
+        float dist = cpvlength(cpvsub(posA, posB));
+        if (dist > maxDist) {
+            cpSpaceRemoveConstraint(space, stickyJoints[i].joint);
+            cpConstraintFree(stickyJoints[i].joint);
+            stickyJoints[i].active = false;
         }
     }
 }
@@ -534,6 +731,20 @@ static Color getWoodColor(float size) {
     };
 }
 
+static Color getClayColor(float size) {
+    // サイズに応じてオレンジ〜茶色 (5〜20)
+    float t = (size - 5.0f) / 15.0f;
+    if (t < 0.0f) t = 0.0f;
+    if (t > 1.0f) t = 1.0f;
+    // オレンジ(220,140,80)〜暗めの茶(160,90,50)
+    return (Color){
+        (unsigned char)(220 - t * 60),
+        (unsigned char)(140 - t * 50),
+        (unsigned char)(80 - t * 30),
+        255
+    };
+}
+
 static void drawDebris(int index) {
     if (!debris[index].active) return;
 
@@ -546,6 +757,8 @@ static void drawDebris(int index) {
         color = (Color){180, 80, 80, 255};  // スリープ中は赤
     } else if (debris[index].type == DEBRIS_WOOD) {
         color = getWoodColor(debris[index].size);
+    } else if (debris[index].type == DEBRIS_CLAY) {
+        color = getClayColor(debris[index].size);
     } else {
         color = getStoneColor(debris[index].size);
     }
@@ -576,6 +789,23 @@ static void drawDebris(int index) {
     for (int i = 0; i < debris[index].vertexCount; i++) {
         int next = (i + 1) % debris[index].vertexCount;
         DrawLineV(screenPoints[i], screenPoints[next], outline);
+    }
+}
+
+// ジョイントを線で描画
+static void drawStickyJoints(void) {
+    for (int i = 0; i < stickyJointCount; i++) {
+        if (!stickyJoints[i].active) continue;
+        int idxA = stickyJoints[i].debrisA;
+        int idxB = stickyJoints[i].debrisB;
+        if (!debris[idxA].active || !debris[idxB].active) continue;
+        if (!debris[idxA].body || !debris[idxB].body) continue;
+
+        cpVect posA = cpBodyGetPosition(debris[idxA].body);
+        cpVect posB = cpBodyGetPosition(debris[idxB].body);
+        Vector2 screenA = {(float)posA.x - cameraX, (float)posA.y};
+        Vector2 screenB = {(float)posB.x - cameraX, (float)posB.y};
+        DrawLineEx(screenA, screenB, 2.0f, (Color){255, 100, 100, 200});
     }
 }
 
@@ -800,9 +1030,12 @@ int main(void)
         if (spawning) {
             spawnTimer += dt;
             if (spawnTimer > 0.016f) {
-                // 3個生成、25%の確率で木片
+                // 3個生成: 60%石、25%木、15%粘土
                 for (int i = 0; i < 3; i++) {
-                    if (rand01() < 0.25f) {
+                    float r = rand01();
+                    if (r < 0.15f) {
+                        spawnClay();
+                    } else if (r < 0.40f) {
                         spawnWood();
                     } else {
                         spawnDebris();
@@ -823,6 +1056,7 @@ int main(void)
         staticizeDebris(dt);
         wakeUpStaticDebris();
         processBreakingDebris();
+        processPendingSticky();
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -833,6 +1067,7 @@ int main(void)
         for (int i = 0; i < debrisCount; i++) {
             drawDebris(i);
         }
+        drawStickyJoints();
 
         int activeCount = 0;
         for (int i = 0; i < debrisCount; i++) {
