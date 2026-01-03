@@ -2268,13 +2268,22 @@ int main(void)
             cameraY += 10.0f / zoom;
         }
 
-        // マウスホイールでズーム
+        // マウスホイールでズーム（ポインタ位置を中心に）
         float wheel = GetMouseWheelMove();
         if (wheel != 0) {
+            Vector2 mousePos = GetMousePosition();
+            // ズーム前のワールド座標
+            float worldXBefore = cameraX + (mousePos.x - SCREEN_WIDTH / 2.0f) / zoom + SCREEN_WIDTH / 2.0f;
+            float worldYBefore = cameraY + (mousePos.y - SCREEN_HEIGHT / 2.0f) / zoom + SCREEN_HEIGHT / 2.0f;
+
             float zoomDelta = wheel * 0.1f;
             zoom += zoomDelta;
             if (zoom < 0.1f) zoom = 0.1f;
             if (zoom > 3.0f) zoom = 3.0f;
+
+            // ズーム後に同じワールド座標がマウス位置に来るようにカメラ調整
+            cameraX = worldXBefore - SCREEN_WIDTH / 2.0f - (mousePos.x - SCREEN_WIDTH / 2.0f) / zoom;
+            cameraY = worldYBefore - SCREEN_HEIGHT / 2.0f - (mousePos.y - SCREEN_HEIGHT / 2.0f) / zoom;
         }
 
         // 1-9キーで操作モード切替
