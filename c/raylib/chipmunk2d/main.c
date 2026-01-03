@@ -62,6 +62,14 @@ static cpSpace *space;
 // カメラオフセット（スクロール用）
 static float cameraX = 0.0f;
 
+// 操作モード (1: 破壊, 2: ドラッグ移動)
+static int actionMode = 1;
+static const char* actionModeNames[] = {"", "Break", "Drag"};
+
+// ドラッグ移動用
+static int draggedDebrisIdx = -1;
+static cpVect dragOffset = {0, 0};
+
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
     float fb = *(const float*)b;
@@ -361,6 +369,7 @@ static void staticizeDebris(float dt) {
     cpBody *staticBody = cpSpaceGetStaticBody(space);
     for (int i = 0; i < debrisCount; i++) {
         if (!debris[i].active || debris[i].isStatic || !debris[i].body) continue;
+        if (i == draggedDebrisIdx) continue;  // ドラッグ中はスキップ
 
         cpVect pos = cpBodyGetPosition(debris[i].body);
         cpVect diff = cpvsub(pos, debris[i].lastPos);
@@ -726,17 +735,65 @@ int main(void)
             spawning = !spawning;
         }
 
-        // 右クリックで石を砕く
-        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-            float worldX = GetMouseX() + cameraX;
-            float worldY = GetMouseY();
-            cpPointQueryInfo info;
-            cpShape *shape = cpSpacePointQueryNearest(space, cpv(worldX, worldY), 0.0f, CP_SHAPE_FILTER_ALL, &info);
-            if (shape && cpShapeGetCollisionType(shape) == COLLISION_TYPE_DEBRIS) {
-                int idx = (int)(intptr_t)cpShapeGetUserData(shape);
-                if (idx >= 0 && idx < debrisCount && debris[idx].active) {
-                    breakDebris(idx);
+        // 1-9キーで操作モード切替
+        if (IsKeyPressed(KEY_ONE)) actionMode = 1;
+        if (IsKeyPressed(KEY_TWO)) actionMode = 2;
+
+        // 右クリック操作
+        float worldX = GetMouseX() + cameraX;
+        float worldY = GetMouseY();
+
+        if (actionMode == 1) {
+            // モード1: 破壊
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                cpPointQueryInfo info;
+                cpShape *shape = cpSpacePointQueryNearest(space, cpv(worldX, worldY), 0.0f, CP_SHAPE_FILTER_ALL, &info);
+                if (shape && cpShapeGetCollisionType(shape) == COLLISION_TYPE_DEBRIS) {
+                    int idx = (int)(intptr_t)cpShapeGetUserData(shape);
+                    if (idx >= 0 && idx < debrisCount && debris[idx].active) {
+                        breakDebris(idx);
+                    }
                 }
+            }
+        } else if (actionMode == 2) {
+            // モード2: ドラッグ移動
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && draggedDebrisIdx < 0) {
+                cpPointQueryInfo info;
+                cpShape *shape = cpSpacePointQueryNearest(space, cpv(worldX, worldY), 10.0f, CP_SHAPE_FILTER_ALL, &info);
+                if (shape && cpShapeGetCollisionType(shape) == COLLISION_TYPE_DEBRIS) {
+                    int idx = (int)(intptr_t)cpShapeGetUserData(shape);
+                    if (idx >= 0 && idx < debrisCount && debris[idx].active) {
+                        // スタティックならダイナミックに戻す
+                        if (debris[idx].isStatic) {
+                            debris[idx].wakeUp = true;
+                            wakeUpStaticDebris();
+                        }
+                        if (debris[idx].body) {
+                            draggedDebrisIdx = idx;
+                            cpVect bodyPos = cpBodyGetPosition(debris[idx].body);
+                            dragOffset = cpvsub(bodyPos, cpv(worldX, worldY));
+                        }
+                    }
+                }
+            }
+            if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && draggedDebrisIdx >= 0) {
+                if (debris[draggedDebrisIdx].active && debris[draggedDebrisIdx].body) {
+                    cpBody *body = debris[draggedDebrisIdx].body;
+                    if (cpBodyIsSleeping(body)) {
+                        cpBodyActivate(body);
+                    }
+                    // 速度ベースでマウスに追従（物理的にめり込まない）
+                    cpVect targetPos = cpvadd(cpv(worldX, worldY), dragOffset);
+                    cpVect currentPos = cpBodyGetPosition(body);
+                    cpVect diff = cpvsub(targetPos, currentPos);
+                    float speed = 2000.0f;  // 追従速度
+                    cpBodySetVelocity(body, cpvmult(diff, speed / 60.0f));
+                    // 重力を打ち消す
+                    cpBodySetForce(body, cpvmult(cpSpaceGetGravity(space), -cpBodyGetMass(body)));
+                }
+            }
+            if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) {
+                draggedDebrisIdx = -1;
             }
         }
 
@@ -785,11 +842,12 @@ int main(void)
         float worldMouseX = GetMouseX() + cameraX;
         float worldMouseY = GetMouseY();
 
-        DrawRectangle(5, 5, 220, 95, (Color){255, 255, 255, 200});
+        DrawRectangle(5, 5, 220, 115, (Color){255, 255, 255, 200});
         DrawFPS(10, 10);
         DrawText(TextFormat("Debris: %d", activeCount), 10, 35, 20, BLACK);
         DrawText(TextFormat("Physics: %.2f ms", physicsTimeMs), 10, 55, 20, BLACK);
         DrawText(TextFormat("Mouse: %.0f, %.0f", worldMouseX, worldMouseY), 10, 75, 20, BLACK);
+        DrawText(TextFormat("Mode[1-9]: %d %s", actionMode, actionModeNames[actionMode]), 10, 95, 20, DARKBLUE);
 
         EndDrawing();
     }
