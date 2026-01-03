@@ -687,6 +687,14 @@ static void staticizeDebris(float dt) {
             continue;
         }
 
+        // 回転中はスタティック化しない
+        cpFloat angVel = cpBodyGetAngularVelocity(debris[i].body);
+        if (fabs(angVel) > 0.1f) {
+            debris[i].idleTime = 0.0f;
+            debris[i].lastPos = pos;
+            continue;
+        }
+
         cpVect diff = cpvsub(pos, debris[i].lastPos);
         float moved = cpvlength(diff);
 
@@ -975,7 +983,9 @@ static void drawDebris(int index) {
     if (!debris[index].active) return;
 
     Color color;
-    if (debris[index].type == DEBRIS_WOOD) {
+    if (debris[index].isStatic) {
+        color = (Color){80, 80, 180, 255};  // スタティックは青
+    } else if (debris[index].type == DEBRIS_WOOD) {
         color = getWoodColor(debris[index].size);
     } else if (debris[index].type == DEBRIS_CLAY) {
         color = getClayColor(debris[index].size);
@@ -1899,9 +1909,9 @@ int main(void)
     cpSpaceSetIterations(space, 20);
     cpSpaceSetCollisionSlop(space, 0.5f);
     cpSpaceSetCollisionBias(space, cpfpow(1.0f - 0.3f, 60.0f));
-    // 0.2秒動かなければスリープ、閾値を大きく
-    cpSpaceSetSleepTimeThreshold(space, 0.2f);
-    cpSpaceSetIdleSpeedThreshold(space, 50.0f);
+    // スリープ設定：閾値を小さくして傾いた状態で止まらないように
+    cpSpaceSetSleepTimeThreshold(space, 0.5f);
+    cpSpaceSetIdleSpeedThreshold(space, 5.0f);
 
     createGround();
 
