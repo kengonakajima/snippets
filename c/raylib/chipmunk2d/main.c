@@ -8,6 +8,7 @@
 
 #define SCREEN_WIDTH 1248
 #define SCREEN_HEIGHT 980
+#define FIELD_WIDTH (SCREEN_WIDTH * 8)  // 横方向に8倍広い
 #define SCALE 64.0f
 #define PI 3.14159265358979323846f
 #define MAX_DEBRIS 50000
@@ -20,7 +21,7 @@
 #define SIEVE_AMP 3.0f
 #define MAX_VERTICES 8
 #define COLLISION_TYPE_DEBRIS 1
-#define WAKE_UP_IMPULSE_THRESHOLD 500.0f  // この衝撃を超えたら起こす
+#define WAKE_UP_IMPULSE_THRESHOLD 120.0f  // この衝撃を超えたら起こす
 
 typedef struct {
     cpBody *body;
@@ -48,6 +49,9 @@ static cpShape *leftWallShape;
 static cpShape *rightWallShape;
 static cpSpace *space;
 
+// カメラオフセット（スクロール用）
+static float cameraX = 0.0f;
+
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
     float fb = *(const float*)b;
@@ -71,7 +75,8 @@ static void spawnDebris(void) {
 
     // サイズ: 3〜18 (小さいものが多い分布)
     float size = 3.0f + powf(rand01(), 2.0f) * 15.0f;
-    float x = 80.0f + rand01() * 300.0f;
+    // フィールド中央付近から生成
+    float x = FIELD_WIDTH / 2.0f - 200.0f + rand01() * 300.0f;
     float y = -50.0f;
 
     int vertexCount = 3 + rand() % 5;
@@ -123,7 +128,7 @@ static void cleanupDebris(void) {
     for (int i = 0; i < debrisCount; i++) {
         if (!debris[i].active || debris[i].isStatic) continue;
         cpVect pos = cpBodyGetPosition(debris[i].body);
-        if (pos.x > SCREEN_WIDTH + 100 || pos.x < -100.0f || pos.y > SCREEN_HEIGHT + 100) {
+        if (pos.x > FIELD_WIDTH + 100 || pos.x < -100.0f || pos.y > SCREEN_HEIGHT + 100) {
             cpSpaceRemoveShape(space, debris[i].shape);
             cpSpaceRemoveBody(space, debris[i].body);
             cpShapeFree(debris[i].shape);
@@ -271,12 +276,12 @@ static void drawDebris(int index) {
             cpVect v = debris[index].vertices[i];
             cpVect rotated = cpv(v.x * c - v.y * s, v.x * s + v.y * c);
             cpVect worldPt = cpvadd(debris[index].staticPos, rotated);
-            screenPoints[i] = (Vector2){(float)worldPt.x, (float)worldPt.y};
+            screenPoints[i] = (Vector2){(float)worldPt.x - cameraX, (float)worldPt.y};
         }
     } else {
         for (int i = 0; i < debris[index].vertexCount; i++) {
             cpVect worldPt = cpBodyLocalToWorld(debris[index].body, debris[index].vertices[i]);
-            screenPoints[i] = (Vector2){(float)worldPt.x, (float)worldPt.y};
+            screenPoints[i] = (Vector2){(float)worldPt.x - cameraX, (float)worldPt.y};
         }
     }
 
@@ -293,7 +298,8 @@ static void drawDebris(int index) {
 
 static void createSieve(void) {
     float spacing = SIEVE_LENGTH + SIEVE_GAP;
-    float startX = 100.0f;
+    // フィールド中央付近に配置
+    float startX = FIELD_WIDTH / 2.0f - 300.0f;
     float startY = 150.0f;
 
     for (int i = 0; i < SIEVE_COUNT; i++) {
@@ -341,7 +347,7 @@ static void drawSieve(void) {
         cpVect pos = cpBodyGetPosition(sieveBodies[i]);
         cpFloat angle = cpBodyGetAngle(sieveBodies[i]);
 
-        Rectangle rect = {(float)pos.x, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
+        Rectangle rect = {(float)pos.x - cameraX, (float)pos.y, SIEVE_LENGTH, SIEVE_THICKNESS};
         Vector2 origin = {SIEVE_LENGTH / 2.0f, SIEVE_THICKNESS / 2.0f};
         DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
     }
@@ -350,15 +356,15 @@ static void drawSieve(void) {
 static void createGround(void) {
     cpBody *staticBody = cpSpaceGetStaticBody(space);
 
-    // 地面
-    cpFloat hw = SCREEN_WIDTH / 2.0f;
+    // 地面（フィールド全体）
+    cpFloat hw = FIELD_WIDTH / 2.0f;
     cpFloat hh = 10.0f;
     cpVect verts[4] = {
         cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
     };
     groundShape = cpPolyShapeNew(staticBody, 4, verts,
-        cpTransformTranslate(cpv(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT - 10.0f)), 0.0f);
-    cpShapeSetFriction(groundShape, 0.5f);
+        cpTransformTranslate(cpv(FIELD_WIDTH / 2.0f, SCREEN_HEIGHT - 10.0f)), 0.0f);
+    cpShapeSetFriction(groundShape, 1.0f);
     cpSpaceAddShape(space, groundShape);
 
     // 左壁
@@ -372,18 +378,19 @@ static void createGround(void) {
     cpShapeSetFriction(leftWallShape, 0.5f);
     cpSpaceAddShape(space, leftWallShape);
 
-    // 右壁
+    // 右壁（フィールド右端）
     cpVect rightVerts[4] = {
         cpv(-wallHW, -wallHH), cpv(-wallHW, wallHH), cpv(wallHW, wallHH), cpv(wallHW, -wallHH)
     };
     rightWallShape = cpPolyShapeNew(staticBody, 4, rightVerts,
-        cpTransformTranslate(cpv(SCREEN_WIDTH + 10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
+        cpTransformTranslate(cpv(FIELD_WIDTH + 10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
     cpShapeSetFriction(rightWallShape, 0.5f);
     cpSpaceAddShape(space, rightWallShape);
 }
 
 static void drawGround(void) {
-    DrawRectangle(0, SCREEN_HEIGHT - 20, SCREEN_WIDTH, 20, DARKGRAY);
+    // カメラオフセットを適用して地面を描画
+    DrawRectangle((int)(0 - cameraX), SCREEN_HEIGHT - 20, FIELD_WIDTH, 20, DARKGRAY);
 }
 
 int main(void)
@@ -413,8 +420,33 @@ int main(void)
     float physicsTimeMs = 0.0f;
     bool spawning = false;
 
+    // カメラをフィールド中央に初期化
+    cameraX = FIELD_WIDTH / 2.0f - SCREEN_WIDTH / 2.0f;
+
+    // マウスドラッグ用
+    bool dragging = false;
+    float dragStartX = 0.0f;
+    float cameraStartX = 0.0f;
+
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
+
+        // マウスドラッグでスクロール
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            dragging = true;
+            dragStartX = GetMouseX();
+            cameraStartX = cameraX;
+        }
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            dragging = false;
+        }
+        if (dragging) {
+            float dx = GetMouseX() - dragStartX;
+            cameraX = cameraStartX - dx;
+            // カメラ範囲制限
+            if (cameraX < 0) cameraX = 0;
+            if (cameraX > FIELD_WIDTH - SCREEN_WIDTH) cameraX = FIELD_WIDTH - SCREEN_WIDTH;
+        }
 
         if (IsKeyPressed(KEY_SPACE)) {
             spawning = !spawning;
@@ -455,10 +487,15 @@ int main(void)
         for (int i = 0; i < debrisCount; i++) {
             if (debris[i].active) activeCount++;
         }
-        DrawRectangle(5, 5, 200, 75, (Color){255, 255, 255, 200});
+        // ワールド座標でのマウス位置
+        float worldMouseX = GetMouseX() + cameraX;
+        float worldMouseY = GetMouseY();
+
+        DrawRectangle(5, 5, 220, 95, (Color){255, 255, 255, 200});
         DrawFPS(10, 10);
         DrawText(TextFormat("Debris: %d", activeCount), 10, 35, 20, BLACK);
         DrawText(TextFormat("Physics: %.2f ms", physicsTimeMs), 10, 55, 20, BLACK);
+        DrawText(TextFormat("Mouse: %.0f, %.0f", worldMouseX, worldMouseY), 10, 75, 20, BLACK);
 
         EndDrawing();
     }
