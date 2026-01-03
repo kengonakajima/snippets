@@ -27,7 +27,7 @@
 #define CATEGORY_WATER 2
 #define CATEGORY_STRUCTURE 4  // 壁、地面、コンベア、ふるいなど
 
-#define WAKE_UP_IMPULSE_THRESHOLD 50000.0f  // この衝撃を超えたら起こす
+#define WAKE_UP_IMPULSE_THRESHOLD 150000.0f  // この衝撃を超えたら起こす（大きい=起きにくい）
 #define MIN_BREAK_SIZE 10.0f  // この大きさ以上の石を砕ける
 
 typedef enum {
@@ -250,9 +250,7 @@ static void spawnDebris(void) {
     cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 0.5f);
     // 小さいほど跳ねる: サイズ2で0.8、サイズ30で0.1
-    float elasticity = 0.8f - (size - 2.0f) / 28.0f * 0.7f;
-    if (elasticity < 0.01f) elasticity = 0.01f;
-    if (elasticity > 1.0f) elasticity = 1.0f;
+    float elasticity = 0.1f;  // 石は跳ねない
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
     cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
@@ -461,9 +459,7 @@ static void spawnDebrisAt(float x, float y, float size, float density, DebrisTyp
 
     cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, type == DEBRIS_WOOD ? 0.6f : 0.5f);
-    float elasticity = type == DEBRIS_WOOD ? 0.3f : (0.8f - (size - 2.0f) / 28.0f * 0.7f);
-    if (elasticity < 0.01f) elasticity = 0.01f;
-    if (elasticity > 1.0f) elasticity = 1.0f;
+    float elasticity = type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
     cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
@@ -689,7 +685,15 @@ static void staticizeDebris(float dt) {
 
         // 回転中はスタティック化しない
         cpFloat angVel = cpBodyGetAngularVelocity(debris[i].body);
-        if (fabs(angVel) > 0.1f) {
+        if (fabs(angVel) > 0.2f) {
+            debris[i].idleTime = 0.0f;
+            debris[i].lastPos = pos;
+            continue;
+        }
+
+        // 速度が十分低いかチェック
+        cpVect vel = cpBodyGetVelocity(debris[i].body);
+        if (cpvlength(vel) > 5.0f) {
             debris[i].idleTime = 0.0f;
             debris[i].lastPos = pos;
             continue;
@@ -699,15 +703,15 @@ static void staticizeDebris(float dt) {
         float moved = cpvlength(diff);
 
         // ほとんど動いていない場合
-        if (moved < 1.0f) {
+        if (moved < 1.5f) {
             debris[i].idleTime += dt;
         } else {
             debris[i].idleTime = 0.0f;
         }
         debris[i].lastPos = pos;
 
-        // 1秒以上静止していたらスタティック化
-        if (debris[i].idleTime > 1.0f) {
+        // 0.5秒以上静止していたらスタティック化
+        if (debris[i].idleTime > 0.5f) {
             cpFloat angle = cpBodyGetAngle(debris[i].body);
 
             // 位置と角度を保存
@@ -847,10 +851,11 @@ static void processPendingSticky(void) {
         }
         if (slot < 0) continue;
 
-        // ピボットジョイントを作成
+        // ピボットジョイントを作成（完全固定、力で切れる）
         cpVect point = pendingSticky[i].point;
         cpConstraint *joint = cpPivotJointNew(debris[idxA].body, debris[idxB].body, point);
-        cpConstraintSetMaxForce(joint, 500000.0f);  // 強めに接着
+        cpConstraintSetMaxForce(joint, INFINITY);  // 完全固定（伸びない）
+        cpConstraintSetErrorBias(joint, cpfpow(0.3f, 60.0f));  // 振動を抑える
         cpConstraintSetCollideBodies(joint, cpTrue);
         cpSpaceAddConstraint(space, joint);
 
@@ -861,8 +866,8 @@ static void processPendingSticky(void) {
     }
     pendingStickyCount = 0;
 
-    // 伸びすぎたジョイントを切る
-    float maxDist = 20.0f;
+    // 力が閾値を超えたジョイントを切る
+    cpFloat maxImpulse = 50000.0f;  // この力を超えたら切れる
     for (int i = 0; i < stickyJointCount; i++) {
         if (!stickyJoints[i].active) continue;
         int idxA = stickyJoints[i].debrisA;
@@ -874,10 +879,9 @@ static void processPendingSticky(void) {
             stickyJoints[i].active = false;
             continue;
         }
-        cpVect posA = cpBodyGetPosition(debris[idxA].body);
-        cpVect posB = cpBodyGetPosition(debris[idxB].body);
-        float dist = cpvlength(cpvsub(posA, posB));
-        if (dist > maxDist) {
+        // ジョイントにかかった力をチェック
+        cpFloat impulse = cpConstraintGetImpulse(stickyJoints[i].joint);
+        if (fabs(impulse) > maxImpulse) {
             cpSpaceRemoveConstraint(space, stickyJoints[i].joint);
             cpConstraintFree(stickyJoints[i].joint);
             stickyJoints[i].active = false;
@@ -905,9 +909,7 @@ static void wakeUpStaticDebris(void) {
 
         cpShape *shape = cpPolyShapeNew(body, debris[i].vertexCount, debris[i].vertices, cpTransformIdentity, 0.0f);
         cpShapeSetFriction(shape, 0.5f);
-        float elasticity = 0.8f - (debris[i].size - 2.0f) / 28.0f * 0.7f;
-        if (elasticity < 0.01f) elasticity = 0.01f;
-        if (elasticity > 1.0f) elasticity = 1.0f;
+        float elasticity = debris[i].type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
         cpShapeSetElasticity(shape, elasticity);
         cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
         cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
@@ -1690,9 +1692,7 @@ static void checkAndFillInputs(void) {
 
                 cpShape *shape = cpPolyShapeNew(body, vertexCount, points, cpTransformIdentity, 0.0f);
                 cpShapeSetFriction(shape, type == DEBRIS_CLAY ? 0.9f : (type == DEBRIS_WOOD ? 0.6f : 0.5f));
-                float elasticity = type == DEBRIS_CLAY ? 0.05f : (type == DEBRIS_WOOD ? 0.3f : 0.8f - (size - 2.0f) / 28.0f * 0.7f);
-                if (elasticity < 0.01f) elasticity = 0.01f;
-                if (elasticity > 1.0f) elasticity = 1.0f;
+                float elasticity = type == DEBRIS_CLAY ? 0.05f : (type == DEBRIS_WOOD ? 0.2f : 0.1f);
                 cpShapeSetElasticity(shape, elasticity);
                 cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
                 cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
@@ -1839,7 +1839,7 @@ static void createGround(void) {
     };
     groundShape = cpPolyShapeNew(staticBody, 4, verts,
         cpTransformTranslate(cpv(FIELD_WIDTH / 2.0f, SCREEN_HEIGHT - 10.0f)), 0.0f);
-    cpShapeSetFriction(groundShape, 1.0f);
+    cpShapeSetFriction(groundShape, 3.0f);  // 強い静止摩擦
     cpShapeSetFilter(groundShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, groundShape);
 
@@ -1851,7 +1851,7 @@ static void createGround(void) {
     };
     leftWallShape = cpPolyShapeNew(staticBody, 4, leftVerts,
         cpTransformTranslate(cpv(-10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
-    cpShapeSetFriction(leftWallShape, 0.5f);
+    cpShapeSetFriction(leftWallShape, 3.0f);  // 強い静止摩擦
     cpShapeSetFilter(leftWallShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, leftWallShape);
 
@@ -1861,7 +1861,7 @@ static void createGround(void) {
     };
     rightWallShape = cpPolyShapeNew(staticBody, 4, rightVerts,
         cpTransformTranslate(cpv(FIELD_WIDTH + 10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
-    cpShapeSetFriction(rightWallShape, 0.5f);
+    cpShapeSetFriction(rightWallShape, 3.0f);  // 強い静止摩擦
     cpShapeSetFilter(rightWallShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, rightWallShape);
 }
@@ -1906,9 +1906,10 @@ int main(void)
     space = cpHastySpaceNew();
     cpHastySpaceSetThreads(space, 0);  // 0 = 自動検出
     cpSpaceSetGravity(space, cpv(0.0f, 9.8f * SCALE));
-    cpSpaceSetIterations(space, 20);
-    cpSpaceSetCollisionSlop(space, 0.5f);
-    cpSpaceSetCollisionBias(space, cpfpow(1.0f - 0.3f, 60.0f));
+    cpSpaceSetIterations(space, 50);  // 増加: より正確な拘束解決
+    cpSpaceSetCollisionSlop(space, 0.1f);  // 減少: めり込み許容を小さく
+    cpSpaceSetCollisionBias(space, cpfpow(0.9f, 60.0f));  // 増加: 素早く位置補正
+    cpSpaceSetDamping(space, 0.9f);  // ダンピング: 振動を抑える
     // スリープ設定：閾値を小さくして傾いた状態で止まらないように
     cpSpaceSetSleepTimeThreshold(space, 0.5f);
     cpSpaceSetIdleSpeedThreshold(space, 5.0f);
