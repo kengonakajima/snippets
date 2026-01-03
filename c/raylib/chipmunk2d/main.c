@@ -76,9 +76,9 @@ static float cameraX = 0.0f;
 static float cameraY = 0.0f;
 static float zoom = 1.0f;
 
-// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置)
+// 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor"};
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -93,6 +93,22 @@ typedef struct {
 } Water;
 static Water waters[MAX_WATER];
 static int waterCount = 0;
+
+// コンベア
+#define MAX_CONVEYOR 50
+#define CONVEYOR_LENGTH 300.0f
+#define CONVEYOR_THICKNESS 10.0f
+#define CONVEYOR_ANGLE (-30.0f * PI / 180.0f)  // 30度斜め上向き
+#define CONVEYOR_SPEED 200.0f  // 表面速度
+#define CONVEYOR_FORCE 50000.0f  // コンベアが物体に加える力
+typedef struct {
+    cpBody *body;
+    cpShape *shape;
+    float x, y;
+    bool active;
+} Conveyor;
+static Conveyor conveyors[MAX_CONVEYOR];
+static int conveyorCount = 0;
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -483,6 +499,49 @@ static bool isInWater(cpVect pos) {
     return false;
 }
 
+// 地面またはスタティックなデブリに接触しているかチェック用コールバック
+static bool touchingGroundOrStatic;
+static void checkGroundOrStaticContact(cpBody *body, cpArbiter *arb, void *data) {
+    (void)body;
+    (void)data;
+
+    cpShape *a, *b;
+    cpArbiterGetShapes(arb, &a, &b);
+
+    // 地面に接触しているか（スタティックボディのシェイプ）
+    cpBody *bodyA = cpShapeGetBody(a);
+    cpBody *bodyB = cpShapeGetBody(b);
+
+    // 相手がスタティックボディか確認
+    if (cpBodyGetType(bodyA) == CP_BODY_TYPE_STATIC || cpBodyGetType(bodyB) == CP_BODY_TYPE_STATIC) {
+        // コンベアは除外（コンベアはスタティックだが、その上ではスタティック化しない）
+        // コンベアかどうかは表面速度で判定
+        cpVect surfVelA = cpShapeGetSurfaceVelocity(a);
+        cpVect surfVelB = cpShapeGetSurfaceVelocity(b);
+        if (cpvlength(surfVelA) > 0.1f || cpvlength(surfVelB) > 0.1f) {
+            return;  // コンベア上なのでスキップ
+        }
+        touchingGroundOrStatic = true;
+        return;
+    }
+
+    // 相手がスタティック化されたデブリか確認
+    if (cpShapeGetCollisionType(a) == COLLISION_TYPE_DEBRIS) {
+        int idx = (int)(intptr_t)cpShapeGetUserData(a);
+        if (idx >= 0 && idx < debrisCount && debris[idx].active && debris[idx].isStatic) {
+            touchingGroundOrStatic = true;
+            return;
+        }
+    }
+    if (cpShapeGetCollisionType(b) == COLLISION_TYPE_DEBRIS) {
+        int idx = (int)(intptr_t)cpShapeGetUserData(b);
+        if (idx >= 0 && idx < debrisCount && debris[idx].active && debris[idx].isStatic) {
+            touchingGroundOrStatic = true;
+            return;
+        }
+    }
+}
+
 // 安定した石をスタティック化
 static void staticizeDebris(float dt) {
     cpBody *staticBody = cpSpaceGetStaticBody(space);
@@ -494,6 +553,15 @@ static void staticizeDebris(float dt) {
 
         // 水中の石はスタティック化しない
         if (isInWater(pos)) {
+            debris[i].idleTime = 0.0f;
+            debris[i].lastPos = pos;
+            continue;
+        }
+
+        // 地面またはスタティックなデブリに接触しているかチェック
+        touchingGroundOrStatic = false;
+        cpBodyEachArbiter(debris[i].body, checkGroundOrStaticContact, NULL);
+        if (!touchingGroundOrStatic) {
             debris[i].idleTime = 0.0f;
             debris[i].lastPos = pos;
             continue;
@@ -893,6 +961,45 @@ static void applyBuoyancy(void) {
     }
 }
 
+// コンベアに接触しているかチェック用コールバック
+static bool onConveyor;
+static void checkConveyorContact(cpBody *body, cpArbiter *arb, void *data) {
+    (void)body;
+    (void)data;
+
+    cpShape *a, *b;
+    cpArbiterGetShapes(arb, &a, &b);
+
+    // 表面速度があるシェイプ（コンベア）に接触しているか
+    cpVect surfVelA = cpShapeGetSurfaceVelocity(a);
+    cpVect surfVelB = cpShapeGetSurfaceVelocity(b);
+    if (cpvlength(surfVelA) > 0.1f || cpvlength(surfVelB) > 0.1f) {
+        onConveyor = true;
+    }
+}
+
+// コンベアの力を適用
+static void applyConveyorForce(void) {
+    // コンベアの進行方向
+    cpVect conveyorDir = cpv(cosf(CONVEYOR_ANGLE), sinf(CONVEYOR_ANGLE));
+
+    for (int i = 0; i < debrisCount; i++) {
+        if (!debris[i].active || debris[i].isStatic || !debris[i].body) continue;
+
+        // コンベアに接触しているかチェック
+        onConveyor = false;
+        cpBodyEachArbiter(debris[i].body, checkConveyorContact, NULL);
+
+        if (onConveyor) {
+            // コンベア方向に力を加える（質量に比例）
+            cpFloat mass = cpBodyGetMass(debris[i].body);
+            cpVect force = cpvmult(conveyorDir, CONVEYOR_FORCE * mass / 100.0f);
+            cpVect currentForce = cpBodyGetForce(debris[i].body);
+            cpBodySetForce(debris[i].body, cpvadd(currentForce, force));
+        }
+    }
+}
+
 // 水を配置
 static void placeWater(float x, float y) {
     // 空きスロットを探す
@@ -908,6 +1015,80 @@ static void placeWater(float x, float y) {
     waters[slot].x = x - WATER_SIZE / 2.0f;
     waters[slot].y = y - WATER_SIZE / 2.0f;
     waters[slot].active = true;
+}
+
+// コンベアを配置
+static void placeConveyor(float x, float y) {
+    // 空きスロットを探す
+    int slot = -1;
+    for (int i = 0; i < conveyorCount; i++) {
+        if (!conveyors[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && conveyorCount < MAX_CONVEYOR) {
+        slot = conveyorCount++;
+    }
+    if (slot < 0) return;
+
+    // スタティックボディを使用
+    cpBody *staticBody = cpSpaceGetStaticBody(space);
+
+    // コンベアの形状（回転した長方形）
+    cpFloat hw = CONVEYOR_LENGTH / 2.0f;
+    cpFloat hh = CONVEYOR_THICKNESS / 2.0f;
+    cpVect verts[4] = {
+        cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
+    };
+
+    // 位置と回転を適用
+    cpTransform t = cpTransformRigid(cpv(x, y), CONVEYOR_ANGLE);
+    cpShape *shape = cpPolyShapeNew(staticBody, 4, verts, t, 0.0f);
+    cpShapeSetFriction(shape, 1.0f);  // 高摩擦
+
+    // 表面速度を設定（ベルトの進行方向）
+    cpShapeSetSurfaceVelocity(shape, cpv(CONVEYOR_SPEED, 0.0f));
+
+    cpSpaceAddShape(space, shape);
+
+    conveyors[slot].body = staticBody;
+    conveyors[slot].shape = shape;
+    conveyors[slot].x = x;
+    conveyors[slot].y = y;
+    conveyors[slot].active = true;
+}
+
+// コンベアを描画
+static void drawConveyors(void) {
+    for (int i = 0; i < conveyorCount; i++) {
+        if (!conveyors[i].active) continue;
+
+        float x = conveyors[i].x;
+        float y = conveyors[i].y;
+
+        // コンベア本体
+        Rectangle rect = {x, y, CONVEYOR_LENGTH, CONVEYOR_THICKNESS};
+        Vector2 origin = {CONVEYOR_LENGTH / 2.0f, CONVEYOR_THICKNESS / 2.0f};
+        DrawRectanglePro(rect, origin, CONVEYOR_ANGLE * 180.0f / PI, BLACK);
+
+        // 矢印を描画（進行方向を示す）
+        float arrowLen = 30.0f;
+        float cx = x;
+        float cy = y;
+        float dx = cosf(CONVEYOR_ANGLE) * arrowLen;
+        float dy = sinf(CONVEYOR_ANGLE) * arrowLen;
+        // 矢印の先端
+        Vector2 tip = {cx + dx, cy + dy};
+        // 矢印の根元
+        Vector2 base = {cx - dx, cy - dy};
+        DrawLineEx(base, tip, 3.0f, WHITE);
+        // 矢じり
+        float arrowHead = 10.0f;
+        float headAngle = CONVEYOR_ANGLE + PI * 0.8f;
+        Vector2 head1 = {tip.x + cosf(headAngle) * arrowHead, tip.y + sinf(headAngle) * arrowHead};
+        headAngle = CONVEYOR_ANGLE - PI * 0.8f;
+        Vector2 head2 = {tip.x + cosf(headAngle) * arrowHead, tip.y + sinf(headAngle) * arrowHead};
+        DrawLineEx(tip, head1, 3.0f, WHITE);
+        DrawLineEx(tip, head2, 3.0f, WHITE);
+    }
 }
 
 static void createSieve(void) {
@@ -1096,6 +1277,7 @@ int main(void)
         if (IsKeyPressed(KEY_ONE)) actionMode = 1;
         if (IsKeyPressed(KEY_TWO)) actionMode = 2;
         if (IsKeyPressed(KEY_THREE)) actionMode = 3;
+        if (IsKeyPressed(KEY_FOUR)) actionMode = 4;
 
         // 右クリック操作（カメラを考慮したワールド座標を取得）
         Camera2D cam = {0};
@@ -1164,6 +1346,11 @@ int main(void)
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                 placeWater(worldX, worldY);
             }
+        } else if (actionMode == 4) {
+            // モード4: コンベア配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeConveyor(worldX, worldY);
+            }
         }
 
         if (spawning) {
@@ -1197,6 +1384,7 @@ int main(void)
         processBreakingDebris();
         processPendingSticky();
         applyBuoyancy();
+        applyConveyorForce();
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -1218,6 +1406,7 @@ int main(void)
             drawDebris(i);
         }
         drawStickyJoints();
+        drawConveyors();
 
         EndMode2D();
 
