@@ -85,6 +85,8 @@ static float zoom = 1.0f;
 // 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input, 8: 削除, 9: 壁)
 static int actionMode = 1;
 static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input", "Delete", "Wall"};
+static const int modeCount = sizeof(actionModeNames) / sizeof(actionModeNames[0]);
+static bool showModeMenu = false;  // Eキーで表示するメニュー
 
 // ドラッグ移動用
 static int draggedDebrisIdx = -1;
@@ -911,38 +913,60 @@ static void processPendingSticky(void) {
 }
 
 // スタティック化した石をダイナミックに戻す
-static void wakeUpStaticDebris(void) {
+// 指定位置の近くにあるstaticデブリを起こす
+static void wakeUpStaticDebrisNearPoint(float x, float y, float radius) {
     for (int i = 0; i < debrisCount; i++) {
-        if (!debris[i].active || !debris[i].isStatic || !debris[i].wakeUp) continue;
+        if (!debris[i].active || !debris[i].isStatic) continue;
+        float dx = debris[i].staticPos.x - x;
+        float dy = debris[i].staticPos.y - y;
+        float dist = sqrtf(dx * dx + dy * dy);
+        if (dist < radius + debris[i].size) {
+            debris[i].wakeUp = true;
+        }
+    }
+}
 
-        // 古いスタティックシェイプを削除
-        cpSpaceRemoveShape(space, debris[i].shape);
-        cpShapeFree(debris[i].shape);
+static void wakeUpStaticDebris(void) {
+    bool anyWokeUp = true;
+    // 連鎖的に起こす（起きたデブリの近くのstaticデブリも起こす）
+    while (anyWokeUp) {
+        anyWokeUp = false;
+        for (int i = 0; i < debrisCount; i++) {
+            if (!debris[i].active || !debris[i].isStatic || !debris[i].wakeUp) continue;
 
-        // ダイナミックボディを再作成（面積×密度で質量計算）
-        float area = calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
-        cpFloat mass = area * debris[i].density;
-        cpFloat moment = cpMomentForPoly(mass, debris[i].vertexCount, debris[i].vertices, cpvzero, 0.0f);
-        cpBody *body = cpBodyNew(mass, moment);
-        cpBodySetPosition(body, debris[i].staticPos);
-        cpBodySetAngle(body, debris[i].staticAngle);
-        cpSpaceAddBody(space, body);
+            // 古いスタティックシェイプを削除
+            cpSpaceRemoveShape(space, debris[i].shape);
+            cpShapeFree(debris[i].shape);
 
-        cpShape *shape = cpPolyShapeNew(body, debris[i].vertexCount, debris[i].vertices, cpTransformIdentity, 0.0f);
-        cpShapeSetFriction(shape, 0.5f);
-        float elasticity = debris[i].type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
-        cpShapeSetElasticity(shape, elasticity);
-        cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
-        cpShapeSetUserData(shape, (void*)(intptr_t)i);
-        cpSpaceAddShape(space, shape);
+            // ダイナミックボディを再作成（面積×密度で質量計算）
+            float area = calcPolygonArea(debris[i].vertices, debris[i].vertexCount);
+            cpFloat mass = area * debris[i].density;
+            cpFloat moment = cpMomentForPoly(mass, debris[i].vertexCount, debris[i].vertices, cpvzero, 0.0f);
+            cpBody *body = cpBodyNew(mass, moment);
+            cpBodySetPosition(body, debris[i].staticPos);
+            cpBodySetAngle(body, debris[i].staticAngle);
+            cpSpaceAddBody(space, body);
 
-        debris[i].body = body;
-        debris[i].shape = shape;
-        debris[i].isStatic = false;
-        debris[i].wakeUp = false;
-        debris[i].idleTime = 0.0f;
-        debris[i].lastPos = debris[i].staticPos;
+            cpShape *shape = cpPolyShapeNew(body, debris[i].vertexCount, debris[i].vertices, cpTransformIdentity, 0.0f);
+            cpShapeSetFriction(shape, 0.5f);
+            float elasticity = debris[i].type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
+            cpShapeSetElasticity(shape, elasticity);
+            cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
+            cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+            cpShapeSetUserData(shape, (void*)(intptr_t)i);
+            cpSpaceAddShape(space, shape);
+
+            debris[i].body = body;
+            debris[i].shape = shape;
+            debris[i].isStatic = false;
+            debris[i].wakeUp = false;
+            debris[i].idleTime = 0.0f;
+            debris[i].lastPos = debris[i].staticPos;
+
+            // このデブリの近くのstaticデブリを起こす（連鎖）
+            wakeUpStaticDebrisNearPoint(debris[i].staticPos.x, debris[i].staticPos.y, debris[i].size + 10.0f);
+            anyWokeUp = true;
+        }
     }
 }
 
@@ -1004,6 +1028,23 @@ static Color getClayColor(float size) {
 
 static void drawDebris(int index) {
     if (!debris[index].active) return;
+
+    // カリング: カメラ範囲外ならスキップ
+    cpVect pos;
+    if (debris[index].isStatic) {
+        pos = debris[index].staticPos;
+    } else {
+        pos = cpBodyGetPosition(debris[index].body);
+    }
+    float margin = debris[index].size + 20.0f;  // 余裕を持たせる
+    float viewLeft = cameraX + (SCREEN_WIDTH / 2.0f) - (SCREEN_WIDTH / 2.0f) / zoom;
+    float viewRight = cameraX + (SCREEN_WIDTH / 2.0f) + (SCREEN_WIDTH / 2.0f) / zoom;
+    float viewTop = cameraY + (SCREEN_HEIGHT / 2.0f) - (SCREEN_HEIGHT / 2.0f) / zoom;
+    float viewBottom = cameraY + (SCREEN_HEIGHT / 2.0f) + (SCREEN_HEIGHT / 2.0f) / zoom;
+    if (pos.x < viewLeft - margin || pos.x > viewRight + margin ||
+        pos.y < viewTop - margin || pos.y > viewBottom + margin) {
+        return;
+    }
 
     Color color;
     if (debris[index].isStatic) {
@@ -2072,6 +2113,43 @@ static void drawGrid(float camX, float camY, float camZoom) {
     }
 }
 
+// モード選択メニューを描画
+static void drawModeMenu(void) {
+    // 背景（半透明グレー）
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){128, 128, 128, 200});
+
+    // ボタン配置（2列レイアウト）
+    int buttonW = 180, buttonH = 40;
+    int startX = 50, startY = 50;
+    int gap = 10;
+
+    for (int i = 1; i < modeCount; i++) {
+        int col = (i - 1) / 10;
+        int row = (i - 1) % 10;
+        int x = startX + col * (buttonW + 30);
+        int y = startY + row * (buttonH + gap);
+
+        // ボタン描画
+        Rectangle btn = {x, y, buttonW, buttonH};
+        Vector2 mouse = GetMousePosition();
+        bool hover = CheckCollisionPointRec(mouse, btn);
+        DrawRectangleRec(btn, hover ? BLUE : (Color){70, 130, 180, 255});
+        DrawRectangleLinesEx(btn, 2, DARKBLUE);
+        DrawText(actionModeNames[i], x + 10, y + 10, 20, WHITE);
+
+        // クリック検出
+        if (hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            actionMode = i;
+            showModeMenu = false;
+        }
+    }
+
+    // ESCで閉じる
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        showModeMenu = false;
+    }
+}
+
 int main(void)
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sieve Simulation (Chipmunk2D)");
@@ -2286,7 +2364,23 @@ int main(void)
             cameraY = worldYBefore - SCREEN_HEIGHT / 2.0f - (mousePos.y - SCREEN_HEIGHT / 2.0f) / zoom;
         }
 
-        // 1-9キーで操作モード切替
+        // Eキーでモード選択メニュー表示
+        if (IsKeyPressed(KEY_E)) {
+            showModeMenu = !showModeMenu;
+        }
+
+        // ワールド座標を取得（描画やプレビューで使用）
+        Camera2D cam = {0};
+        cam.target = (Vector2){cameraX + SCREEN_WIDTH / 2.0f, cameraY + SCREEN_HEIGHT / 2.0f};
+        cam.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+        cam.rotation = 0.0f;
+        cam.zoom = zoom;
+        Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), cam);
+        float worldX = mouseWorld.x;
+        float worldY = mouseWorld.y;
+
+        // 1-9キーで操作モード切替（メニュー非表示時のみ）
+        if (!showModeMenu) {
         if (IsKeyPressed(KEY_ONE)) actionMode = 1;
         if (IsKeyPressed(KEY_TWO)) actionMode = 2;
         if (IsKeyPressed(KEY_THREE)) actionMode = 3;
@@ -2296,16 +2390,6 @@ int main(void)
         if (IsKeyPressed(KEY_SEVEN)) actionMode = 7;
         if (IsKeyPressed(KEY_EIGHT)) actionMode = 8;
         if (IsKeyPressed(KEY_NINE)) actionMode = 9;
-
-        // 右クリック操作（カメラを考慮したワールド座標を取得）
-        Camera2D cam = {0};
-        cam.target = (Vector2){cameraX + SCREEN_WIDTH / 2.0f, cameraY + SCREEN_HEIGHT / 2.0f};
-        cam.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
-        cam.rotation = 0.0f;
-        cam.zoom = zoom;
-        Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), cam);
-        float worldX = mouseWorld.x;
-        float worldY = mouseWorld.y;
 
         if (actionMode == 1) {
             // モード1: 破壊
@@ -2494,6 +2578,9 @@ int main(void)
                             cpShapeFree(walls[i].shape);
                             cpBodyFree(walls[i].body);
                             walls[i].active = false;
+                            // 壁の近くのstaticデブリを起こす
+                            wakeUpStaticDebrisNearPoint((float)pos.x, (float)pos.y, WALL_LENGTH);
+                            wakeUpStaticDebris();
                             deleted = true;
                         }
                     }
@@ -2505,6 +2592,7 @@ int main(void)
                 placeWall(worldX, worldY);
             }
         }
+        } // if (!showModeMenu)
 
         // Input箱が空なら土砂を生成
         checkAndFillInputs();
@@ -2673,6 +2761,11 @@ int main(void)
         DrawText("W/S: Scroll U/D", helpX, helpY + 230, 14, BLACK);
         DrawText("Wheel: Zoom", helpX, helpY + 250, 14, BLACK);
         DrawText("L-Drag: Pan", helpX, helpY + 270, 14, BLACK);
+
+        // モード選択メニュー
+        if (showModeMenu) {
+            drawModeMenu();
+        }
 
         EndDrawing();
     }
