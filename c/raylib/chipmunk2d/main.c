@@ -135,7 +135,7 @@ static float snapToGrid(float v) {
 #define CONVEYOR_DEFAULT_ANGLE (-30.0f * PI / 180.0f)  // デフォルト30度斜め上向き
 #define CONVEYOR_FORCE 500000.0f  // コンベアが物体に加える力
 #define CONVEYOR_MAX_SPEED 150.0f  // コンベア上の最大速度
-#define CONVEYOR_HANDLE_RADIUS 15.0f  // 回転用ハンドルの半径
+#define CONVEYOR_HANDLE_RADIUS 8.0f  // 回転用ハンドルの半径
 #define ROTATE_SPEED 0.02f  // 回転速度
 typedef struct {
     cpBody *body;
@@ -206,7 +206,7 @@ static float lastSieveAngle = SIEVE_ANGLE;  // 最後に置いたふるいの角
 // 壁（静的な障害物）
 #define MAX_WALL 100
 #define WALL_THICKNESS 5.0f
-#define WALL_HANDLE_RADIUS 8.0f
+#define WALL_HANDLE_RADIUS 5.0f
 #define WALL_MIN_LENGTH 30.0f
 #define WALL_MAX_LENGTH 300.0f
 typedef struct {
