@@ -148,6 +148,7 @@ typedef struct {
 } Conveyor;
 static Conveyor conveyors[MAX_CONVEYOR];
 static int conveyorCount = 0;
+static float lastConveyorAngle = CONVEYOR_DEFAULT_ANGLE;  // 最後に置いたコンベアの角度
 
 // Output（排出口）
 #define MAX_OUTPUT 20
@@ -311,6 +312,7 @@ static void spawnDebris(void) {
     debris[slot].breakFlash = 0;
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
+    debris[slot].isBack = false;  // 常に表面に生成
     if (slot >= debrisCount) debrisCount = slot + 1;
 }
 
@@ -373,6 +375,7 @@ static void spawnWood(void) {
     debris[slot].breakFlash = 0;
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
+    debris[slot].isBack = false;  // 常に表面に生成
     if (slot >= debrisCount) debrisCount = slot + 1;
 }
 
@@ -434,11 +437,12 @@ static void spawnClay(void) {
     debris[slot].breakFlash = 0;
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
+    debris[slot].isBack = false;  // 常に表面に生成
     if (slot >= debrisCount) debrisCount = slot + 1;
 }
 
-// 指定位置に指定サイズ・密度・タイプの破片を生成
-static void spawnDebrisAt(float x, float y, float size, float density, DebrisType type) {
+// 指定位置に指定サイズ・密度・タイプの破片を生成（isBack指定可能）
+static void spawnDebrisAt(float x, float y, float size, float density, DebrisType type, bool isBack) {
     int slot = findFreeSlot();
     if (slot < 0) return;
     if (size < 2.0f) size = 2.0f;  // 最小サイズ保証
@@ -500,7 +504,11 @@ static void spawnDebrisAt(float x, float y, float size, float density, DebrisTyp
     float elasticity = type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+    if (isBack) {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+    }
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -520,6 +528,7 @@ static void spawnDebrisAt(float x, float y, float size, float density, DebrisTyp
     debris[slot].breakFlash = 0;  // 破片は元の色で表示
     debris[slot].idleTime = 0.0f;
     debris[slot].lastPos = cpv(x, y);
+    debris[slot].isBack = isBack;  // 面を継承
     if (slot >= debrisCount) debrisCount = slot + 1;
 }
 
@@ -532,6 +541,7 @@ static void breakDebris(int index) {
     float originalSize = debris[index].size;
     float density = debris[index].density;  // 削除前に保存
     DebrisType type = debris[index].type;   // 削除前に保存
+    bool isBack = debris[index].isBack;     // 削除前に保存
     // 実際のポリゴン面積を計算
     float originalArea = calcPolygonArea(debris[index].vertices, debris[index].vertexCount);
 
@@ -591,11 +601,11 @@ static void breakDebris(int index) {
         remainingArea -= pieceSize * pieceSize * areaFactor;
     }
 
-    // 破片を生成（元の密度とタイプを継承）
+    // 破片を生成（元の密度とタイプと面を継承）
     for (int i = 0; i < numPieces; i++) {
         float offsetX = (rand01() - 0.5f) * originalSize;
         float offsetY = (rand01() - 0.5f) * originalSize;
-        spawnDebrisAt((float)pos.x + offsetX, (float)pos.y + offsetY, sizes[i], density, type);
+        spawnDebrisAt((float)pos.x + offsetX, (float)pos.y + offsetY, sizes[i], density, type, isBack);
     }
 }
 
@@ -985,7 +995,11 @@ static void wakeUpStaticDebris(void) {
             float elasticity = debris[i].type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
             cpShapeSetElasticity(shape, elasticity);
             cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-            cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+            if (debris[i].isBack) {
+                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_BACK, MASK_BACK));
+            } else {
+                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+            }
             cpShapeSetUserData(shape, (void*)(intptr_t)i);
             cpSpaceAddShape(space, shape);
 
@@ -1501,7 +1515,7 @@ static void placeConveyor(float x, float y) {
     // キネマティックボディを使用（回転できるように）
     cpBody *body = cpBodyNewKinematic();
     cpBodySetPosition(body, cpv(x, y));
-    cpBodySetAngle(body, CONVEYOR_DEFAULT_ANGLE);
+    cpBodySetAngle(body, lastConveyorAngle);
     cpSpaceAddBody(space, body);
 
     // コンベアの形状
@@ -1526,7 +1540,7 @@ static void placeConveyor(float x, float y) {
     conveyors[slot].shape = shape;
     conveyors[slot].x = x;
     conveyors[slot].y = y;
-    conveyors[slot].angle = CONVEYOR_DEFAULT_ANGLE;
+    conveyors[slot].angle = lastConveyorAngle;
     conveyors[slot].active = true;
     conveyors[slot].reversed = false;
     conveyors[slot].isBack = showBackSide;
@@ -2528,7 +2542,9 @@ int main(void)
             // ドラッグしなかった場合のみ15度回転
             if (clickedConveyor >= 0 && draggingConveyor < 0) {
                 cpFloat currentAngle = cpBodyGetAngle(conveyors[clickedConveyor].body);
-                cpBodySetAngle(conveyors[clickedConveyor].body, currentAngle + 15.0f * PI / 180.0f);
+                cpFloat newAngle = currentAngle + 15.0f * PI / 180.0f;
+                cpBodySetAngle(conveyors[clickedConveyor].body, newAngle);
+                lastConveyorAngle = (float)newAngle;  // 次に置くコンベアも同じ角度にする
             }
             if (clickedSieve >= 0 && draggingSieve < 0) {
                 cpFloat currentAngle = cpBodyGetAngle(userSieves[clickedSieve].body);
@@ -2902,13 +2918,8 @@ int main(void)
         Color previewColor = (Color){100, 200, 100, 180};
 
         if (actionMode == 4) {
-            // コンベア プレビュー
-            Rectangle rect = {previewX, previewY, CONVEYOR_LENGTH, CONVEYOR_THICKNESS};
-            Vector2 origin = {CONVEYOR_LENGTH / 2.0f, CONVEYOR_THICKNESS / 2.0f};
-            DrawRectanglePro(rect, origin, CONVEYOR_DEFAULT_ANGLE * 180.0f / PI, (Color){0, 0, 0, 0});
-            DrawRectangleLinesEx((Rectangle){previewX - CONVEYOR_LENGTH/2, previewY - CONVEYOR_THICKNESS/2, CONVEYOR_LENGTH, CONVEYOR_THICKNESS}, 2, previewColor);
-            // 回転を考慮した線で描画
-            float angle = CONVEYOR_DEFAULT_ANGLE;
+            // コンベア プレビュー（回転を考慮）
+            float angle = lastConveyorAngle;
             float hw = CONVEYOR_LENGTH / 2.0f;
             float hh = CONVEYOR_THICKNESS / 2.0f;
             float cosA = cosf(angle), sinA = sinf(angle);
