@@ -205,18 +205,24 @@ static float lastSieveAngle = SIEVE_ANGLE;  // 最後に置いたふるいの角
 
 // 壁（静的な障害物）
 #define MAX_WALL 100
-#define WALL_LENGTH 60.0f
 #define WALL_THICKNESS 5.0f
 #define WALL_HANDLE_RADIUS 8.0f
+#define WALL_MIN_LENGTH 30.0f
+#define WALL_MAX_LENGTH 300.0f
 typedef struct {
     cpBody *body;
     cpShape *shape;
+    float length;   // 壁の長さ（可変）
     bool active;
     bool isBack;  // 裏面にあるか
 } Wall;
 static Wall walls[MAX_WALL];
 static int wallCount = 0;
-static float lastWallAngle = 0.0f;  // 最後に置いた壁の角度
+
+// 壁2点配置用
+static bool wallPlacing = false;    // 2点配置モード中か
+static float wallStartX = 0.0f;     // 始点X
+static float wallStartY = 0.0f;     // 始点Y
 
 // Transfer（立体交差パーツ）
 #define MAX_TRANSFER 50
@@ -1610,10 +1616,19 @@ static void drawConveyors(void) {
     }
 }
 
-// 壁を配置
-static void placeWall(float x, float y) {
-    x = snapToGrid(x);
-    y = snapToGrid(y);
+// 壁を配置（2点指定）
+static void placeWall(float x1, float y1, float x2, float y2) {
+    // 中点を計算
+    float cx = (x1 + x2) / 2.0f;
+    float cy = (y1 + y2) / 2.0f;
+
+    // 角度を計算
+    float angle = atan2f(y2 - y1, x2 - x1);
+
+    // 長さを計算（制限付き）
+    float length = sqrtf((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    if (length < WALL_MIN_LENGTH) length = WALL_MIN_LENGTH;
+    if (length > WALL_MAX_LENGTH) length = WALL_MAX_LENGTH;
 
     int slot = -1;
     for (int i = 0; i < wallCount; i++) {
@@ -1626,12 +1641,12 @@ static void placeWall(float x, float y) {
 
     // キネマティックボディ（回転できるように）
     cpBody *body = cpBodyNewKinematic();
-    cpBodySetPosition(body, cpv(x, y));
-    cpBodySetAngle(body, lastWallAngle);
+    cpBodySetPosition(body, cpv(cx, cy));
+    cpBodySetAngle(body, angle);
     cpSpaceAddBody(space, body);
 
-    // 壁の形状
-    cpFloat hw = WALL_LENGTH / 2.0f;
+    // 壁の形状（長さは可変）
+    cpFloat hw = length / 2.0f;
     cpFloat hh = WALL_THICKNESS / 2.0f;
     cpVect verts[4] = {
         cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
@@ -1648,6 +1663,7 @@ static void placeWall(float x, float y) {
 
     walls[slot].body = body;
     walls[slot].shape = shape;
+    walls[slot].length = length;
     walls[slot].active = true;
     walls[slot].isBack = showBackSide;
 }
@@ -1662,9 +1678,10 @@ static void drawWalls(void) {
         cpVect pos = cpBodyGetPosition(walls[i].body);
         float angle = (float)cpBodyGetAngle(walls[i].body);
 
-        // 壁本体
-        Rectangle rect = {(float)pos.x, (float)pos.y, WALL_LENGTH, WALL_THICKNESS};
-        Vector2 origin = {WALL_LENGTH / 2.0f, WALL_THICKNESS / 2.0f};
+        // 壁本体（長さは可変）
+        float len = walls[i].length;
+        Rectangle rect = {(float)pos.x, (float)pos.y, len, WALL_THICKNESS};
+        Vector2 origin = {len / 2.0f, WALL_THICKNESS / 2.0f};
         DrawRectanglePro(rect, origin, angle * 180.0f / PI, DARKGRAY);
 
         // 中心に回転用の丸を描画
@@ -2401,13 +2418,16 @@ static void drawModeMenu(void) {
             actionMode = i;
             showModeMenu = false;
             conveyorPlacing = false;  // モード変更時はコンベア配置をリセット
+            wallPlacing = false;      // モード変更時は壁配置をリセット
         }
     }
 
-    // ESCで閉じる / コンベア配置キャンセル
+    // ESCで閉じる / 配置キャンセル
     if (IsKeyPressed(KEY_ESCAPE)) {
         if (conveyorPlacing) {
             conveyorPlacing = false;  // コンベア配置をキャンセル
+        } else if (wallPlacing) {
+            wallPlacing = false;      // 壁配置をキャンセル
         } else {
             showModeMenu = false;
         }
@@ -2580,7 +2600,6 @@ int main(void)
                 cpFloat currentAngle = cpBodyGetAngle(walls[clickedWall].body);
                 cpFloat newAngle = currentAngle + 15.0f * PI / 180.0f;
                 cpBodySetAngle(walls[clickedWall].body, newAngle);
-                lastWallAngle = (float)newAngle;  // 次に置く壁も同じ角度にする
             }
             dragging = false;
             clickedConveyor = -1;
@@ -2652,15 +2671,15 @@ int main(void)
 
         // 1-9キーで操作モード切替（メニュー非表示時のみ）
         if (!showModeMenu) {
-        if (IsKeyPressed(KEY_ONE)) { actionMode = 1; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_TWO)) { actionMode = 2; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_THREE)) { actionMode = 3; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_FOUR)) { actionMode = 4; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_FIVE)) { actionMode = 5; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_SIX)) { actionMode = 6; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_SEVEN)) { actionMode = 7; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_EIGHT)) { actionMode = 8; conveyorPlacing = false; }
-        if (IsKeyPressed(KEY_NINE)) { actionMode = 9; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_ONE)) { actionMode = 1; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_TWO)) { actionMode = 2; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_THREE)) { actionMode = 3; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_FOUR)) { actionMode = 4; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_FIVE)) { actionMode = 5; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_SIX)) { actionMode = 6; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_SEVEN)) { actionMode = 7; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_EIGHT)) { actionMode = 8; conveyorPlacing = false; wallPlacing = false; }
+        if (IsKeyPressed(KEY_NINE)) { actionMode = 9; conveyorPlacing = false; wallPlacing = false; }
 
         if (actionMode == 1) {
             // モード1: 破壊
@@ -2854,14 +2873,14 @@ int main(void)
                         if (!walls[i].active) continue;
                         cpVect pos = cpBodyGetPosition(walls[i].body);
                         float dist = sqrtf(powf(worldX - (float)pos.x, 2) + powf(worldY - (float)pos.y, 2));
-                        if (dist < WALL_LENGTH / 2.0f) {
+                        if (dist < walls[i].length / 2.0f) {
                             cpSpaceRemoveShape(space, walls[i].shape);
                             cpSpaceRemoveBody(space, walls[i].body);
                             cpShapeFree(walls[i].shape);
                             cpBodyFree(walls[i].body);
                             walls[i].active = false;
                             // 壁の近くのstaticデブリを起こす
-                            wakeUpStaticDebrisNearPoint((float)pos.x, (float)pos.y, WALL_LENGTH);
+                            wakeUpStaticDebrisNearPoint((float)pos.x, (float)pos.y, walls[i].length);
                             wakeUpStaticDebris();
                             deleted = true;
                         }
@@ -2878,9 +2897,20 @@ int main(void)
                 }
             }
         } else if (actionMode == 9) {
-            // モード9: 壁配置
+            // モード9: 壁配置（2点クリック）
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-                placeWall(worldX, worldY);
+                if (!wallPlacing) {
+                    // 1回目: 始点を記録
+                    wallStartX = snapToGrid(worldX);
+                    wallStartY = snapToGrid(worldY);
+                    wallPlacing = true;
+                } else {
+                    // 2回目: 終点確定、壁配置
+                    float endX = snapToGrid(worldX);
+                    float endY = snapToGrid(worldY);
+                    placeWall(wallStartX, wallStartY, endX, endY);
+                    wallPlacing = false;
+                }
             }
         } else if (actionMode == 10) {
             // モード10: Transfer配置
@@ -3014,19 +3044,40 @@ int main(void)
             float iy = previewY - INPUT_SIZE / 2.0f;
             DrawRectangleLines((int)ix, (int)iy, (int)INPUT_SIZE, (int)INPUT_SIZE, previewColor);
         } else if (actionMode == 9) {
-            // 壁 プレビュー
-            float angle = lastWallAngle;
-            float hw = WALL_LENGTH / 2.0f;
-            float hh = WALL_THICKNESS / 2.0f;
-            float cosA = cosf(angle), sinA = sinf(angle);
-            Vector2 corners[4] = {
-                {previewX + (-hw)*cosA - (-hh)*sinA, previewY + (-hw)*sinA + (-hh)*cosA},
-                {previewX + ( hw)*cosA - (-hh)*sinA, previewY + ( hw)*sinA + (-hh)*cosA},
-                {previewX + ( hw)*cosA - ( hh)*sinA, previewY + ( hw)*sinA + ( hh)*cosA},
-                {previewX + (-hw)*cosA - ( hh)*sinA, previewY + (-hw)*sinA + ( hh)*cosA}
-            };
-            for (int i = 0; i < 4; i++) {
-                DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+            // 壁 プレビュー（2点クリック対応）
+            if (wallPlacing) {
+                // 2点目待ち: 始点からマウス位置への壁をプレビュー
+                float endX = previewX;
+                float endY = previewY;
+
+                // 始点マーカー
+                DrawCircleLines((int)wallStartX, (int)wallStartY, 6, previewColor);
+
+                // 中点・角度・長さを計算
+                float cx = (wallStartX + endX) / 2.0f;
+                float cy = (wallStartY + endY) / 2.0f;
+                float angle = atan2f(endY - wallStartY, endX - wallStartX);
+                float length = sqrtf((endX - wallStartX) * (endX - wallStartX) +
+                                    (endY - wallStartY) * (endY - wallStartY));
+                if (length < WALL_MIN_LENGTH) length = WALL_MIN_LENGTH;
+                if (length > WALL_MAX_LENGTH) length = WALL_MAX_LENGTH;
+
+                // 壁形状プレビュー
+                float hw = length / 2.0f;
+                float hh = WALL_THICKNESS / 2.0f;
+                float cosA = cosf(angle), sinA = sinf(angle);
+                Vector2 corners[4] = {
+                    {cx + (-hw)*cosA - (-hh)*sinA, cy + (-hw)*sinA + (-hh)*cosA},
+                    {cx + ( hw)*cosA - (-hh)*sinA, cy + ( hw)*sinA + (-hh)*cosA},
+                    {cx + ( hw)*cosA - ( hh)*sinA, cy + ( hw)*sinA + ( hh)*cosA},
+                    {cx + (-hw)*cosA - ( hh)*sinA, cy + (-hw)*sinA + ( hh)*cosA}
+                };
+                for (int i = 0; i < 4; i++) {
+                    DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+                }
+            } else {
+                // 1点目待ち: 始点マーカーのみ
+                DrawCircleLines((int)previewX, (int)previewY, 6, previewColor);
             }
         } else if (actionMode == 10) {
             // Transfer プレビュー
