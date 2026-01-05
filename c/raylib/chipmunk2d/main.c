@@ -142,6 +142,7 @@ typedef struct {
     cpShape *shape;
     float x, y;
     float angle;
+    float length;   // コンベアの長さ（可変）
     bool active;
     bool reversed;  // 力の方向を反転
     bool isBack;    // 裏面にあるか
@@ -149,6 +150,13 @@ typedef struct {
 static Conveyor conveyors[MAX_CONVEYOR];
 static int conveyorCount = 0;
 static float lastConveyorAngle = CONVEYOR_DEFAULT_ANGLE;  // 最後に置いたコンベアの角度
+
+// コンベア2点配置用
+#define CONVEYOR_MIN_LENGTH 50.0f
+#define CONVEYOR_MAX_LENGTH 500.0f
+static bool conveyorPlacing = false;  // 2点配置モード中か
+static float conveyorStartX = 0.0f;   // 始点X
+static float conveyorStartY = 0.0f;   // 始点Y
 
 // Output（排出口）
 #define MAX_OUTPUT 20
@@ -1497,10 +1505,19 @@ static void spawnWaterParticle(float x, float y) {
     waterParticles[slot].mergeCooldown = 0;
 }
 
-// コンベアを配置
-static void placeConveyor(float x, float y) {
-    x = snapToGrid(x);
-    y = snapToGrid(y);
+// コンベアを配置（2点指定）
+static void placeConveyor(float x1, float y1, float x2, float y2) {
+    // 中点を計算
+    float cx = (x1 + x2) / 2.0f;
+    float cy = (y1 + y2) / 2.0f;
+
+    // 角度を計算
+    float angle = atan2f(y2 - y1, x2 - x1);
+
+    // 長さを計算（制限付き）
+    float length = sqrtf((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    if (length < CONVEYOR_MIN_LENGTH) length = CONVEYOR_MIN_LENGTH;
+    if (length > CONVEYOR_MAX_LENGTH) length = CONVEYOR_MAX_LENGTH;
 
     // 空きスロットを探す
     int slot = -1;
@@ -1514,12 +1531,12 @@ static void placeConveyor(float x, float y) {
 
     // キネマティックボディを使用（回転できるように）
     cpBody *body = cpBodyNewKinematic();
-    cpBodySetPosition(body, cpv(x, y));
-    cpBodySetAngle(body, lastConveyorAngle);
+    cpBodySetPosition(body, cpv(cx, cy));
+    cpBodySetAngle(body, angle);
     cpSpaceAddBody(space, body);
 
-    // コンベアの形状
-    cpFloat hw = CONVEYOR_LENGTH / 2.0f;
+    // コンベアの形状（長さは可変）
+    cpFloat hw = length / 2.0f;
     cpFloat hh = CONVEYOR_THICKNESS / 2.0f;
     cpVect verts[4] = {
         cpv(-hw, -hh), cpv(-hw, hh), cpv(hw, hh), cpv(hw, -hh)
@@ -1538,9 +1555,10 @@ static void placeConveyor(float x, float y) {
 
     conveyors[slot].body = body;
     conveyors[slot].shape = shape;
-    conveyors[slot].x = x;
-    conveyors[slot].y = y;
-    conveyors[slot].angle = lastConveyorAngle;
+    conveyors[slot].x = cx;
+    conveyors[slot].y = cy;
+    conveyors[slot].angle = angle;
+    conveyors[slot].length = length;
     conveyors[slot].active = true;
     conveyors[slot].reversed = false;
     conveyors[slot].isBack = showBackSide;
@@ -1556,9 +1574,10 @@ static void drawConveyors(void) {
         cpVect pos = cpBodyGetPosition(conveyors[i].body);
         float angle = (float)cpBodyGetAngle(conveyors[i].body);
 
-        // コンベア本体
-        Rectangle rect = {(float)pos.x, (float)pos.y, CONVEYOR_LENGTH, CONVEYOR_THICKNESS};
-        Vector2 origin = {CONVEYOR_LENGTH / 2.0f, CONVEYOR_THICKNESS / 2.0f};
+        // コンベア本体（長さは可変）
+        float len = conveyors[i].length;
+        Rectangle rect = {(float)pos.x, (float)pos.y, len, CONVEYOR_THICKNESS};
+        Vector2 origin = {len / 2.0f, CONVEYOR_THICKNESS / 2.0f};
         DrawRectanglePro(rect, origin, angle * 180.0f / PI, BLACK);
 
         // 中心に回転用の丸を描画
@@ -2381,12 +2400,17 @@ static void drawModeMenu(void) {
         if (hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             actionMode = i;
             showModeMenu = false;
+            conveyorPlacing = false;  // モード変更時はコンベア配置をリセット
         }
     }
 
-    // ESCで閉じる
+    // ESCで閉じる / コンベア配置キャンセル
     if (IsKeyPressed(KEY_ESCAPE)) {
-        showModeMenu = false;
+        if (conveyorPlacing) {
+            conveyorPlacing = false;  // コンベア配置をキャンセル
+        } else {
+            showModeMenu = false;
+        }
     }
 }
 
@@ -2628,15 +2652,15 @@ int main(void)
 
         // 1-9キーで操作モード切替（メニュー非表示時のみ）
         if (!showModeMenu) {
-        if (IsKeyPressed(KEY_ONE)) actionMode = 1;
-        if (IsKeyPressed(KEY_TWO)) actionMode = 2;
-        if (IsKeyPressed(KEY_THREE)) actionMode = 3;
-        if (IsKeyPressed(KEY_FOUR)) actionMode = 4;
-        if (IsKeyPressed(KEY_FIVE)) actionMode = 5;
-        if (IsKeyPressed(KEY_SIX)) actionMode = 6;
-        if (IsKeyPressed(KEY_SEVEN)) actionMode = 7;
-        if (IsKeyPressed(KEY_EIGHT)) actionMode = 8;
-        if (IsKeyPressed(KEY_NINE)) actionMode = 9;
+        if (IsKeyPressed(KEY_ONE)) { actionMode = 1; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_TWO)) { actionMode = 2; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_THREE)) { actionMode = 3; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_FOUR)) { actionMode = 4; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_FIVE)) { actionMode = 5; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_SIX)) { actionMode = 6; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_SEVEN)) { actionMode = 7; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_EIGHT)) { actionMode = 8; conveyorPlacing = false; }
+        if (IsKeyPressed(KEY_NINE)) { actionMode = 9; conveyorPlacing = false; }
 
         if (actionMode == 1) {
             // モード1: 破壊
@@ -2696,9 +2720,20 @@ int main(void)
                 spawnWaterParticle(worldX, worldY);
             }
         } else if (actionMode == 4) {
-            // モード4: コンベア配置
+            // モード4: コンベア配置（2点クリック）
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-                placeConveyor(worldX, worldY);
+                if (!conveyorPlacing) {
+                    // 1回目: 始点を記録
+                    conveyorStartX = snapToGrid(worldX);
+                    conveyorStartY = snapToGrid(worldY);
+                    conveyorPlacing = true;
+                } else {
+                    // 2回目: 終点確定、コンベア配置
+                    float endX = snapToGrid(worldX);
+                    float endY = snapToGrid(worldY);
+                    placeConveyor(conveyorStartX, conveyorStartY, endX, endY);
+                    conveyorPlacing = false;
+                }
             }
         } else if (actionMode == 5) {
             // モード5: Output配置
@@ -2918,19 +2953,40 @@ int main(void)
         Color previewColor = (Color){100, 200, 100, 180};
 
         if (actionMode == 4) {
-            // コンベア プレビュー（回転を考慮）
-            float angle = lastConveyorAngle;
-            float hw = CONVEYOR_LENGTH / 2.0f;
-            float hh = CONVEYOR_THICKNESS / 2.0f;
-            float cosA = cosf(angle), sinA = sinf(angle);
-            Vector2 corners[4] = {
-                {previewX + (-hw)*cosA - (-hh)*sinA, previewY + (-hw)*sinA + (-hh)*cosA},
-                {previewX + ( hw)*cosA - (-hh)*sinA, previewY + ( hw)*sinA + (-hh)*cosA},
-                {previewX + ( hw)*cosA - ( hh)*sinA, previewY + ( hw)*sinA + ( hh)*cosA},
-                {previewX + (-hw)*cosA - ( hh)*sinA, previewY + (-hw)*sinA + ( hh)*cosA}
-            };
-            for (int i = 0; i < 4; i++) {
-                DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+            // コンベア プレビュー（2点クリック対応）
+            if (conveyorPlacing) {
+                // 2点目待ち: 始点からマウス位置へのコンベアをプレビュー
+                float endX = previewX;
+                float endY = previewY;
+
+                // 始点マーカー
+                DrawCircleLines((int)conveyorStartX, (int)conveyorStartY, 8, previewColor);
+
+                // 中点・角度・長さを計算
+                float cx = (conveyorStartX + endX) / 2.0f;
+                float cy = (conveyorStartY + endY) / 2.0f;
+                float angle = atan2f(endY - conveyorStartY, endX - conveyorStartX);
+                float length = sqrtf((endX - conveyorStartX) * (endX - conveyorStartX) +
+                                    (endY - conveyorStartY) * (endY - conveyorStartY));
+                if (length < CONVEYOR_MIN_LENGTH) length = CONVEYOR_MIN_LENGTH;
+                if (length > CONVEYOR_MAX_LENGTH) length = CONVEYOR_MAX_LENGTH;
+
+                // コンベア形状プレビュー
+                float hw = length / 2.0f;
+                float hh = CONVEYOR_THICKNESS / 2.0f;
+                float cosA = cosf(angle), sinA = sinf(angle);
+                Vector2 corners[4] = {
+                    {cx + (-hw)*cosA - (-hh)*sinA, cy + (-hw)*sinA + (-hh)*cosA},
+                    {cx + ( hw)*cosA - (-hh)*sinA, cy + ( hw)*sinA + (-hh)*cosA},
+                    {cx + ( hw)*cosA - ( hh)*sinA, cy + ( hw)*sinA + ( hh)*cosA},
+                    {cx + (-hw)*cosA - ( hh)*sinA, cy + (-hw)*sinA + ( hh)*cosA}
+                };
+                for (int i = 0; i < 4; i++) {
+                    DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
+                }
+            } else {
+                // 1点目待ち: 始点マーカーのみ
+                DrawCircleLines((int)previewX, (int)previewY, 8, previewColor);
             }
         } else if (actionMode == 5) {
             // Output プレビュー
