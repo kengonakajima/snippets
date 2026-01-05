@@ -22,10 +22,18 @@
 #define MAX_VERTICES 8
 #define COLLISION_TYPE_DEBRIS 1
 
-// 衝突カテゴリ（水とデブリは互いに素通りする）
-#define CATEGORY_DEBRIS 1
-#define CATEGORY_WATER 2
-#define CATEGORY_STRUCTURE 4  // 壁、地面、コンベア、ふるいなど
+// 衝突カテゴリ（表面と裏面で完全分離）
+#define CATEGORY_DEBRIS_FRONT 1
+#define CATEGORY_DEBRIS_BACK 2
+#define CATEGORY_WATER_FRONT 4
+#define CATEGORY_WATER_BACK 8
+#define CATEGORY_STRUCTURE_FRONT 16
+#define CATEGORY_STRUCTURE_BACK 32
+#define CATEGORY_GROUND 64  // 地面と左右壁（両面共通）
+
+// 便利マクロ
+#define MASK_FRONT (CATEGORY_DEBRIS_FRONT | CATEGORY_WATER_FRONT | CATEGORY_STRUCTURE_FRONT | CATEGORY_GROUND)
+#define MASK_BACK (CATEGORY_DEBRIS_BACK | CATEGORY_WATER_BACK | CATEGORY_STRUCTURE_BACK | CATEGORY_GROUND)
 
 #define WAKE_UP_IMPULSE_THRESHOLD 150000.0f  // この衝撃を超えたら起こす（大きい=起きにくい）
 #define MIN_BREAK_SIZE 10.0f  // この大きさ以上の石を砕ける
@@ -64,6 +72,7 @@ typedef struct {
     cpVect lastPos;     // 前フレームの位置
     cpVect staticPos;   // スタティック化時の位置
     cpFloat staticAngle;// スタティック化時の角度
+    bool isBack;        // 裏面にいるか
 } Debris;
 
 static Debris debris[MAX_DEBRIS];
@@ -84,7 +93,7 @@ static float zoom = 1.0f;
 
 // 操作モード (1: 破壊, 2: ドラッグ移動, 3: 水配置, 4: コンベア, 5: Output, 6: ふるい, 7: Input, 8: 削除, 9: 壁)
 static int actionMode = 1;
-static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input", "Delete", "Wall"};
+static const char* actionModeNames[] = {"", "Break", "Drag", "Water", "Conveyor", "Output", "Sieve", "Input", "Delete", "Wall", "Transfer"};
 static const int modeCount = sizeof(actionModeNames) / sizeof(actionModeNames[0]);
 static bool showModeMenu = false;  // Eキーで表示するメニュー
 
@@ -105,6 +114,7 @@ typedef struct {
     bool isMud;  // 泥水かどうか
     int valence; // 1, 2, 4, 8, 16（含む水量）
     int mergeCooldown;  // マージ禁止カウンタ（0なら合体可能）
+    bool isBack;  // 裏面にいるか
 } WaterParticle;
 static WaterParticle waterParticles[MAX_WATER_PARTICLES];
 static int waterParticleCount = 0;
@@ -134,6 +144,7 @@ typedef struct {
     float angle;
     bool active;
     bool reversed;  // 力の方向を反転
+    bool isBack;    // 裏面にあるか
 } Conveyor;
 static Conveyor conveyors[MAX_CONVEYOR];
 static int conveyorCount = 0;
@@ -149,6 +160,7 @@ typedef struct {
     cpShape *rightWall;
     cpShape *bottomWall;
     bool active;
+    bool isBack;  // 裏面にあるか
 } Output;
 static Output outputs[MAX_OUTPUT];
 static int outputCount = 0;
@@ -163,6 +175,7 @@ typedef struct {
     cpShape *rightWall;
     cpShape *topWall;
     bool active;
+    bool isBack;  // 裏面にあるか
 } Input;
 static Input inputs[MAX_INPUT_BOX];
 static int inputCount = 0;
@@ -175,6 +188,7 @@ typedef struct {
     cpShape *shape;
     cpVect basePos;
     bool active;
+    bool isBack;  // 裏面にあるか
 } UserSieve;
 static UserSieve userSieves[MAX_USER_SIEVE];
 static int userSieveCount = 0;
@@ -189,10 +203,25 @@ typedef struct {
     cpBody *body;
     cpShape *shape;
     bool active;
+    bool isBack;  // 裏面にあるか
 } Wall;
 static Wall walls[MAX_WALL];
 static int wallCount = 0;
 static float lastWallAngle = 0.0f;  // 最後に置いた壁の角度
+
+// Transfer（立体交差パーツ）
+#define MAX_TRANSFER 50
+#define TRANSFER_SIZE 80.0f  // 正方形のサイズ
+typedef struct {
+    float x, y;      // 中心座標
+    bool active;
+    bool toBack;     // true: 表→裏, false: 裏→表
+} Transfer;
+static Transfer transfers[MAX_TRANSFER];
+static int transferCount = 0;
+
+// 表面/裏面の表示切替
+static bool showBackSide = false;  // Fキーで切替
 
 static int compareFloats(const void* a, const void* b) {
     float fa = *(const float*)a;
@@ -262,7 +291,7 @@ static void spawnDebris(void) {
     float elasticity = 0.1f;  // 石は跳ねない
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -324,7 +353,7 @@ static void spawnWood(void) {
     cpShapeSetFriction(shape, 0.6f);
     cpShapeSetElasticity(shape, 0.3f);  // 木は跳ねにくい
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -385,7 +414,7 @@ static void spawnClay(void) {
     cpShapeSetFriction(shape, 0.9f);  // 高摩擦
     cpShapeSetElasticity(shape, 0.05f);  // ほとんど跳ねない
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -471,7 +500,7 @@ static void spawnDebrisAt(float x, float y, float size, float density, DebrisTyp
     float elasticity = type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
     cpShapeSetElasticity(shape, elasticity);
     cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);
     cpSpaceAddShape(space, shape);
 
@@ -742,7 +771,11 @@ static void staticizeDebris(float dt) {
                 debris[i].vertices, t, 0.0f);
             cpShapeSetFriction(debris[i].shape, 0.5f);
             cpShapeSetCollisionType(debris[i].shape, COLLISION_TYPE_DEBRIS);
-            cpShapeSetFilter(debris[i].shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+            if (debris[i].isBack) {
+                cpShapeSetFilter(debris[i].shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_BACK, MASK_BACK));
+            } else {
+                cpShapeSetFilter(debris[i].shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+            }
             cpShapeSetUserData(debris[i].shape, (void*)(intptr_t)i);
             cpSpaceAddShape(space, debris[i].shape);
 
@@ -952,7 +985,7 @@ static void wakeUpStaticDebris(void) {
             float elasticity = debris[i].type == DEBRIS_WOOD ? 0.2f : 0.1f;  // 固い物は跳ねない
             cpShapeSetElasticity(shape, elasticity);
             cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-            cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+            cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
             cpShapeSetUserData(shape, (void*)(intptr_t)i);
             cpSpaceAddShape(space, shape);
 
@@ -1028,6 +1061,8 @@ static Color getClayColor(float size) {
 
 static void drawDebris(int index) {
     if (!debris[index].active) return;
+    // 現在表示中の面のみ描画
+    if (debris[index].isBack != showBackSide) return;
 
     // カリング: カメラ範囲外ならスキップ
     cpVect pos;
@@ -1094,6 +1129,8 @@ static void drawStickyJoints(void) {
         int idxB = stickyJoints[i].debrisB;
         if (!debris[idxA].active || !debris[idxB].active) continue;
         if (!debris[idxA].body || !debris[idxB].body) continue;
+        // 現在表示中の面のみ描画
+        if (debris[idxA].isBack != showBackSide) continue;
 
         cpVect posA = cpBodyGetPosition(debris[idxA].body);
         cpVect posB = cpBodyGetPosition(debris[idxB].body);
@@ -1107,6 +1144,8 @@ static void drawStickyJoints(void) {
 static void drawWaterParticles(void) {
     for (int i = 0; i < waterParticleCount; i++) {
         if (!waterParticles[i].active) continue;
+        // 現在表示中の面のみ描画
+        if (waterParticles[i].isBack != showBackSide) continue;
         cpVect pos = cpBodyGetPosition(waterParticles[i].body);
         float radius = getWaterRadius(waterParticles[i].valence);
         Color color;
@@ -1281,7 +1320,7 @@ static void updateWaterParticleShape(int idx) {
     cpShapeSetFriction(wp->shape, 0.0f);
     cpShapeSetElasticity(wp->shape, 0.1f);
     cpShapeSetCollisionType(wp->shape, COLLISION_TYPE_WATER);
-    cpShapeSetFilter(wp->shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+    cpShapeSetFilter(wp->shape, cpShapeFilterNew(0, CATEGORY_WATER_FRONT, MASK_FRONT));
     cpShapeSetUserData(wp->shape, (void*)(intptr_t)idx);
     cpSpaceAddShape(space, wp->shape);
 }
@@ -1393,7 +1432,7 @@ static void splitWaterParticles(void) {
                 cpShapeSetFriction(shape, 0.0f);
                 cpShapeSetElasticity(shape, 0.1f);
                 cpShapeSetCollisionType(shape, COLLISION_TYPE_WATER);
-                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER_FRONT, MASK_FRONT));
                 cpShapeSetUserData(shape, (void*)(intptr_t)slot);
                 cpSpaceAddShape(space, shape);
 
@@ -1432,7 +1471,7 @@ static void spawnWaterParticle(float x, float y) {
     cpShapeSetFriction(shape, 0.0f);  // 摩擦ゼロで滑り落ちる
     cpShapeSetElasticity(shape, 0.1f);  // 少し弾んで広がる
     cpShapeSetCollisionType(shape, COLLISION_TYPE_WATER);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER, CATEGORY_WATER | CATEGORY_STRUCTURE));
+    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_WATER_FRONT, MASK_FRONT));
     cpShapeSetUserData(shape, (void*)(intptr_t)slot);  // インデックスを保存
     cpSpaceAddShape(space, shape);
 
@@ -1474,7 +1513,11 @@ static void placeConveyor(float x, float y) {
 
     cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 1.0f);  // 高摩擦
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     // 表面速度は使わず、力だけで動かす（回転に正しく追従させるため）
 
     cpSpaceAddShape(space, shape);
@@ -1486,12 +1529,15 @@ static void placeConveyor(float x, float y) {
     conveyors[slot].angle = CONVEYOR_DEFAULT_ANGLE;
     conveyors[slot].active = true;
     conveyors[slot].reversed = false;
+    conveyors[slot].isBack = showBackSide;
 }
 
 // コンベアを描画
 static void drawConveyors(void) {
     for (int i = 0; i < conveyorCount; i++) {
         if (!conveyors[i].active) continue;
+        // 現在表示中の面のみ描画
+        if (conveyors[i].isBack != showBackSide) continue;
 
         cpVect pos = cpBodyGetPosition(conveyors[i].body);
         float angle = (float)cpBodyGetAngle(conveyors[i].body);
@@ -1560,18 +1606,25 @@ static void placeWall(float x, float y) {
 
     cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 0.8f);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, shape);
 
     walls[slot].body = body;
     walls[slot].shape = shape;
     walls[slot].active = true;
+    walls[slot].isBack = showBackSide;
 }
 
 // 壁を描画
 static void drawWalls(void) {
     for (int i = 0; i < wallCount; i++) {
         if (!walls[i].active) continue;
+        // 現在表示中の面のみ描画
+        if (walls[i].isBack != showBackSide) continue;
 
         cpVect pos = cpBodyGetPosition(walls[i].body);
         float angle = (float)cpBodyGetAngle(walls[i].body);
@@ -1584,6 +1637,136 @@ static void drawWalls(void) {
         // 中心に回転用の丸を描画
         DrawCircle((int)pos.x, (int)pos.y, WALL_HANDLE_RADIUS, GRAY);
         DrawCircleLines((int)pos.x, (int)pos.y, WALL_HANDLE_RADIUS, WHITE);
+    }
+}
+
+// Transferを配置
+static void placeTransfer(float x, float y) {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+
+    int slot = -1;
+    for (int i = 0; i < transferCount; i++) {
+        if (!transfers[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && transferCount < MAX_TRANSFER) {
+        slot = transferCount++;
+    }
+    if (slot < 0) return;
+
+    transfers[slot].x = x;
+    transfers[slot].y = y;
+    transfers[slot].active = true;
+    // 表示中の面から反対の面へ送る
+    transfers[slot].toBack = !showBackSide;  // Front表示中なら表→裏、Back表示中なら裏→表
+}
+
+// Transferを描画（両面で表示）
+static void drawTransfers(void) {
+    for (int i = 0; i < transferCount; i++) {
+        if (!transfers[i].active) continue;
+
+        float x = transfers[i].x;
+        float y = transfers[i].y;
+        float halfSize = TRANSFER_SIZE / 2.0f;
+        bool toBack = transfers[i].toBack;
+
+        // 入口側（送り出し側）か出口側（受け入れ側）か
+        bool isEntrance = (toBack && !showBackSide) || (!toBack && showBackSide);
+
+        // 入口は濃く、出口は薄く表示
+        Color color;
+        if (isEntrance) {
+            color = toBack ? (Color){50, 150, 255, 150} : (Color){255, 150, 50, 150};
+        } else {
+            color = toBack ? (Color){50, 150, 255, 50} : (Color){255, 150, 50, 50};
+        }
+        DrawRectangle((int)(x - halfSize), (int)(y - halfSize),
+            (int)TRANSFER_SIZE, (int)TRANSFER_SIZE, color);
+
+        // 枠線
+        DrawRectangleLines((int)(x - halfSize), (int)(y - halfSize),
+            (int)TRANSFER_SIZE, (int)TRANSFER_SIZE, WHITE);
+
+        // 方向テキスト
+        const char *label = toBack ? "F>B" : "B>F";
+        DrawText(label, (int)(x - 12), (int)(y - 8), 16, WHITE);
+    }
+}
+
+// Transfer内のデブリ/水を反対側の面に転送
+static void updateTransfers(void) {
+    float halfSize = TRANSFER_SIZE / 2.0f;
+
+    for (int t = 0; t < transferCount; t++) {
+        if (!transfers[t].active) continue;
+
+        float tx = transfers[t].x;
+        float ty = transfers[t].y;
+        float left = tx - halfSize;
+        float right = tx + halfSize;
+        float top = ty - halfSize;
+        float bottom = ty + halfSize;
+        bool toBack = transfers[t].toBack;
+
+        // デブリをチェック
+        for (int i = 0; i < debrisCount; i++) {
+            if (!debris[i].active) continue;
+            // 入口側の面にいるオブジェクトのみ転送（出口からは入らない）
+            // toBack=true(F→B): Frontにいる(isBack=false)オブジェクトのみ
+            // toBack=false(B→F): Backにいる(isBack=true)オブジェクトのみ
+            if (debris[i].isBack == toBack) continue;
+
+            cpVect pos;
+            if (debris[i].isStatic) {
+                pos = debris[i].staticPos;
+            } else {
+                pos = cpBodyGetPosition(debris[i].body);
+            }
+
+            // デブリがTransfer領域内に完全に入っているか
+            float margin = debris[i].size * 0.5f;
+            if (pos.x - margin >= left && pos.x + margin <= right &&
+                pos.y - margin >= top && pos.y + margin <= bottom) {
+
+                // 面を切り替え
+                debris[i].isBack = toBack;
+
+                // 衝突フィルタを更新
+                if (debris[i].shape) {
+                    if (debris[i].isBack) {
+                        cpShapeSetFilter(debris[i].shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_BACK, MASK_BACK));
+                    } else {
+                        cpShapeSetFilter(debris[i].shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+                    }
+                }
+            }
+        }
+
+        // 水パーティクルをチェック
+        for (int i = 0; i < waterParticleCount; i++) {
+            if (!waterParticles[i].active) continue;
+            // 入口側の面にいるオブジェクトのみ転送
+            if (waterParticles[i].isBack == toBack) continue;
+
+            cpVect pos = cpBodyGetPosition(waterParticles[i].body);
+            float radius = getWaterRadius(waterParticles[i].valence);
+
+            // 水がTransfer領域内に完全に入っているか
+            if (pos.x - radius >= left && pos.x + radius <= right &&
+                pos.y - radius >= top && pos.y + radius <= bottom) {
+
+                // 面を切り替え
+                waterParticles[i].isBack = toBack;
+
+                // 衝突フィルタを更新
+                if (waterParticles[i].isBack) {
+                    cpShapeSetFilter(waterParticles[i].shape, cpShapeFilterNew(0, CATEGORY_WATER_BACK, MASK_BACK));
+                } else {
+                    cpShapeSetFilter(waterParticles[i].shape, cpShapeFilterNew(0, CATEGORY_WATER_FRONT, MASK_FRONT));
+                }
+            }
+        }
     }
 }
 
@@ -1617,14 +1800,22 @@ static void placeOutput(float x, float y) {
     cpTransform leftT = cpTransformTranslate(cpv(ox, oy + OUTPUT_SIZE / 2.0f));
     outputs[slot].leftWall = cpPolyShapeNew(staticBody, 4, leftVerts, leftT, 0.0f);
     cpShapeSetFriction(outputs[slot].leftWall, 0.5f);
-    cpShapeSetFilter(outputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(outputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(outputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, outputs[slot].leftWall);
 
     // 右壁
     cpTransform rightT = cpTransformTranslate(cpv(ox + OUTPUT_SIZE, oy + OUTPUT_SIZE / 2.0f));
     outputs[slot].rightWall = cpPolyShapeNew(staticBody, 4, leftVerts, rightT, 0.0f);
     cpShapeSetFriction(outputs[slot].rightWall, 0.5f);
-    cpShapeSetFilter(outputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(outputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(outputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, outputs[slot].rightWall);
 
     // 底壁
@@ -1636,16 +1827,23 @@ static void placeOutput(float x, float y) {
     cpTransform bottomT = cpTransformTranslate(cpv(ox + OUTPUT_SIZE / 2.0f, oy + OUTPUT_SIZE));
     outputs[slot].bottomWall = cpPolyShapeNew(staticBody, 4, bottomVerts, bottomT, 0.0f);
     cpShapeSetFriction(outputs[slot].bottomWall, 0.5f);
-    cpShapeSetFilter(outputs[slot].bottomWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(outputs[slot].bottomWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(outputs[slot].bottomWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, outputs[slot].bottomWall);
 
     outputs[slot].active = true;
+    outputs[slot].isBack = showBackSide;
 }
 
 // Outputを描画
 static void drawOutputs(void) {
     for (int i = 0; i < outputCount; i++) {
         if (!outputs[i].active) continue;
+        // 現在表示中の面のみ描画
+        if (outputs[i].isBack != showBackSide) continue;
         float ox = outputs[i].x;
         float oy = outputs[i].y;
 
@@ -1756,14 +1954,22 @@ static void placeInput(float x, float y) {
     cpTransform leftT = cpTransformTranslate(cpv(ix, iy + INPUT_SIZE / 2.0f));
     inputs[slot].leftWall = cpPolyShapeNew(staticBody, 4, leftVerts, leftT, 0.0f);
     cpShapeSetFriction(inputs[slot].leftWall, 0.5f);
-    cpShapeSetFilter(inputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(inputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(inputs[slot].leftWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, inputs[slot].leftWall);
 
     // 右壁
     cpTransform rightT = cpTransformTranslate(cpv(ix + INPUT_SIZE, iy + INPUT_SIZE / 2.0f));
     inputs[slot].rightWall = cpPolyShapeNew(staticBody, 4, leftVerts, rightT, 0.0f);
     cpShapeSetFriction(inputs[slot].rightWall, 0.5f);
-    cpShapeSetFilter(inputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(inputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(inputs[slot].rightWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, inputs[slot].rightWall);
 
     // 上壁
@@ -1775,16 +1981,23 @@ static void placeInput(float x, float y) {
     cpTransform topT = cpTransformTranslate(cpv(ix + INPUT_SIZE / 2.0f, iy));
     inputs[slot].topWall = cpPolyShapeNew(staticBody, 4, topVerts, topT, 0.0f);
     cpShapeSetFriction(inputs[slot].topWall, 0.5f);
-    cpShapeSetFilter(inputs[slot].topWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(inputs[slot].topWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(inputs[slot].topWall, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, inputs[slot].topWall);
 
     inputs[slot].active = true;
+    inputs[slot].isBack = showBackSide;
 }
 
 // Inputを描画
 static void drawInputs(void) {
     for (int i = 0; i < inputCount; i++) {
         if (!inputs[i].active) continue;
+        // 現在表示中の面のみ描画
+        if (inputs[i].isBack != showBackSide) continue;
         float ix = inputs[i].x;
         float iy = inputs[i].y;
 
@@ -1814,10 +2027,11 @@ static void checkAndFillInputs(void) {
         float ix = inputs[inp].x;
         float iy = inputs[inp].y;
 
-        // このInput内にデブリがあるかチェック
+        // このInput内にデブリがあるかチェック（同じ面のみ）
         bool hasDebris = false;
         for (int i = 0; i < debrisCount; i++) {
             if (!debris[i].active) continue;
+            if (debris[i].isBack != inputs[inp].isBack) continue;  // 同じ面のみ
 
             cpVect pos;
             if (debris[i].isStatic) {
@@ -1911,7 +2125,11 @@ static void checkAndFillInputs(void) {
                 float elasticity = type == DEBRIS_CLAY ? 0.05f : (type == DEBRIS_WOOD ? 0.2f : 0.1f);
                 cpShapeSetElasticity(shape, elasticity);
                 cpShapeSetCollisionType(shape, COLLISION_TYPE_DEBRIS);
-                cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS, CATEGORY_DEBRIS | CATEGORY_STRUCTURE));
+                if (inputs[inp].isBack) {
+                    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_BACK, MASK_BACK));
+                } else {
+                    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_DEBRIS_FRONT, MASK_FRONT));
+                }
                 cpShapeSetUserData(shape, (void*)(intptr_t)slot);
                 cpSpaceAddShape(space, shape);
 
@@ -1931,6 +2149,7 @@ static void checkAndFillInputs(void) {
                 debris[slot].breakFlash = 0;
                 debris[slot].idleTime = 0.0f;
                 debris[slot].lastPos = cpv(spawnX, spawnY);
+                debris[slot].isBack = inputs[inp].isBack;  // Inputと同じ面に生成
                 if (slot >= debrisCount) debrisCount = slot + 1;
             }
         }
@@ -1965,18 +2184,25 @@ static void placeUserSieve(float x, float y) {
     };
     cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
     cpShapeSetFriction(shape, 0.5f);
-    cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    if (showBackSide) {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_BACK, MASK_BACK));
+    } else {
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
+    }
     cpSpaceAddShape(space, shape);
 
     userSieves[slot].body = body;
     userSieves[slot].shape = shape;
     userSieves[slot].active = true;
+    userSieves[slot].isBack = showBackSide;
 }
 
 // ユーザーふるいを描画
 static void drawUserSieves(void) {
     for (int i = 0; i < userSieveCount; i++) {
         if (!userSieves[i].active) continue;
+        // 現在表示中の面のみ描画
+        if (userSieves[i].isBack != showBackSide) continue;
 
         cpVect pos = cpBodyGetPosition(userSieves[i].body);
         cpFloat angle = cpBodyGetAngle(userSieves[i].body);
@@ -2015,7 +2241,7 @@ static void createSieve(void) {
         };
         cpShape *shape = cpPolyShapeNew(body, 4, verts, cpTransformIdentity, 0.0f);
         cpShapeSetFriction(shape, 0.5f);
-        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+        cpShapeSetFilter(shape, cpShapeFilterNew(0, CATEGORY_STRUCTURE_FRONT, MASK_FRONT));
         cpSpaceAddShape(space, shape);
 
         sieveBodies[i] = body;
@@ -2056,7 +2282,7 @@ static void createGround(void) {
     groundShape = cpPolyShapeNew(staticBody, 4, verts,
         cpTransformTranslate(cpv(FIELD_WIDTH / 2.0f, SCREEN_HEIGHT - 10.0f)), 0.0f);
     cpShapeSetFriction(groundShape, 3.0f);  // 強い静止摩擦
-    cpShapeSetFilter(groundShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    cpShapeSetFilter(groundShape, cpShapeFilterNew(0, CATEGORY_GROUND, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, groundShape);
 
     // 左壁
@@ -2068,7 +2294,7 @@ static void createGround(void) {
     leftWallShape = cpPolyShapeNew(staticBody, 4, leftVerts,
         cpTransformTranslate(cpv(-10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
     cpShapeSetFriction(leftWallShape, 3.0f);  // 強い静止摩擦
-    cpShapeSetFilter(leftWallShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    cpShapeSetFilter(leftWallShape, cpShapeFilterNew(0, CATEGORY_GROUND, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, leftWallShape);
 
     // 右壁（フィールド右端）
@@ -2078,7 +2304,7 @@ static void createGround(void) {
     rightWallShape = cpPolyShapeNew(staticBody, 4, rightVerts,
         cpTransformTranslate(cpv(FIELD_WIDTH + 10.0f, SCREEN_HEIGHT / 2.0f)), 0.0f);
     cpShapeSetFriction(rightWallShape, 3.0f);  // 強い静止摩擦
-    cpShapeSetFilter(rightWallShape, cpShapeFilterNew(0, CATEGORY_STRUCTURE, CP_ALL_CATEGORIES));
+    cpShapeSetFilter(rightWallShape, cpShapeFilterNew(0, CATEGORY_GROUND, CP_ALL_CATEGORIES));
     cpSpaceAddShape(space, rightWallShape);
 }
 
@@ -2369,6 +2595,11 @@ int main(void)
             showModeMenu = !showModeMenu;
         }
 
+        // Fキーで表面/裏面切替
+        if (IsKeyPressed(KEY_F)) {
+            showBackSide = !showBackSide;
+        }
+
         // ワールド座標を取得（描画やプレビューで使用）
         Camera2D cam = {0};
         cam.target = (Vector2){cameraX + SCREEN_WIDTH / 2.0f, cameraY + SCREEN_HEIGHT / 2.0f};
@@ -2584,12 +2815,26 @@ int main(void)
                             deleted = true;
                         }
                     }
+                    // Transferをチェック
+                    for (int i = 0; i < transferCount && !deleted; i++) {
+                        if (!transfers[i].active) continue;
+                        float dist = sqrtf(powf(worldX - transfers[i].x, 2) + powf(worldY - transfers[i].y, 2));
+                        if (dist < TRANSFER_SIZE / 2.0f) {
+                            transfers[i].active = false;
+                            deleted = true;
+                        }
+                    }
                 }
             }
         } else if (actionMode == 9) {
             // モード9: 壁配置
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                 placeWall(worldX, worldY);
+            }
+        } else if (actionMode == 10) {
+            // モード10: Transfer配置
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                placeTransfer(worldX, worldY);
             }
         }
         } // if (!showModeMenu)
@@ -2611,6 +2856,7 @@ int main(void)
         processBreakingDebris();
         processPendingSticky();
         updateWaterParticles();
+        updateTransfers();  // Transfer内のオブジェクトを反対側に転送
         // 10フレームごとにマージ/分割処理
         static int waterFrameCount = 0;
         if (++waterFrameCount >= 10) {
@@ -2648,6 +2894,7 @@ int main(void)
         drawWalls();
         drawOutputs();
         drawInputs();
+        drawTransfers();  // 両面で表示
 
         // 配置プレビュー（ワイヤフレーム）
         float previewX = snapToGrid(worldX);
@@ -2714,6 +2961,11 @@ int main(void)
             for (int i = 0; i < 4; i++) {
                 DrawLineEx(corners[i], corners[(i+1)%4], 2, previewColor);
             }
+        } else if (actionMode == 10) {
+            // Transfer プレビュー
+            float halfSize = TRANSFER_SIZE / 2.0f;
+            DrawRectangleLines((int)(previewX - halfSize), (int)(previewY - halfSize),
+                (int)TRANSFER_SIZE, (int)TRANSFER_SIZE, previewColor);
         }
 
         EndMode2D();
@@ -2740,27 +2992,21 @@ int main(void)
         DrawText(TextFormat("Water: %d (vol:%d)", activeWaterCount, totalWaterVolume), 10, 55, 20, BLUE);
         DrawText(TextFormat("Physics: %.2f ms", physicsTimeMs), 10, 75, 20, BLACK);
         DrawText(TextFormat("Mouse: %.0f, %.0f", worldX, worldY), 10, 95, 20, BLACK);
-        DrawText(TextFormat("Mode[1-9]: %d %s", actionMode, actionModeNames[actionMode]), 10, 115, 20, DARKBLUE);
+        DrawText(TextFormat("Mode[E]: %s", actionModeNames[actionMode]), 10, 115, 20, DARKBLUE);
         DrawText(TextFormat("Zoom: %.1fx", zoom), 10, 135, 20, BLACK);
+        DrawText(showBackSide ? "Side: Back [F]" : "Side: Front [F]", 10, 155, 20, showBackSide ? ORANGE : DARKGREEN);
 
         // キー操作一覧（右端）
         int helpX = SCREEN_WIDTH - 180;
         int helpY = 5;
-        DrawRectangle(helpX - 5, helpY, 180, 300, (Color){255, 255, 255, 200});
+        DrawRectangle(helpX - 5, helpY, 180, 150, (Color){255, 255, 255, 200});
         DrawText("-- Controls --", helpX, helpY + 5, 16, DARKGRAY);
-        DrawText("1: Break mode", helpX, helpY + 25, 14, BLACK);
-        DrawText("2: Drag mode", helpX, helpY + 45, 14, BLACK);
-        DrawText("3: Water mode", helpX, helpY + 65, 14, BLACK);
-        DrawText("4: Conveyor mode", helpX, helpY + 85, 14, BLACK);
-        DrawText("5: Output mode", helpX, helpY + 105, 14, BLACK);
-        DrawText("6: Sieve mode", helpX, helpY + 125, 14, BLACK);
-        DrawText("7: Input mode", helpX, helpY + 145, 14, BLACK);
-        DrawText("8: Delete mode", helpX, helpY + 165, 14, BLACK);
-        DrawText("9: Wall mode", helpX, helpY + 185, 14, BLACK);
-        DrawText("A/D: Scroll L/R", helpX, helpY + 210, 14, BLACK);
-        DrawText("W/S: Scroll U/D", helpX, helpY + 230, 14, BLACK);
-        DrawText("Wheel: Zoom", helpX, helpY + 250, 14, BLACK);
-        DrawText("L-Drag: Pan", helpX, helpY + 270, 14, BLACK);
+        DrawText("E: Mode menu", helpX, helpY + 25, 14, BLACK);
+        DrawText("F: Front/Back", helpX, helpY + 45, 14, BLACK);
+        DrawText("A/D: Scroll L/R", helpX, helpY + 65, 14, BLACK);
+        DrawText("W/S: Scroll U/D", helpX, helpY + 85, 14, BLACK);
+        DrawText("Wheel: Zoom", helpX, helpY + 105, 14, BLACK);
+        DrawText("L-Drag: Pan", helpX, helpY + 125, 14, BLACK);
 
         // モード選択メニュー
         if (showModeMenu) {
