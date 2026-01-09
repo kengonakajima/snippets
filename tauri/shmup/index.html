@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shmup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas { background: #111; }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 20px;
+    }
+    #gameover {
+      position: absolute;
+      color: #f00;
+      font-family: monospace;
+      font-size: 40px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">SCORE: 0</div>
+  <div id="gameover">GAME OVER</div>
+  <canvas id="game" width="480" height="640"></canvas>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

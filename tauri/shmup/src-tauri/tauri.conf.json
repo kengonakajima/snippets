@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "shmup",
+  "version": "0.1.0",
+  "identifier": "com.example.shmup",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Shmup",
+        "width": 480,
+        "height": 680,
+        "resizable": false,
+        "center": true
+      }
+    ]
+  }
+}
