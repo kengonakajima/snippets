@@ -1,0 +1,13 @@
+[package]
+name = "metal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSThread", "NSRunLoop", "NSDate", "NSString", "NSError"] }
+objc2-core-foundation = "0.3"
+objc2-app-kit = { version = "0.3", features = ["NSApplication", "NSWindow", "NSView", "NSRunningApplication", "NSResponder", "NSEvent"] }
+objc2-quartz-core = { version = "0.3", features = ["CAMetalLayer", "CALayer"] }
+objc2-metal = "0.3"
+block2 = "0.6"
