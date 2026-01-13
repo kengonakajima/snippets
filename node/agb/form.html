@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>テストフォーム</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    form { max-width: 400px; }
+    label { display: block; margin-top: 10px; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+    #result { margin-top: 20px; padding: 10px; background: #e0ffe0; display: none; }
+  </style>
+</head>
+<body>
+  <h1>テストフォーム</h1>
+  <form id="myform">
+    <label for="name">名前</label>
+    <input type="text" id="name" name="name" placeholder="名前を入力">
+
+    <label for="email">メールアドレス</label>
+    <input type="email" id="email" name="email" placeholder="メールアドレスを入力">
+
+    <label for="message">メッセージ</label>
+    <textarea id="message" name="message" rows="4" placeholder="メッセージを入力"></textarea>
+
+    <button type="submit">送信</button>
+  </form>
+
+  <div id="result">
+    <h2>送信完了!</h2>
+    <p>入力された内容:</p>
+    <ul>
+      <li>名前: <span id="result-name"></span></li>
+      <li>メール: <span id="result-email"></span></li>
+      <li>メッセージ: <span id="result-message"></span></li>
+    </ul>
+  </div>
+
+  <script>
+    document.getElementById('myform').addEventListener('submit', function(e) {
+      e.preventDefault();
+      document.getElementById('result-name').textContent = document.getElementById('name').value;
+      document.getElementById('result-email').textContent = document.getElementById('email').value;
+      document.getElementById('result-message').textContent = document.getElementById('message').value;
+      document.getElementById('result').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
