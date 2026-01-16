@@ -1,0 +1,179 @@
+# RLM実行結果の解説 (問題000: Kalamang言語翻訳)
+
+## 問題の概要
+
+- **タスク**: Kalamang語の文法書（約100万文字）を参照し、以下の文を英訳する
+- **入力文**: "Faisal emun me mindi don bolonet me ma he kademor."
+- **選択肢**:
+  - A: Faisal's mother is still angry at him for a little thing like that.
+  - B: Faisal's mother turns furious at him for a big thing like that.
+  - C: Faisal's mother gets frustrated at him for a big thing like this.
+  - D: Faisal's mother gets angry at him for a little thing like that.
+- **正解**: D
+
+---
+
+## RLMループの流れ
+
+```
+init_state → [propose_query → search → extract_evidence → update_state → converged?] × N → finalize
+```
+
+---
+
+## イテレーション 1/5（根拠 0 → 5）
+
+### propose_query（検索クエリ生成）
+LLMに「次に何を検索すべきか」を問い合わせる。
+
+- **生成されたクエリ**: "Kalamang emun mindi bolonet kademor translation"
+- **戦略**: 翻訳対象の文に含まれる未知の単語をそのまま検索キーワードにした
+
+### search（コンテキスト検索）
+100万文字の文法書から、キーワードにマッチする行をTop-10で取得。
+
+- **ヒット**: 10件
+- **上位ヒット例**:
+  - 行3411: "mindi"の説明（様態指示詞）
+  - 行4134, 4137: "emun"の用例（母を意味する）
+
+### extract_evidence（根拠抽出）
+LLMが検索結果から、問題を解くのに役立つ情報を抽出。
+
+**抽出された5件の根拠**:
+1. **mindi** = "like that"（様態指示詞、「あのように」）
+2. **wandi** = "like this"（mindiと対になる形）
+3. **emun** = "mother"（母）、所有格と組み合わせて「Xの母」
+4. **me** = 省略可能な要素（等価構文で使用）
+5. **me**の有無は意味に大きな影響なし
+
+### 状態更新
+- 根拠: 0 → 5件
+
+**【ポイント】** 最初のイテレーションで、文の主要な単語（emun=母, mindi=like that）の意味を把握できた！
+
+---
+
+## イテレーション 2/5（根拠 5 → 5）
+
+### propose_query
+- **クエリ**: "Kalamang emun don bolonet kademor meaning translation grammar"
+- **意図**: まだ意味不明な単語（don, bolonet, kademor）を調べようとした
+
+### 結果
+- ヒット10件あったが、検索結果はKalamang言語の一般的な説明のみ
+- **新規根拠: 0件**（「なし」と判定）
+
+**【ポイント】** 検索がヒットしても、問題解決に役立つ情報がなければ「なし」と判断される
+
+---
+
+## イテレーション 3/5（根拠 5 → 5）
+
+### propose_query
+- **クエリ**: "Kalamang bolonet kademor don meaning"
+- **意図**: 引き続き未知の単語を検索
+
+### 結果
+- 地理的情報などがヒットしたが、単語の意味は見つからず
+- **新規根拠: 0件**
+
+---
+
+## イテレーション 4/5（根拠 5 → 5）
+
+### propose_query
+- **クエリ**: "Kalamang don meaning, Kalamang bolonet meaning, Kalamang kademor meaning, Kalamang emotion adjectives angry frustrated furious, Kalamang size adjectives big little"
+- **意図**: 複数キーワードを一度に検索。選択肢から「angry/furious/frustrated」「big/little」などの感情・サイズ形容詞も検索
+
+### 結果
+- スコア高め（最大10）のヒットがあったが、具体的な単語の意味は見つからず
+- **新規根拠: 0件**
+
+**【ポイント】** 選択肢の違い（angry vs furious, big vs little）を解決するための検索を試みたが失敗
+
+---
+
+## イテレーション 5/5（根拠 5 → 9）
+
+### propose_query
+- **クエリ**: "Kalamang emun mindi bolonet kademor"
+- **意図**: シンプルに文中の単語で再検索
+
+### 結果
+- イテレーション1と同じ行がヒット
+- しかし、LLMが異なる観点から情報を抽出
+
+**新たに抽出された4件の根拠**:
+1. **emun** → "mother"（再確認）
+2. **mindi** → manner demonstrative "like that"（再確認）
+3. **me** → optional particle（再確認）
+4. **mindi**は動詞と組み合わせて様態・比較を表す
+
+### 状態更新
+- 根拠: 5 → 9件
+
+---
+
+## 最終回答フェーズ（finalize）
+
+### 累積根拠（9件）
+LLMに累積した根拠を提示し、最終回答を求める。
+
+### 推論
+収集された根拠から判明した事実:
+- **Faisal emun** = "Faisal's mother"
+- **mindi** = "like that"（選択肢AとDに含まれる）
+- **wandi** = "like this"（選択肢Cに含まれる）→ Cは除外
+
+選択肢の比較:
+- A: "still angry" + "little thing"
+- D: "gets angry" + "little thing"
+
+→ 根拠からは「still」に対応する単語の情報がないため、よりシンプルなDが選ばれた可能性
+
+### 最終回答
+**D**
+
+---
+
+## 結果
+
+```
+RLM回答: D
+正解: D
+結果: 正解!
+```
+
+---
+
+## RLMの動作まとめ
+
+| イテレーション | 検索クエリの戦略 | 新規根拠 | 累積根拠 |
+|---------------|-----------------|---------|---------|
+| 1 | 文中の単語をそのまま検索 | 5件 | 5件 |
+| 2 | 未知の単語 + grammar/translation | 0件 | 5件 |
+| 3 | 未知の単語のみ | 0件 | 5件 |
+| 4 | 複数キーワード + 感情/サイズ形容詞 | 0件 | 5件 |
+| 5 | 文中の単語で再検索 | 4件 | 9件 |
+
+### 成功のポイント
+1. **emun = mother** を早期に発見（イテレーション1）
+2. **mindi = like that** を発見し、"like this"（選択肢C）を除外できた
+3. 完全な翻訳はできなかったが、部分的な根拠で正解を絞り込めた
+
+### 課題
+- **don, bolonet, kademor, ma, he** の意味は最後まで見つからなかった
+- それでも選択肢の消去法で正解できた（LongBenchの4択形式が有利に働いた）
+
+---
+
+## 考察: なぜRLMが有効か？
+
+1. **100万文字を一度に読めない** → 検索で関連部分だけ取得
+2. **段階的な情報収集** → 最初は広く、徐々に絞り込む
+3. **LLMの推論能力** → 部分的な情報からでも選択肢を絞り込める
+4. **収束判定** → 十分な根拠が集まったら終了（効率的）
+
+通常のLLMでは100万文字のコンテキストを処理できないが、
+RLMは「検索 + 抽出 + 蓄積」のループで解決できる。

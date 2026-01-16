@@ -1,0 +1,13 @@
+# データセット（Hugging Faceからダウンロード）
+longbench_v2/
+longbench_v2_txt/
+
+# 実行結果
+output.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code
+.claude/

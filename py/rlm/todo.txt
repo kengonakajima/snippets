@@ -1,0 +1,24 @@
+RLM (Recursive Language Model)の最小構成のループを自作し、
+LongBench v2のデータセットを使って、その動きを確かめる。
+
+最小構成のループは、概念としては以下のようである。
+これを実際にデータセットを読んで動くコードにし、評価する。
+
+起動時に問題番号(002とか)を指定して、その問題を解かせることができるpythonスクリプトを完成させる。
+
+
+
+```python
+def rlm_loop(task, S_max):
+    state = init_state(task)                 # 仮説・候補・根拠を保持（短く）
+    for s in range(S_max):                   # ← ハード上限（無限防止）
+        query = propose_query(state)         # LLM: 次の search クエリ（slots推奨）
+        hits  = search(query)                # 唯一のI/O：Top-Kの(line_no,value,context)
+        delta = extract_evidence(hits, task) # LLM or ルール: 有用情報だけ抜く
+        state = update_state(state, delta)   # 要約/候補更新（重複排除・圧縮）
+        if converged(state):                 # 新規根拠が増えない/候補が確定
+            break
+    answer = finalize(state)                 # LLM: 最終(line_no)を1つに確定
+    return answer
+```
+
