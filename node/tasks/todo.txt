@@ -1,0 +1,186 @@
+# Node.jsでタスク分解＋逐次実行エージェント（標準構成）
+
+## 基本設計
+- **Structured Outputs（JSON Schema）**で“計画（plan）”を安全に取り出す  
+- **Tool（Function）Calling**で各ステップを**1つずつ実行**するループ（plan → act → observe）  
+- 進捗/成果物（state, artifacts, logs）を**自前ストア**に保存し、**次ターンの入力**に渡す
+
+## エージェント動作
+
+- 無限ループ。
+- まずタスク分解し、次にタスクを実行し、最後に結果を評価検証する。
+- 作業が完了したり、進行のために情報が必要だったらユーザーに入力を促す。
+
+
+
+## 成果物
+
+- node.jsで動く、stdinから入力を受けて結果を出力するプログラムを実装する。
+
+
+---
+
+## 最小構成（Node.js／TypeScript）
+
+```ts
+// pnpm add openai zod
+import OpenAI from "openai";
+import { z } from "zod";
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// 1) 計画をJSONで強制するスキーマ
+const PlanSchema = z.object({
+  goal: z.string(),
+  steps: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    detail: z.string().optional(),
+    deps: z.array(z.string()).default([]),   // 依存関係
+    kind: z.string()                          // "reason" | "web" | "code" | "write" など自由に
+  })),
+});
+type Plan = z.infer<typeof PlanSchema>;
+
+// 2) ツール定義（モデルが呼べる関数）
+//   実務では web 検索、HTTP、DB、スクリプト実行などを並べます。
+const tools: OpenAI.Responses.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "writeNote",
+      description: "中間成果物やメモを保存する",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          content: { type: "string" }
+        },
+        required: ["title", "content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "fetchUrl",
+      description: "HTTP GET でテキストを取得する（デモ用の簡易版）",
+      parameters: {
+        type: "object",
+        properties: { url: { type: "string" } },
+        required: ["url"]
+      }
+    }
+  }
+];
+
+// ツール実体(サーバー側実装)
+async function callTool(name: string, args: any) {
+  if (name === "writeNote") {
+    artifacts.push({ type: "note", ...args });        // 実運用はDB/FSに保存
+    return { ok: true, id: String(artifacts.length) };
+  }
+  if (name === "fetchUrl") {
+    const res = await fetch(args.url);
+    const text = await res.text();
+    return { status: res.status, text: text.slice(0, 4000) };
+  }
+  throw new Error(`Unknown tool ${name}`);
+}
+
+// 簡易ステート
+const artifacts: any[] = [];
+const logs: string[] = [];
+
+// 3) 計画生成（Structured Outputs）
+export async function makePlan(userGoal: string) {
+  const schema = PlanSchema;
+  const resp = await client.responses.create({
+    model: "gpt-5",
+    input: [
+      { role: "system", content: "You are a planner agent. Output must follow the JSON schema." },
+      { role: "user", content: `Goal: ${userGoal}\n制約: 各ステップは15分以内 / 外部ツールは必要最小限。` }
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "Plan",
+        schema: (PlanSchema as any).toJSON?.() ?? JSON.parse(JSON.stringify(PlanSchema)), // 環境により
+        strict: true
+      }
+    }
+  });
+
+  const json = resp.output?.[0]?.content?.[0];
+  if (json?.type !== "output_text") throw new Error("No JSON");
+  const plan = schema.parse(JSON.parse(json.text));
+  return plan as Plan;
+}
+
+// 4) 1ステップずつ実行するループ
+export async function runPlan(plan: Plan) {
+  const done = new Set<string>();
+  const byId = new Map(plan.steps.map(s => [s.id, s]));
+
+  while (done.size < plan.steps.length) {
+    // 未了で依存が満たされた次のステップを選ぶ
+    const next = plan.steps.find(s => !done.has(s.id) && s.deps.every(d => done.has(d)));
+    if (!next) throw new Error("Deadlock or unresolved deps");
+
+    // モデルに「この1ステップだけ」やらせる
+    const turn = await client.responses.create({
+      model: "gpt-5",
+      tools,
+      tool_choice: "auto",
+      input: [
+        { role: "system", content: "You are an execution agent. Think step-by-step. Prefer calling a tool when helpful." },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Step to execute: ${next.title}\nKind: ${next.kind}\nDetail: ${next.detail ?? ""}` },
+            { type: "text", text: `Goal: ${plan.goal}` },
+            { type: "text", text: `Artifacts so far: ${JSON.stringify(artifacts).slice(0, 2000)}` }
+          ]
+        }
+      ]
+    });
+
+    // 5) Tool 呼び出しが来たら実行し、結果を再プロンプト
+    let finalThought = "";
+    for (const item of turn.output ?? []) {
+      if (item.type === "message" && item.role === "assistant") {
+        const txt = item.content?.map(c => c.type === "output_text" ? c.text : "").join("");
+        if (txt) logs.push(txt);
+      }
+      if (item.type === "tool_call") {
+        const result = await callTool(item.name!, item.arguments);
+        // ツール結果をモデルへフィードバック（観測）
+        const follow = await client.responses.create({
+          model: "gpt-5",
+          input: [
+            { role: "system", content: "Incorporate the tool result and decide if the step is complete." },
+            { role: "assistant", content: [{ type: "tool_result", tool_call_id: item.call_id!, content: JSON.stringify(result) }] }
+          ]
+        });
+        finalThought = follow.output?.map(o => o.type === "message"
+          ? o.content?.map(c => c.type === "output_text" ? c.text : "").join("")
+          : ""
+        ).join("") ?? "";
+      }
+    }
+
+    artifacts.push({ type: "step_result", stepId: next.id, note: finalThought });
+    done.add(next.id);
+  }
+
+  return { artifacts, logs };
+}
+
+// 6) 使い方（デモ）
+(async () => {
+  const plan = await makePlan("『音声メモ→要約→見出し抽出→Markdown整形→Gitコミット』のPoCを作る");
+  const { artifacts } = await runPlan(plan);
+  console.log("Artifacts:", artifacts);
+})();
+
+

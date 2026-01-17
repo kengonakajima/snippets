@@ -1,0 +1,20 @@
+{
+  "name": "task-agent",
+  "version": "0.1.0",
+  "description": "Task decomposition and execution agent CLI",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "openai": "^4.53.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.15.6",
+    "typescript": "^5.5.4"
+  }
+}
