@@ -4,6 +4,7 @@ import sounddevice as sd
 import scipy.io.wavfile as wavfile
 import sys
 import threading
+import os
 
 duration = 5  # 録音秒数
 sample_rate = 16000
@@ -11,6 +12,15 @@ audio_buffer = []
 voice_frames = 0  # 音声が検出されたフレーム数
 total_frames = 0
 voice_threshold = 0.02  # 音声検出しきい値
+
+# 保存先
+embedding_dir = "embeddings"
+name = input("登録する名前を入力してください: ").strip()
+if not name:
+    print("エラー: 名前が空です。")
+    sys.exit(1)
+os.makedirs(embedding_dir, exist_ok=True)
+save_path = os.path.join(embedding_dir, f"{name}.npy")
 
 def audio_callback(indata, frames, time, status):
     global voice_frames, total_frames
@@ -64,6 +74,6 @@ print("特徴ベクトルを抽出中...")
 embedding = model.extract_embedding('temp_register.wav')
 
 # ファイルに保存
-np.save('my_voice_embedding.npy', embedding)
-print(f"登録完了: my_voice_embedding.npy")
+np.save(save_path, embedding)
+print(f"登録完了: {save_path}")
 print(f"Embedding shape: {embedding.shape}")

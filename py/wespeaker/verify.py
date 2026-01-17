@@ -31,16 +31,29 @@ def to_numpy_embedding(x):
     return np.squeeze(np.array(x, dtype=np.float32))
 
 
+def load_registered_embeddings(embedding_dir):
+    if not os.path.isdir(embedding_dir):
+        print(f"エラー: {embedding_dir} が見つかりません。先に register.py を実行してください。")
+        sys.exit(1)
+    items = []
+    for name in sorted(os.listdir(embedding_dir)):
+        if not name.endswith(".npy"):
+            continue
+        path = os.path.join(embedding_dir, name)
+        emb = to_numpy_embedding(np.load(path))
+        label = os.path.splitext(name)[0]
+        items.append((label, emb))
+    if not items:
+        print(f"エラー: {embedding_dir} に .npy がありません。")
+        sys.exit(1)
+    return items
+
+
 print("モデルをロード中...")
 model = wespeaker.load_model("campplus")
 
-if not os.path.exists("my_voice_embedding.npy"):
-    print("エラー: my_voice_embedding.npy が見つかりません。先に register.py を実行してください。")
-    sys.exit(1)
-
-registered_embedding = np.load("my_voice_embedding.npy")
-reg_emb = to_numpy_embedding(registered_embedding)
-print(f"登録済みembeddingをロード: shape={reg_emb.shape}")
+registered_embeddings = load_registered_embeddings("embeddings")
+print(f"登録済みembedding数: {len(registered_embeddings)}")
 
 print("\nリアルタイム判定開始 (Ctrl+C で終了)")
 print(f"判定間隔: {judge_interval}秒, ウィンドウ: {window_sec}秒")
@@ -82,13 +95,20 @@ with sd.InputStream(samplerate=sample_rate, channels=1, dtype="float32", callbac
         inference_time = time.time() - start_time
 
         test_emb = to_numpy_embedding(test_embedding)
-        similarity = float(
-            np.dot(reg_emb, test_emb) / (np.linalg.norm(reg_emb) * np.linalg.norm(test_emb))
-        )
-        judge = "本人" if similarity >= similarity_threshold else "別人"
+        best_label = "未知"
+        best_similarity = -1.0
+        for label, reg_emb in registered_embeddings:
+            similarity = float(
+                np.dot(reg_emb, test_emb) / (np.linalg.norm(reg_emb) * np.linalg.norm(test_emb))
+            )
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_label = label
+
+        judge = best_label if best_similarity >= similarity_threshold else "未知"
 
         bar_length = min(int(latest_rms * 400), 40)
         bar = "#" * bar_length
         print(
-            f"音量: [{bar:<40}] | 類似度: {similarity:5.2f} | 判定: {judge} | 推論: {inference_time:.2f}秒"
+            f"音量: [{bar:<40}] | 類似度: {best_similarity:5.2f} | 判定: {judge} | 推論: {inference_time:.2f}秒"
         )
