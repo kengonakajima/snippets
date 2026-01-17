@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+temp_*.wav
+my_voice_embedding.npy
