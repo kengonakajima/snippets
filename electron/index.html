@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Desktop Audio Volume</title>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #1e1e1e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #status { margin-bottom: 20px; font-size: 14px; color: #aaa; }
+    #volume-bar-container {
+      width: 300px;
+      height: 30px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #volume-bar {
+      height: 100%;
+      width: 0%;
+      background: #4caf50;
+      transition: width 0.05s;
+    }
+    #volume-value { margin-top: 10px; font-size: 24px; font-variant-numeric: tabular-nums; }
+    button {
+      margin-top: 20px;
+      padding: 8px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #4caf50;
+      color: #fff;
+    }
+    button:hover { background: #45a049; }
+  </style>
+</head>
+<body>
+  <div id="status">Click to start capturing desktop audio</div>
+  <div id="volume-bar-container"><div id="volume-bar"></div></div>
+  <div id="volume-value">0 dB</div>
+  <button id="start-btn">Start Capture</button>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const volumeBar = document.getElementById('volume-bar');
+    const volumeValue = document.getElementById('volume-value');
+    const startBtn = document.getElementById('start-btn');
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      statusEl.textContent = 'Requesting display media...';
+
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        audio: true,
+        video: true,
+      });
+
+      const audioTracks = stream.getAudioTracks();
+
+      if (audioTracks.length === 0) {
+        statusEl.textContent = 'No audio track available';
+        return;
+      }
+
+      statusEl.textContent = `Capturing system audio (${audioTracks[0].label})`;
+
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      source.connect(analyser);
+
+      const dataArray = new Float32Array(analyser.fftSize);
+
+      function update() {
+        analyser.getFloatTimeDomainData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i] * dataArray[i];
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+        const db = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+
+        const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+        volumeBar.style.width = pct + '%';
+        volumeValue.textContent = db === -Infinity ? '-∞ dB' : db.toFixed(1) + ' dB';
+
+        if (pct > 70) {
+          volumeBar.style.background = '#f44336';
+        } else if (pct > 40) {
+          volumeBar.style.background = '#ff9800';
+        } else {
+          volumeBar.style.background = '#4caf50';
+        }
+
+        requestAnimationFrame(update);
+      }
+      update();
+    });
+  </script>
+</body>
+</html>
