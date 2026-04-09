@@ -1,0 +1,17 @@
+{
+  "name": "agentos-demo",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "demo": "node --import tsx demo.ts"
+  },
+  "dependencies": {
+    "@rivet-dev/agent-os-claude": "^0.1.1",
+    "@rivet-dev/agent-os-common": "^0.0.260331072558",
+    "@rivet-dev/agent-os-core": "latest",
+    "@rivet-dev/agent-os-pi": "^0.1.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}
