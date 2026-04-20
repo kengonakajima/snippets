@@ -8,7 +8,7 @@
     "bidi-sse": "^0.2.7",
     "blessed": "^0.1.81",
     "bull": "^4.10.2",
-    "diff": "^5.1.0",
+    "diff": "^8.0.3",
     "express": "^4.18.2",
     "helmet": "^6.1.5",
     "leaflet.offline": "^3.0.0",
