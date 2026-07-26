@@ -1,0 +1,9 @@
+config_version=5
+
+[application]
+config/name="GodotMicTest"
+run/main_scene="res://main.tscn"
+
+[audio]
+driver/enable_input=true
+driver/mix_rate=48000
